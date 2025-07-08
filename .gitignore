@@ -1,0 +1,40 @@
+.zig-cache
+zig-out
+.DS_Store
+*~.nib
+build/
+*.swp
+
+# XCode specific ignores
+ios/BGD/libbgd-ios.a
+ios/BGD.xcodeproj/xcshareddata/
+project.xcworkspace/
+xcuserdata/
+*.pbxuser
+*.perspective
+*.perspectivev3
+
+# Android specific ignores
+.gradle
+.idea
+local.properties
+android_sign
+android/local.properties
+android/app/release/
+android/app/debug/
+
+# Dont commit the libraries, build them.
+liblexica-ios.a
+liblexica-android.so
+ios/Lexica/liblexica-ios.a
+ios/Lexica/resources.bd
+android/app/jni/jniLibs/arm64-v8a/liblexica-android.so
+android/app/src/main/assets/resources.bd
+assets-bgd
+libs/engine
+
+# Dont accidentally overwrite these files. Use git -f to force commit
+android_libc.txt
+android/app/build.gradle
+android/app/src/main/AndroidManifest.xml
+ios/Lexica.xcodeproj/project.pbxproj

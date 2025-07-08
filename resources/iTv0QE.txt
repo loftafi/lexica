@@ -1,0 +1,6 @@
+i:iTv0QE
+d:202505020037
+v:true
+c:jay/tabler
+s:icon-parsing-check
+s:icon parsing check

@@ -1,0 +1,5 @@
+i:1oegu
+d:202505080351
+v:true
+c:jay
+s:lexica translation
