@@ -1,6 +1,6 @@
 .{
     .name = .lexica,
-    .version = "0.2.1",
+    .version = "0.2.2",
     .fingerprint = 0x2ce87c922558d28,
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
@@ -17,16 +17,16 @@
             .hash = "zigimg-0.1.0-lly-O_qZEgAP5eJWUbcWtL9Jv4V_BGcK5p-570Hiaj7k",
         },
         .praxis = .{
-            .url = "git+https://github.com/loftafi/praxis.git#57f6a0f23ec8191d4737210459ce55bacbea65d6",
-            .hash = "praxis-0.0.5-FPf2NdwnBABFfnBZneRdaZy3rDXeTaoX2aIEh5UaVxnL",
+            .url = "git+https://github.com/loftafi/praxis.git#88063206b43a36296cae30f70fa0bc57b522fe48",
+            .hash = "praxis-0.0.6-FPf2NQlSBAAqxeJPwt1QE1JXoRaFMPj3U-erNdGbpxDL",
         },
         .resources = .{
-            .url = "git+https://github.com/loftafi/resources.git#a7cf2506a25f799a3fbf72c4334f05f483f9e6df",
-            .hash = "resources-0.0.3-J0GwI4X0AABDdFpi5dpYwJTW-GaEeapq1ovBdAD_2OcN",
+            .url = "git+https://github.com/loftafi/resources.git#76f9900675106f929473937a87643e1c52e7f73c",
+            .hash = "resources-0.0.5-J0GwI4n5AACORm1ztLSveKfXRHIvLxv7nrxtSl8FJaip",
         },
         .engine = .{
-            .url = "git+https://github.com/loftafi/engine.git#bd68add6664999b53c275f160df1c711cb77de34",
-            .hash = "engine-0.1.2-1VilCs-bIgNqBbgZ8U5RE_paiYvyBjoZSa-JFsqbUsTD",
+            .url = "git+https://github.com/loftafi/engine.git#65166e2ebe40bf3bf2bbcf58322e5c8f99d8a92b",
+            .hash = "engine-0.1.5-1VilCjS8IgN3d1v0IvxxAbzxDsyEGUb2zhMP3FU1lyLL",
         },
     },
 

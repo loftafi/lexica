@@ -50,10 +50,10 @@ pub fn setup_with_lexeme(self: *Self, lexeme: *praxis.Lexeme) error{OutOfMemory}
     });
     if (engine.dev_mode == true) {
         for (self.form_bank.items) |form| {
-            var ps = ArrayList(u8).init(ac.allocator);
-            form.parsing.string(&ps) catch {};
+            var ps: std.ArrayListUnmanaged(u8) = .empty;
+            form.parsing.string(ps.writer(ac.allocator)) catch {};
             debug("  {s} {s}", .{ form.word, ps.items });
-            ps.deinit();
+            ps.deinit(ac.allocator);
         }
     }
 
@@ -83,10 +83,10 @@ pub fn setup_with_word_set(self: *Self, word_set: *WordSet) error{OutOfMemory}!v
     });
     if (engine.dev_mode == true) {
         for (self.form_bank.items) |form| {
-            var ps = ArrayList(u8).init(ac.allocator);
-            form.parsing.string(&ps) catch {};
+            var ps: std.ArrayListUnmanaged(u8) = .empty;
+            form.parsing.string(ps.writer(ac.allocator)) catch {};
             debug("  {s} {s}", .{ form.word, ps.items });
-            ps.deinit();
+            ps.deinit(ac.allocator);
         }
     }
 
@@ -186,10 +186,10 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
             }
         }
     } else {
-        var ps = ArrayList(u8).init(self.form_bank.allocator);
-        form.parsing.string(&ps) catch {};
+        var ps: std.ArrayListUnmanaged(u8) = .empty;
+        form.parsing.string(ps.writer(self.form_bank.allocator)) catch {};
         warn("Skip unsupported form for wordbank. {s} {s}", .{ form.word, ps.items });
-        ps.deinit();
+        ps.deinit(self.form_bank.allocator);
         return;
     }
     try self.form_bank.append(form);

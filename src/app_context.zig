@@ -28,7 +28,7 @@ pub var data_loaded_event: sdl.SDL_Event = undefined;
 pub fn dictionary_loader_in_thread(data: []const u8) void {
     defer app_context.?.allocator.free(data);
     const start = std.time.milliTimestamp();
-    app_context.?.dictionary.load_binary_data(data, app_context.?.allocator) catch |e| {
+    app_context.?.dictionary.loadBinaryData(app_context.?.dictionary_arena.allocator(), app_context.?.allocator, data) catch |e| {
         err("Error reading dictionary data content. load_binary_data() returned: {any}", .{e});
         _ = sdl.SDL_PushEvent(&data_loaded_event);
         return;
@@ -54,8 +54,10 @@ pub const AppContext = struct {
     // Global app variables
     allocator: Allocator,
     display: *Display = undefined,
-    dictionary: *Dictionary = undefined,
     theme: []const u8 = "",
+
+    dictionary: *Dictionary = undefined,
+    dictionary_arena: std.heap.ArenaAllocator = undefined,
 
     // Word info screen data
     word_lexeme: ?*praxis.Lexeme = null,
@@ -155,8 +157,10 @@ pub const AppContext = struct {
         errdefer app_context = null;
 
         // Placeholder for the dictionary in case this object is destroyed later
-        ac.dictionary = try Dictionary.create(null);
-        errdefer ac.dictionary.destroy();
+        ac.dictionary_arena = std.heap.ArenaAllocator.init(allocator);
+        errdefer ac.dictionary_arena.deinit();
+        ac.dictionary = try Dictionary.create(ac.dictionary_arena.allocator());
+        errdefer ac.dictionary.destroy(ac.dictionary_arena.allocator());
         ac.lists = Lists.init(allocator, ac.dictionary);
         try ac.start_dictionary_load();
 
@@ -171,11 +175,14 @@ pub const AppContext = struct {
             WordInfoScreen.deinit();
         }
         ac.view_history.deinit();
-        ac.dictionary.destroy();
         ac.display.destroy();
         ac.panels.destroy();
         ac.parsing_quiz.deinit();
         ac.lists.deinit();
+
+        ac.dictionary.destroy(ac.dictionary_arena.allocator());
+        ac.dictionary_arena.deinit();
+
         ac.allocator.destroy(ac);
     }
 

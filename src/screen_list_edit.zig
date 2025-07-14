@@ -333,7 +333,7 @@ pub fn search_update(display: *Display, element: *Element) error{OutOfMemory}!vo
             if (i >= MAX_SEARCH_RESULTS) break;
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
-                if (lexeme.primary_form()) |first| {
+                if (lexeme.primaryForm()) |first| {
                     try update_search_result_panel(first, &i, &seen_result, query);
                 }
             }
@@ -346,7 +346,7 @@ pub fn search_update(display: *Display, element: *Element) error{OutOfMemory}!vo
             if (i >= MAX_SEARCH_RESULTS) break;
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
-                if (lexeme.primary_form()) |first| {
+                if (lexeme.primaryForm()) |first| {
                     try update_search_result_panel(first, &i, &seen_result, query);
                 }
             }
@@ -359,7 +359,7 @@ pub fn search_update(display: *Display, element: *Element) error{OutOfMemory}!vo
             if (i >= MAX_SEARCH_RESULTS) break;
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
-                if (lexeme.primary_form()) |first| {
+                if (lexeme.primaryForm()) |first| {
                     try update_search_result_panel(first, &i, &seen_result, query);
                 }
             }
