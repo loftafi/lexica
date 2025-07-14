@@ -323,7 +323,7 @@ pub fn select_primary_form(word: *praxis.Form, query: []const u8) *Form {
     if (word.lexeme == null) {
         return word;
     }
-    const primary = word.lexeme.?.primary_form();
+    const primary = word.lexeme.?.primaryForm();
     if (primary == null) {
         return word;
     }

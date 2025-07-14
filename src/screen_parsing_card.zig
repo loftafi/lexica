@@ -1455,7 +1455,7 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
     if (buttons.options_picked(current_form)) |parsing| {
         var out = std.ArrayList(u8).init(ac.app_context.?.allocator);
         defer out.deinit();
-        parsing.string(&out) catch |e| {
+        parsing.string(out.writer()) catch |e| {
             if (e == error.Incomplete) {
                 debug("invalid state. parsing incomplete after user picking.", .{});
             }
@@ -1475,7 +1475,7 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
         } else {
             var out2 = std.ArrayList(u8).init(ac.app_context.?.allocator);
             defer out2.deinit();
-            current_form.parsing.string(&out2) catch |e| {
+            current_form.parsing.string(out2.writer()) catch |e| {
                 if (e == error.Incomplete) {
                     debug("invalid state. parsing incomplete after user picking.", .{});
                 }

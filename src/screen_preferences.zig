@@ -424,10 +424,10 @@ pub fn heading_tap(_: *Display, _: *Element) std.mem.Allocator.Error!void {
     }
 }
 
-pub fn pick_theme(_: *Display, element: *Element) std.mem.Allocator.Error!void {
-    const theme = Theme.parse(element.name);
+pub fn pick_theme(display: *Display, element: *Element) std.mem.Allocator.Error!void {
+    const theme = display.validate_theme(element.name);
+    _ = display.set_theme(theme);
     ac.app_context.?.preference.theme = theme;
-    ac.app_context.?.set_theme(theme);
     ac.app_context.?.save_preferences();
 }
 
@@ -567,7 +567,6 @@ const Element = engine.Element;
 const MenuUI = @import("menu_ui.zig");
 const ac = @import("app_context.zig");
 const AppContext = ac.AppContext;
-const Theme = ac.Theme;
 const best_width = @import("screen_parsing_menu.zig").best_width;
 const show_privacy_screen = @import("screen_privacy.zig").show;
 const show_terms_screen = @import("screen_terms.zig").show;

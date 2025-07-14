@@ -28,7 +28,7 @@ pub var data_loaded_event: sdl.SDL_Event = undefined;
 pub fn dictionary_loader_in_thread(data: []const u8) void {
     defer app_context.?.allocator.free(data);
     const start = std.time.milliTimestamp();
-    app_context.?.dictionary.load_binary_data(data, app_context.?.allocator) catch |e| {
+    app_context.?.dictionary.loadBinaryData(app_context.?.dictionary_arena.allocator(), app_context.?.allocator, data) catch |e| {
         err("Error reading dictionary data content. load_binary_data() returned: {any}", .{e});
         _ = sdl.SDL_PushEvent(&data_loaded_event);
         return;
@@ -54,8 +54,10 @@ pub const AppContext = struct {
     // Global app variables
     allocator: Allocator,
     display: *Display = undefined,
+    theme: []const u8 = "",
+
     dictionary: *Dictionary = undefined,
-    theme: Theme = .default,
+    dictionary_arena: std.heap.ArenaAllocator = undefined,
 
     // Word info screen data
     word_lexeme: ?*praxis.Lexeme = null,
@@ -72,7 +74,7 @@ pub const AppContext = struct {
         show_strongs: bool = false,
         accessibility: bool = false,
         size: Scale = .normal,
-        theme: Theme = .default,
+        theme: []const u8 = "",
 
         present_future: bool = true,
         imperfect: bool = false,
@@ -148,15 +150,17 @@ pub const AppContext = struct {
         }
         ac.display.set_scale(ac.preference.size);
         ac.display.event_hook = event_hook;
-        ac.set_theme(ac.preference.theme);
+        _ = ac.display.set_theme(ac.preference.theme);
         debug("Loaded preferences. Scale={d}/{s}", .{ ac.display.user_scale, @tagName(ac.preference.size) });
 
         app_context = ac;
         errdefer app_context = null;
 
         // Placeholder for the dictionary in case this object is destroyed later
-        ac.dictionary = try Dictionary.create(null);
-        errdefer ac.dictionary.destroy();
+        ac.dictionary_arena = std.heap.ArenaAllocator.init(allocator);
+        errdefer ac.dictionary_arena.deinit();
+        ac.dictionary = try Dictionary.create(ac.dictionary_arena.allocator());
+        errdefer ac.dictionary.destroy(ac.dictionary_arena.allocator());
         ac.lists = Lists.init(allocator, ac.dictionary);
         try ac.start_dictionary_load();
 
@@ -171,11 +175,14 @@ pub const AppContext = struct {
             WordInfoScreen.deinit();
         }
         ac.view_history.deinit();
-        ac.dictionary.destroy();
         ac.display.destroy();
         ac.panels.destroy();
         ac.parsing_quiz.deinit();
         ac.lists.deinit();
+
+        ac.dictionary.destroy(ac.dictionary_arena.allocator());
+        ac.dictionary_arena.deinit();
+
         ac.allocator.destroy(ac);
     }
 
@@ -303,29 +310,6 @@ pub const AppContext = struct {
         ac.display.relayout();
     }
 
-    pub fn set_theme(ac: *AppContext, new_theme: Theme) void {
-        ac.theme = new_theme;
-        switch (new_theme) {
-            .midnight => ac.display.theme = &ac.display.themes[1],
-            .sand => ac.display.theme = &ac.display.themes[2],
-            .black => ac.display.theme = &ac.display.themes[0],
-            .white => ac.display.theme = &ac.display.themes[3],
-            .default => {
-                switch (sdl.SDL_GetSystemTheme()) {
-                    sdl.SDL_SYSTEM_THEME_DARK => {
-                        ac.display.theme = &ac.display.themes[0];
-                    },
-                    sdl.SDL_SYSTEM_THEME_LIGHT => {
-                        ac.display.theme = &ac.display.themes[3];
-                    },
-                    else => {
-                        ac.display.theme = &ac.display.themes[3];
-                    },
-                }
-            },
-        }
-    }
-
     pub fn save_preferences(self: *AppContext) void {
         var data = std.ArrayList(u8).initCapacity(self.allocator, 5000) catch {
             warn("Save preferences out of memory.", .{});
@@ -355,7 +339,7 @@ pub const AppContext = struct {
         }
 
         data.appendSliceAssumeCapacity("theme=");
-        data.appendSliceAssumeCapacity(@tagName(self.preference.theme));
+        data.appendSliceAssumeCapacity(self.preference.theme);
         data.appendSliceAssumeCapacity("\nscale=");
         data.appendSliceAssumeCapacity(@tagName(self.preference.size));
         data.appendSliceAssumeCapacity("\naccessibility=");
@@ -462,7 +446,7 @@ pub const AppContext = struct {
         self.preference.use_koine = false;
         self.preference.show_strongs = false;
         self.preference.accessibility = false;
-        self.preference.theme = .default;
+        self.preference.theme = "default";
         self.preference.size = .normal;
         self.preference.uk_order = true;
 
@@ -518,7 +502,7 @@ pub const AppContext = struct {
                     } else if (std.mem.eql(u8, "accessibility", field)) {
                         self.preference.accessibility = is_true(field, value);
                     } else if (std.mem.eql(u8, "theme", field)) {
-                        self.preference.theme = Theme.parse(value);
+                        self.preference.theme = self.display.validate_theme(value);
                     } else if (std.mem.eql(u8, "scale", field)) {
                         self.preference.size = Scale.parse(value);
                     } else if (std.mem.eql(u8, "uk_order", field)) {
@@ -624,34 +608,6 @@ fn android_back(display: *Display) std.mem.Allocator.Error!void {
 fn rotate_theme_selection(display: *Display) std.mem.Allocator.Error!void {
     display.rotate_theme();
 }
-
-/// Give each theme a name
-pub const Theme = enum(u8) {
-    default = 0,
-    black = 1,
-    white = 2,
-    sand = 3,
-    midnight = 4,
-
-    pub fn parse(text: []const u8) Theme {
-        if (std.mem.eql(u8, text, @tagName(.default))) {
-            return .default;
-        }
-        if (std.mem.eql(u8, text, @tagName(.black))) {
-            return .black;
-        }
-        if (std.mem.eql(u8, text, @tagName(.white))) {
-            return .white;
-        }
-        if (std.mem.eql(u8, text, @tagName(.sand))) {
-            return .sand;
-        }
-        if (std.mem.eql(u8, text, @tagName(.midnight))) {
-            return .midnight;
-        }
-        return .default;
-    }
-};
 
 var APP_ORG_Z: [1000]u8 = undefined;
 pub fn app_org_z() [:0]const u8 {
