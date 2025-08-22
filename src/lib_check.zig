@@ -11,7 +11,12 @@ pub fn main() !void {
     while (try walker.next()) |entry| {
         if (std.ascii.endsWithIgnoreCase(entry.basename, ".so")) {
             //std.debug.print("File Name: {s}\n", .{entry.basename});
-            std.debug.print("File Name: {s}\n", .{entry.path});
+            //std.debug.print("File Name: {s}\n", .{entry.path});
+            try check_lib(entry.basename, entry.path);
+        }
+        if (std.ascii.endsWithIgnoreCase(entry.basename, ".a")) {
+            //std.debug.print("File Name: {s}\n", .{entry.basename});
+            //std.debug.print("File Name: {s}\n", .{entry.path});
             try check_lib(entry.basename, entry.path);
         }
     }
@@ -39,9 +44,10 @@ pub fn check_lib(name: []const u8, path: []const u8) !void {
             }
         }
     }
-    std.log.err("checked {d} symbols.", .{flagged});
-    if (flagged > 0) {
-        std.log.err("{d} symbols were flagged.", .{flagged});
+    if (flagged == 0) {
+        std.log.info("{s}: checked {d} symbols.", .{ path, count });
+    } else {
+        std.log.err("{s}: found {d} symbols and flagged {d} symbols.", .{ path, count, flagged });
     }
 }
 

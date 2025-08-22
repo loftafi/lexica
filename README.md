@@ -27,6 +27,12 @@ android folder:
 
     zig build -Doptimize=ReleaseFast -Dplatform=ios install
 
+    zig build -Doptimize=ReleaseFast -Dplatform=ios \
+        -Dapp_name="Biblical Greek Dictionary"\
+        -Dapp_version="5.0"\
+        -Dapp_id=com.scripturial.bgd3
+        -Dorg="Jacob Rhoden"
+
 ## Setup for the android project
 
 The home folder contains an `android_libc.txt` file which zig uses
