@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Does not use Bluetooth</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Does not use Camera</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Does not use Microphone</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Does not use Photos</string>
+</dict>
+</plist>
