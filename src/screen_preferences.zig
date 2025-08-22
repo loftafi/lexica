@@ -413,6 +413,27 @@ fn add_theme_pickr(display: *Display, parent: *Element) !void {
         "",
         "",
     ));
+
+    try picker.add_element(try engine.create_button(
+        display,
+        "theme garden",
+        "theme garden",
+        "theme garden",
+        .{
+            .name = "garden",
+            .rect = .{ .width = 80, .height = 80 },
+            .layout = .{ .x = .fixed, .y = .fixed },
+            .type = .{ .button = .{
+                .text = "",
+                .on_click = pick_theme,
+                .style = .custom,
+                .icon_size = .{ .x = 80, .y = 80 },
+            } },
+        },
+        "",
+        "",
+        "",
+    ));
 }
 
 pub fn heading_tap(_: *Display, _: *Element) std.mem.Allocator.Error!void {
