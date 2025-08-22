@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		6D8B74022E5826E800E265BA /* SDL3.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; };
+		6D8B74032E5826EA00E265BA /* SDL3_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; };
+		6D8B74092E5827FF00E265BA /* SDL3.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		6D8B740A2E58280300E265BA /* SDL3_ttf.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		6D2635892DA8B6A1009A1EEE /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -13,6 +20,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				6D8B740A2E58280300E265BA /* SDL3_ttf.framework in Embed Frameworks */,
+				6D8B74092E5827FF00E265BA /* SDL3.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -21,37 +30,27 @@
 
 /* Begin PBXFileReference section */
 		6D56F8492DA4F35A0040B3D6 /* Lexica.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lexica.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6D8B73F22E58244000E265BA /* SDL3.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL3.framework; sourceTree = "<group>"; };
+		6D8B73F32E58244000E265BA /* SDL3_ttf.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL3_ttf.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		6DB46CFF2DDB074500C7FB15 /* Exceptions for "Lexica" folder in "Copy Bundle Resources" phase from "Lexica" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = 6D56F8472DA4F35A0040B3D6 /* Resources */;
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6D8B74062E5827A300E265BA /* Exceptions for "Lexica" folder in "Lexica" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				SDL3_ttf.framework,
-				SDL3.framework,
+				"assets/app-icon-3-full.png",
+				"assets/splash-screen.jpg",
+				Info.plist,
 			);
+			target = 6D56F8482DA4F35A0040B3D6 /* Lexica */;
 		};
-		6DB46D002DDB074500C7FB15 /* Exceptions for "Lexica" folder in "Embed Frameworks" phase from "Lexica" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			attributesByRelativePath = {
-				SDL3.framework = (CodeSignOnCopy, RemoveHeadersOnCopy, );
-				SDL3_ttf.framework = (CodeSignOnCopy, RemoveHeadersOnCopy, );
-			};
-			buildPhase = 6D2635892DA8B6A1009A1EEE /* Embed Frameworks */;
-			membershipExceptions = (
-				SDL3_ttf.framework,
-				SDL3.framework,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6D56F84B2DA4F35A0040B3D6 /* Lexica */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				6DB46CFF2DDB074500C7FB15 /* Exceptions for "Lexica" folder in "Copy Bundle Resources" phase from "Lexica" target */,
-				6DB46D002DDB074500C7FB15 /* Exceptions for "Lexica" folder in "Embed Frameworks" phase from "Lexica" target */,
+				6D8B74062E5827A300E265BA /* Exceptions for "Lexica" folder in "Lexica" target */,
 			);
 			path = Lexica;
 			sourceTree = "<group>";
@@ -63,6 +62,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6D8B74022E5826E800E265BA /* SDL3.framework in Frameworks */,
+				6D8B74032E5826EA00E265BA /* SDL3_ttf.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,6 +90,8 @@
 		6D56F8792DA4F7010040B3D6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				6D8B73F22E58244000E265BA /* SDL3.framework */,
+				6D8B73F32E58244000E265BA /* SDL3_ttf.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -302,14 +305,16 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/cc",
 					"$(PROJECT_DIR)/Lexica",
+					"$(PROJECT_DIR)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
+				INFOPLIST_FILE = Lexica/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Lexica";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = metal;
-				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
@@ -344,14 +349,16 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/cc",
 					"$(PROJECT_DIR)/Lexica",
+					"$(PROJECT_DIR)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
+				INFOPLIST_FILE = Lexica/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Lexica";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = metal;
-				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
