@@ -89,6 +89,7 @@ pub const AppContext = struct {
         imperative: bool = false,
         participle: bool = false,
         subjunctive: bool = false,
+        optative: bool = false,
         infinitive: bool = false,
     },
 
@@ -457,6 +458,7 @@ pub const AppContext = struct {
         self.preference.imperative = false;
         self.preference.infinitive = false;
         self.preference.subjunctive = false;
+        self.preference.optative = false;
         self.preference.indicative = true;
         self.preference.participle = false;
         self.preference.middle_passive = false;

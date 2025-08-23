@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6D2A3A582E586BED00D248E9 /* SDL3.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; };
+		6D2A3A592E586BED00D248E9 /* SDL3.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		6D2A3A5B2E586BFB00D248E9 /* SDL3_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; };
+		6D2A3A5C2E586BFB00D248E9 /* SDL3_ttf.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		6D8B74022E5826E800E265BA /* SDL3.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; };
 		6D8B74032E5826EA00E265BA /* SDL3_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; };
 		6D8B74092E5827FF00E265BA /* SDL3.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -26,15 +30,43 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6D2A3A5A2E586BED00D248E9 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				6D2A3A592E586BED00D248E9 /* SDL3.framework in Embed Frameworks */,
+				6D2A3A5C2E586BFB00D248E9 /* SDL3_ttf.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		6D2A3A3E2E586B6500D248E9 /* Lexica Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Lexica Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D56F8492DA4F35A0040B3D6 /* Lexica.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lexica.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D8B73F22E58244000E265BA /* SDL3.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL3.framework; sourceTree = "<group>"; };
 		6D8B73F32E58244000E265BA /* SDL3_ttf.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL3_ttf.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6D2A3A542E586B6600D248E9 /* Exceptions for "Lexica Mac" folder in "Lexica Mac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6D2A3A3D2E586B6500D248E9 /* Lexica Mac */;
+		};
+		6D2A3A5E2E586C1200D248E9 /* Exceptions for "Lexica" folder in "Lexica Mac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"liblexica-ios.a",
+				resources.bd,
+			);
+			target = 6D2A3A3D2E586B6500D248E9 /* Lexica Mac */;
+		};
 		6D8B74062E5827A300E265BA /* Exceptions for "Lexica" folder in "Lexica" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -47,10 +79,19 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		6D2A3A3F2E586B6500D248E9 /* Lexica Mac */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6D2A3A542E586B6600D248E9 /* Exceptions for "Lexica Mac" folder in "Lexica Mac" target */,
+			);
+			path = "Lexica Mac";
+			sourceTree = "<group>";
+		};
 		6D56F84B2DA4F35A0040B3D6 /* Lexica */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				6D8B74062E5827A300E265BA /* Exceptions for "Lexica" folder in "Lexica" target */,
+				6D2A3A5E2E586C1200D248E9 /* Exceptions for "Lexica" folder in "Lexica Mac" target */,
 			);
 			path = Lexica;
 			sourceTree = "<group>";
@@ -58,6 +99,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		6D2A3A3B2E586B6500D248E9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6D2A3A582E586BED00D248E9 /* SDL3.framework in Frameworks */,
+				6D2A3A5B2E586BFB00D248E9 /* SDL3_ttf.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6D56F8462DA4F35A0040B3D6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -74,6 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				6D56F84B2DA4F35A0040B3D6 /* Lexica */,
+				6D2A3A3F2E586B6500D248E9 /* Lexica Mac */,
 				6D56F8792DA4F7010040B3D6 /* Frameworks */,
 				6D56F84A2DA4F35A0040B3D6 /* Products */,
 			);
@@ -83,6 +134,7 @@
 			isa = PBXGroup;
 			children = (
 				6D56F8492DA4F35A0040B3D6 /* Lexica.app */,
+				6D2A3A3E2E586B6500D248E9 /* Lexica Mac.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -99,6 +151,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		6D2A3A3D2E586B6500D248E9 /* Lexica Mac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6D2A3A552E586B6600D248E9 /* Build configuration list for PBXNativeTarget "Lexica Mac" */;
+			buildPhases = (
+				6D2A3A3A2E586B6500D248E9 /* Sources */,
+				6D2A3A3B2E586B6500D248E9 /* Frameworks */,
+				6D2A3A3C2E586B6500D248E9 /* Resources */,
+				6D2A3A5A2E586BED00D248E9 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				6D2A3A3F2E586B6500D248E9 /* Lexica Mac */,
+			);
+			name = "Lexica Mac";
+			packageProductDependencies = (
+			);
+			productName = "Lexica Mac";
+			productReference = 6D2A3A3E2E586B6500D248E9 /* Lexica Mac.app */;
+			productType = "com.apple.product-type.application";
+		};
 		6D56F8482DA4F35A0040B3D6 /* Lexica */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6D56F8642DA4F35C0040B3D6 /* Build configuration list for PBXNativeTarget "Lexica" */;
@@ -131,6 +206,9 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 1610;
 				TargetAttributes = {
+					6D2A3A3D2E586B6500D248E9 = {
+						CreatedOnToolsVersion = 16.1;
+					};
 					6D56F8482DA4F35A0040B3D6 = {
 						CreatedOnToolsVersion = 16.1;
 					};
@@ -151,11 +229,19 @@
 			projectRoot = "";
 			targets = (
 				6D56F8482DA4F35A0040B3D6 /* Lexica */,
+				6D2A3A3D2E586B6500D248E9 /* Lexica Mac */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		6D2A3A3C2E586B6500D248E9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6D56F8472DA4F35A0040B3D6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -166,6 +252,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		6D2A3A3A2E586B6500D248E9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6D56F8452DA4F35A0040B3D6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -176,6 +269,78 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		6D2A3A562E586B6600D248E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UMYBTVGX6G;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Lexica Mac/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Lexica",
+				);
+				MARKETING_VERSION = 5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.scripturial.bgd3.Lexica-Mac";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6D2A3A572E586B6600D248E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UMYBTVGX6G;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Lexica Mac/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Lexica",
+				);
+				MARKETING_VERSION = 5.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.scripturial.bgd3.Lexica-Mac";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		6D56F8622DA4F35C0040B3D6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -298,9 +463,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2004;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = UMYBTVGX6G;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/cc",
@@ -309,7 +474,7 @@
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Lexica/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Lexica";
+				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -342,9 +507,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2004;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = UMYBTVGX6G;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/cc",
@@ -353,7 +518,7 @@
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Lexica/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Lexica";
+				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -383,6 +548,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		6D2A3A552E586B6600D248E9 /* Build configuration list for PBXNativeTarget "Lexica Mac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D2A3A562E586B6600D248E9 /* Debug */,
+				6D2A3A572E586B6600D248E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		6D56F8442DA4F35A0040B3D6 /* Build configuration list for PBXProject "Lexica" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

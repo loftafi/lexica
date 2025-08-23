@@ -26,6 +26,7 @@ pub const Stats = struct {
     imperative: Counter = .{},
     participle: Counter = .{},
     subjunctive: Counter = .{},
+    optative: Counter = .{},
     infinitive: Counter = .{},
     mi: Counter = .{},
     third_declension: Counter = .{},
@@ -44,6 +45,7 @@ pub const Stats = struct {
                     self.indicative.update(form.parsing.mood == .indicative);
                     self.imperative.update(form.parsing.mood == .imperative);
                     self.subjunctive.update(form.parsing.mood == .participle);
+                    self.optative.update(form.parsing.mood == .optative);
                     self.participle.update(form.parsing.mood == .participle);
                     self.infinitive.update(form.parsing.mood == .infinitive);
                     self.active.update(form.parsing.voice == .active);
