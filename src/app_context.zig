@@ -16,6 +16,8 @@ pub const RESOURCE_TRANSLATION_FILE = "lexica translation";
 pub const MAX_SEARCH_HISTORY = @import("screen_search.zig").MAX_SEARCH_RESULTS;
 pub const MAX_PANEL_TABLES: usize = 20;
 
+pub const study_optative = false;
+
 pub var app_context: ?*AppContext = null;
 pub var writing_enabled = true;
 

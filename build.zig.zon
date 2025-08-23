@@ -25,8 +25,8 @@
             .hash = "resources-0.0.5-J0GwI4n5AACORm1ztLSveKfXRHIvLxv7nrxtSl8FJaip",
         },
         .engine = .{
-            .url = "git+https://github.com/loftafi/engine.git#3ba24fd08c89a2402ba25921135eb9742df78475",
-            .hash = "engine-0.1.8-1VilCoPDIgNGbhXXLyjRJ-by1Ny4gVd6YYNaZQI_gqom",
+            .url = "git+https://github.com/loftafi/engine.git#48a089946dc32c3427a07ac44a650be3d0bf56ab",
+            .hash = "engine-0.1.9-1VilCqXDIgP09q2fwwygQ92UDvnaW9AsWre2zHWmHYCQ",
         },
     },
 

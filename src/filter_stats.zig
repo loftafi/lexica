@@ -34,6 +34,9 @@ pub const Stats = struct {
     pub fn count(self: *Stats, forms: []*Form) void {
         for (forms) |form| {
             const part_of_speech = form.parsing.part_of_speech;
+            if (!ac.study_optative and part_of_speech == .verb and form.parsing.mood == .optative) {
+                continue;
+            }
             switch (part_of_speech) {
                 .verb => {
                     self.present.update(form.parsing.tense_form == .present);
@@ -153,6 +156,7 @@ pub inline fn can_practice_lexeme(lexeme: *Lexeme) bool {
 const std = @import("std");
 const praxis = @import("praxis");
 const engine = @import("engine");
+const ac = @import("app_context.zig");
 const trace = engine.trace;
 const err = engine.err;
 const Form = praxis.Form;

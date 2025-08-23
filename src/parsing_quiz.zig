@@ -102,6 +102,9 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
         }
     }
     if (form.parsing.part_of_speech == .verb) {
+        if (app.study_optative == false and form.parsing.mood == .optative) {
+            return;
+        }
         for (non_endings) |ending| {
             if (std.mem.endsWith(u8, form.word, ending)) {
                 return;
