@@ -16,6 +16,8 @@ pub const RESOURCE_TRANSLATION_FILE = "lexica translation";
 pub const MAX_SEARCH_HISTORY = @import("screen_search.zig").MAX_SEARCH_RESULTS;
 pub const MAX_PANEL_TABLES: usize = 20;
 
+pub const study_optative = false;
+
 pub var app_context: ?*AppContext = null;
 pub var writing_enabled = true;
 
@@ -89,6 +91,7 @@ pub const AppContext = struct {
         imperative: bool = false,
         participle: bool = false,
         subjunctive: bool = false,
+        optative: bool = false,
         infinitive: bool = false,
     },
 
@@ -457,6 +460,7 @@ pub const AppContext = struct {
         self.preference.imperative = false;
         self.preference.infinitive = false;
         self.preference.subjunctive = false;
+        self.preference.optative = false;
         self.preference.indicative = true;
         self.preference.participle = false;
         self.preference.middle_passive = false;

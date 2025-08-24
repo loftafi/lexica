@@ -25,6 +25,7 @@ pub var list: ?*WordSet = null;
 var lexeme: ?*Lexeme = null;
 var heading: *Element = undefined;
 
+/// Study all forms of a specific lexeme
 pub fn study_by_form(display: *Display, called_lexeme: *praxis.Lexeme, from_caller: ac.Screen) error{OutOfMemory}!void {
     called_by = from_caller;
     lexeme = called_lexeme;
@@ -61,6 +62,7 @@ pub fn study_by_form(display: *Display, called_lexeme: *praxis.Lexeme, from_call
     display.need_relayout = true;
 }
 
+/// Study all forms of lexemes in a word set.
 pub fn study_by_list(display: *Display, study_list: *WordSet, from_caller: ac.Screen) error{OutOfMemory}!void {
     called_by = from_caller;
     list = study_list;

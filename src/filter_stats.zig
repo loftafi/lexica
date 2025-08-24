@@ -26,6 +26,7 @@ pub const Stats = struct {
     imperative: Counter = .{},
     participle: Counter = .{},
     subjunctive: Counter = .{},
+    optative: Counter = .{},
     infinitive: Counter = .{},
     mi: Counter = .{},
     third_declension: Counter = .{},
@@ -33,6 +34,9 @@ pub const Stats = struct {
     pub fn count(self: *Stats, forms: []*Form) void {
         for (forms) |form| {
             const part_of_speech = form.parsing.part_of_speech;
+            if (!ac.study_optative and part_of_speech == .verb and form.parsing.mood == .optative) {
+                continue;
+            }
             switch (part_of_speech) {
                 .verb => {
                     self.present.update(form.parsing.tense_form == .present);
@@ -44,6 +48,7 @@ pub const Stats = struct {
                     self.indicative.update(form.parsing.mood == .indicative);
                     self.imperative.update(form.parsing.mood == .imperative);
                     self.subjunctive.update(form.parsing.mood == .participle);
+                    self.optative.update(form.parsing.mood == .optative);
                     self.participle.update(form.parsing.mood == .participle);
                     self.infinitive.update(form.parsing.mood == .infinitive);
                     self.active.update(form.parsing.voice == .active);
@@ -63,6 +68,12 @@ pub const Stats = struct {
                     if (part_of_speech == .proper_noun and (form.lexeme == null or form.lexeme.?.pos.indeclinable))
                         continue;
                     self.third_declension.update(form.parsing.tense_form == .imperfect);
+                    self.nominative.update(form.parsing.case == .nominative);
+                    self.accusative.update(form.parsing.case == .accusative);
+                    self.genitive.update(form.parsing.case == .genitive);
+                    self.dative.update(form.parsing.case == .dative);
+                },
+                .personal_pronoun => {
                     self.nominative.update(form.parsing.case == .nominative);
                     self.accusative.update(form.parsing.case == .accusative);
                     self.genitive.update(form.parsing.case == .genitive);
@@ -126,9 +137,8 @@ pub inline fn can_practice_form(form: *Form) bool {
     if (form.lexeme.?.forms.items.len < 2)
         return false;
     const pos = form.parsing.part_of_speech;
-    if (pos == .noun or pos == .adjective or pos == .verb) {
+    if (pos == .noun or pos == .adjective or pos == .verb or pos == .personal_pronoun)
         return true;
-    }
     if (pos == .proper_noun and form.lexeme.?.pos.indeclinable == false)
         return true;
     return false;
@@ -140,7 +150,7 @@ pub inline fn can_practice_lexeme(lexeme: *Lexeme) bool {
     if (lexeme.forms.items.len < 2)
         return false;
     const pos = lexeme.pos.part_of_speech;
-    if (pos == .noun or pos == .adjective or pos == .verb) {
+    if (pos == .noun or pos == .adjective or pos == .verb or pos == .personal_pronoun) {
         return true;
     }
     if (pos == .proper_noun and lexeme.pos.indeclinable == false)
@@ -151,6 +161,7 @@ pub inline fn can_practice_lexeme(lexeme: *Lexeme) bool {
 const std = @import("std");
 const praxis = @import("praxis");
 const engine = @import("engine");
+const ac = @import("app_context.zig");
 const trace = engine.trace;
 const err = engine.err;
 const Form = praxis.Form;
