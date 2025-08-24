@@ -139,60 +139,131 @@ var buttons = struct {
             .part_of_speech = ac.app_context.?.parsing_quiz.form_bank.items[0].parsing.part_of_speech,
         };
         var count: usize = 0;
-        if (form.parsing.part_of_speech == .verb) {
-            parsing.part_of_speech = .verb;
+        switch (form.parsing.part_of_speech) {
+            .verb => {
+                parsing.part_of_speech = .verb;
 
-            // Tense form
-            if (self.present.type.button.toggle == .on) {
-                parsing.tense_form = .present;
-                count += 1;
-            } else if (self.future.type.button.toggle == .on) {
-                parsing.tense_form = .future;
-                count += 1;
-            } else if (self.imperfect.type.button.toggle == .on) {
-                parsing.tense_form = .imperfect;
-                count += 1;
-            } else if (self.aorist.type.button.toggle == .on) {
-                parsing.tense_form = .aorist;
-                count += 1;
-            } else if (self.perfect.type.button.toggle == .on) {
-                parsing.tense_form = .perfect;
-                count += 1;
-            } else if (self.pluperfect.type.button.toggle == .on) {
-                parsing.tense_form = .pluperfect;
-                count += 1;
-            }
+                // Tense form
+                if (self.present.type.button.toggle == .on) {
+                    parsing.tense_form = .present;
+                    count += 1;
+                } else if (self.future.type.button.toggle == .on) {
+                    parsing.tense_form = .future;
+                    count += 1;
+                } else if (self.imperfect.type.button.toggle == .on) {
+                    parsing.tense_form = .imperfect;
+                    count += 1;
+                } else if (self.aorist.type.button.toggle == .on) {
+                    parsing.tense_form = .aorist;
+                    count += 1;
+                } else if (self.perfect.type.button.toggle == .on) {
+                    parsing.tense_form = .perfect;
+                    count += 1;
+                } else if (self.pluperfect.type.button.toggle == .on) {
+                    parsing.tense_form = .pluperfect;
+                    count += 1;
+                }
 
-            // Voice
-            if (self.active.type.button.toggle == .on) {
-                parsing.voice = .active;
-                count += 1;
-            } else if (self.middle.type.button.toggle == .on) {
-                parsing.voice = .middle;
-                count += 1;
-            } else if (self.passive.type.button.toggle == .on) {
-                parsing.voice = .passive;
-                count += 1;
-            }
+                // Voice
+                if (self.active.type.button.toggle == .on) {
+                    parsing.voice = .active;
+                    count += 1;
+                } else if (self.middle.type.button.toggle == .on) {
+                    parsing.voice = .middle;
+                    count += 1;
+                } else if (self.passive.type.button.toggle == .on) {
+                    parsing.voice = .passive;
+                    count += 1;
+                }
 
-            if (self.indicative.type.button.toggle == .on) {
-                parsing.mood = .indicative;
-                count += 1;
-            } else if (self.participle.type.button.toggle == .on) {
-                parsing.mood = .participle;
-                count += 1;
-            } else if (self.subjunctive.type.button.toggle == .on) {
-                parsing.mood = .subjunctive;
-                count += 1;
-            } else if (self.imperative.type.button.toggle == .on) {
-                parsing.mood = .imperative;
-                count += 1;
-            } else if (self.infinitive.type.button.toggle == .on) {
-                parsing.mood = .infinitive;
-                count += 1;
-            }
+                if (self.indicative.type.button.toggle == .on) {
+                    parsing.mood = .indicative;
+                    count += 1;
+                } else if (self.participle.type.button.toggle == .on) {
+                    parsing.mood = .participle;
+                    count += 1;
+                } else if (self.subjunctive.type.button.toggle == .on) {
+                    parsing.mood = .subjunctive;
+                    count += 1;
+                } else if (self.imperative.type.button.toggle == .on) {
+                    parsing.mood = .imperative;
+                    count += 1;
+                } else if (self.infinitive.type.button.toggle == .on) {
+                    parsing.mood = .infinitive;
+                    count += 1;
+                }
 
-            if (form.parsing.mood != .participle) {
+                if (form.parsing.mood != .participle) {
+                    if (self.first.type.button.toggle == .on) {
+                        parsing.person = .first;
+                        count += 1;
+                    } else if (self.second.type.button.toggle == .on) {
+                        parsing.person = .second;
+                        count += 1;
+                    } else if (self.third.type.button.toggle == .on) {
+                        parsing.person = .third;
+                        count += 1;
+                    }
+
+                    if (self.singular.type.button.toggle == .on) {
+                        parsing.number = .singular;
+                        count += 1;
+                    } else if (self.plural.type.button.toggle == .on) {
+                        parsing.number = .plural;
+                        count += 1;
+                    }
+
+                    if (count > 4) {
+                        return parsing;
+                    } else {
+                        return null;
+                    }
+                } else {
+                    if (self.nominative.type.button.toggle == .on) {
+                        parsing.case = .nominative;
+                        count += 1;
+                    } else if (self.accusative.type.button.toggle == .on) {
+                        parsing.case = .accusative;
+                        count += 1;
+                    } else if (self.dative.type.button.toggle == .on) {
+                        parsing.case = .dative;
+                        count += 1;
+                    } else if (self.genitive.type.button.toggle == .on) {
+                        parsing.case = .genitive;
+                        count += 1;
+                    }
+
+                    // Number
+                    if (self.singular.type.button.toggle == .on) {
+                        parsing.number = .singular;
+                        count += 1;
+                    } else if (self.plural.type.button.toggle == .on) {
+                        parsing.number = .plural;
+                        count += 1;
+                    }
+
+                    // Gender
+                    if (self.masculine.type.button.toggle == .on) {
+                        parsing.gender = .masculine;
+                        count += 1;
+                    } else if (self.feminine.type.button.toggle == .on) {
+                        parsing.gender = .feminine;
+                        count += 1;
+                    } else if (self.neuter.type.button.toggle == .on) {
+                        parsing.gender = .neuter;
+                        count += 1;
+                    }
+
+                    //trace("current choice: {any} count: {d}", .{ parsing, count });
+                    if (count > 5) {
+                        return parsing;
+                    } else {
+                        return null;
+                    }
+                }
+            },
+            .personal_pronoun => {
+                // Person
                 if (self.first.type.button.toggle == .on) {
                     parsing.person = .first;
                     count += 1;
@@ -204,20 +275,67 @@ var buttons = struct {
                     count += 1;
                 }
 
-                if (self.singular.type.button.toggle == .on) {
-                    parsing.number = .singular;
+                // Case
+                if (self.nominative.type.button.toggle == .on) {
+                    parsing.case = .nominative;
                     count += 1;
-                } else if (self.plural.type.button.toggle == .on) {
-                    parsing.number = .plural;
+                } else if (self.accusative.type.button.toggle == .on) {
+                    parsing.case = .accusative;
+                    count += 1;
+                } else if (self.dative.type.button.toggle == .on) {
+                    parsing.case = .dative;
+                    count += 1;
+                } else if (self.genitive.type.button.toggle == .on) {
+                    parsing.case = .genitive;
                     count += 1;
                 }
 
-                if (count > 4) {
+                if (form.lexeme) |lexeme| {
+                    if (std.mem.eql(u8, lexeme.word, "αὐτός")) {
+
+                        // Number
+                        if (self.singular.type.button.toggle == .on) {
+                            parsing.number = .singular;
+                            count += 1;
+                        } else if (self.plural.type.button.toggle == .on) {
+                            parsing.number = .plural;
+                            count += 1;
+                        }
+
+                        if (self.masculine.type.button.toggle == .on) {
+                            parsing.gender = .masculine;
+                            count += 1;
+                        } else if (self.feminine.type.button.toggle == .on) {
+                            parsing.gender = .feminine;
+                            count += 1;
+                        } else if (self.neuter.type.button.toggle == .on) {
+                            parsing.gender = .neuter;
+                            count += 1;
+                        }
+                        if (count > 3) {
+                            return parsing;
+                        }
+                        return null;
+                    }
+                }
+
+                // Number
+                if (self.singular.type.button.toggle == .on) {
+                    parsing.tense_form = .ref_singular;
+                    count += 1;
+                } else if (self.plural.type.button.toggle == .on) {
+                    parsing.tense_form = .ref_plural;
+                    count += 1;
+                }
+
+                if (count > 2) {
                     return parsing;
                 } else {
                     return null;
                 }
-            } else {
+            },
+            .noun, .proper_noun => {
+                // Case
                 if (self.nominative.type.button.toggle == .on) {
                     parsing.case = .nominative;
                     count += 1;
@@ -241,69 +359,30 @@ var buttons = struct {
                     count += 1;
                 }
 
-                // Gender
-                if (self.masculine.type.button.toggle == .on) {
-                    parsing.gender = .masculine;
-                    count += 1;
-                } else if (self.feminine.type.button.toggle == .on) {
-                    parsing.gender = .feminine;
-                    count += 1;
-                } else if (self.neuter.type.button.toggle == .on) {
-                    parsing.gender = .neuter;
-                    count += 1;
+                // Gender - Nouns have gender, but puersonal pronouns don't
+                if (form.parsing.part_of_speech == .noun) {
+                    if (self.masculine.type.button.toggle == .on) {
+                        parsing.gender = .masculine;
+                        count += 1;
+                    } else if (self.feminine.type.button.toggle == .on) {
+                        parsing.gender = .feminine;
+                        count += 1;
+                    } else if (self.neuter.type.button.toggle == .on) {
+                        parsing.gender = .neuter;
+                        count += 1;
+                    }
                 }
 
-                //trace("current choice: {any} count: {d}", .{ parsing, count });
-                if (count > 5) {
+                if (count > 2) {
                     return parsing;
                 } else {
                     return null;
                 }
-            }
-        }
-
-        // Its a noun
-        {
-            // Case
-            if (self.nominative.type.button.toggle == .on) {
-                parsing.case = .nominative;
-                count += 1;
-            } else if (self.accusative.type.button.toggle == .on) {
-                parsing.case = .accusative;
-                count += 1;
-            } else if (self.dative.type.button.toggle == .on) {
-                parsing.case = .dative;
-                count += 1;
-            } else if (self.genitive.type.button.toggle == .on) {
-                parsing.case = .genitive;
-                count += 1;
-            }
-
-            // Person
-            if (self.singular.type.button.toggle == .on) {
-                parsing.number = .singular;
-                count += 1;
-            } else if (self.plural.type.button.toggle == .on) {
-                parsing.number = .plural;
-                count += 1;
-            }
-
-            // Gender
-            if (self.masculine.type.button.toggle == .on) {
-                parsing.gender = .masculine;
-                count += 1;
-            } else if (self.feminine.type.button.toggle == .on) {
-                parsing.gender = .feminine;
-                count += 1;
-            } else if (self.neuter.type.button.toggle == .on) {
-                parsing.gender = .neuter;
-                count += 1;
-            }
-            if (count > 2) {
-                return parsing;
-            } else {
+            },
+            else => {
+                err("Options picked cant handle {s}", .{@tagName(form.parsing.part_of_speech)});
                 return null;
-            }
+            },
         }
     }
 
@@ -319,78 +398,159 @@ var buttons = struct {
         }
     }
 
-    fn mark_answers(self: *Self, form: *praxis.Form) void {
+    fn mark_answers(self: *Self, form: *praxis.Form, user_choice: praxis.Parsing, gpa: std.mem.Allocator) error{OutOfMemory}!bool {
+        var expected_parsing = form.parsing;
+        var clean_choice = user_choice;
+
+        // Special handling for αὐτός.
+        if (form.lexeme != null and
+            std.mem.eql(u8, form.lexeme.?.word, "αὐτός") and
+            form.parsing.part_of_speech == .personal_pronoun)
+        {
+            // If third person is not picked,
+            if (expected_parsing.person != .third) {
+                // Dont clear the third person field because its not in the
+                // parsing table. This will (correctly) cause the error dialogue
+                // box to appear
+            } else {
+                expected_parsing.person = .unknown;
+            }
+            clean_choice.person = .unknown;
+        }
+
         const parsing = form.parsing;
+        var correct: bool = false;
+
+        // There may be one or more parsing options for a given form.
+        var valid_forms: std.ArrayListUnmanaged(*praxis.Form) = .empty;
+        defer valid_forms.deinit(gpa);
+        if (form.lexeme == null) {
+            try valid_forms.append(gpa, form);
+            if (user_choice == form.parsing) correct = true;
+        } else {
+            for (form.lexeme.?.forms.items) |item| {
+                if (std.mem.eql(u8, form.word, item.word)) {
+                    if (clean_choice == item.parsing) correct = true;
+                    try valid_forms.append(gpa, item);
+                    info("checkmatch {s} {any} {any}", .{ form.word, item.parsing, user_choice });
+                }
+            }
+        }
+
+        var oo: std.ArrayListUnmanaged(u8) = .empty;
+        defer oo.deinit(gpa);
+        for (valid_forms.items) |vf| {
+            vf.parsing.string(oo.writer(gpa)) catch {};
+            try oo.append(gpa, ' ');
+        }
+        info("check {s} (count={d}) matched {any}", .{ oo.items, valid_forms.items.len, correct });
+
         switch (form.parsing.part_of_speech) {
             .verb => {
 
                 // Tense form
-                mark_button(&self.present.type.button.toggle, parsing.tense_form == .present);
-                mark_button(&self.future.type.button.toggle, parsing.tense_form == .future);
-                mark_button(&self.imperfect.type.button.toggle, parsing.tense_form == .imperfect);
-                mark_button(&self.aorist.type.button.toggle, parsing.tense_form == .aorist);
-                mark_button(&self.perfect.type.button.toggle, parsing.tense_form == .perfect);
-                mark_button(&self.pluperfect.type.button.toggle, parsing.tense_form == .pluperfect);
+                mark_button(&self.present.type.button.toggle, formsHaveTenseForm(valid_forms.items, .present));
+                mark_button(&self.future.type.button.toggle, formsHaveTenseForm(valid_forms.items, .future));
+                mark_button(&self.imperfect.type.button.toggle, formsHaveTenseForm(valid_forms.items, .imperfect));
+                mark_button(&self.aorist.type.button.toggle, formsHaveTenseForm(valid_forms.items, .aorist));
+                mark_button(&self.perfect.type.button.toggle, formsHaveTenseForm(valid_forms.items, .perfect));
+                mark_button(&self.pluperfect.type.button.toggle, formsHaveTenseForm(valid_forms.items, .pluperfect));
 
                 // Voice
-                mark_button(&self.active.type.button.toggle, parsing.voice == .active);
-                mark_button(&self.middle.type.button.toggle, parsing.voice == .middle);
-                mark_button(&self.passive.type.button.toggle, parsing.voice == .passive);
+                mark_button(&self.active.type.button.toggle, formsHaveVoice(valid_forms.items, .active));
+                mark_button(&self.middle.type.button.toggle, formsHaveVoice(valid_forms.items, .middle));
+                mark_button(&self.passive.type.button.toggle, formsHaveVoice(valid_forms.items, .passive));
 
                 // Mood
-                mark_button(&self.indicative.type.button.toggle, parsing.mood == .indicative);
-                mark_button(&self.participle.type.button.toggle, parsing.mood == .participle);
-                mark_button(&self.subjunctive.type.button.toggle, parsing.mood == .subjunctive);
-                mark_button(&self.imperative.type.button.toggle, parsing.mood == .imperative);
-                mark_button(&self.infinitive.type.button.toggle, parsing.mood == .infinitive);
+                mark_button(&self.indicative.type.button.toggle, formsHaveMood(valid_forms.items, .indicative));
+                mark_button(&self.participle.type.button.toggle, formsHaveMood(valid_forms.items, .participle));
+                mark_button(&self.subjunctive.type.button.toggle, formsHaveMood(valid_forms.items, .subjunctive));
+                mark_button(&self.imperative.type.button.toggle, formsHaveMood(valid_forms.items, .imperative));
+                mark_button(&self.infinitive.type.button.toggle, formsHaveMood(valid_forms.items, .infinitive));
 
                 if (parsing.mood == .participle) {
                     // Case
-                    mark_button(&self.nominative.type.button.toggle, parsing.case == .nominative);
-                    mark_button(&self.accusative.type.button.toggle, parsing.case == .accusative);
-                    mark_button(&self.dative.type.button.toggle, parsing.case == .dative);
-                    mark_button(&self.genitive.type.button.toggle, parsing.case == .genitive);
+                    mark_button(&self.nominative.type.button.toggle, formsHaveCase(valid_forms.items, .nominative));
+                    mark_button(&self.accusative.type.button.toggle, formsHaveCase(valid_forms.items, .accusative));
+                    mark_button(&self.dative.type.button.toggle, formsHaveCase(valid_forms.items, .dative));
+                    mark_button(&self.genitive.type.button.toggle, formsHaveCase(valid_forms.items, .genitive));
 
                     // Person
-                    mark_button(&self.singular.type.button.toggle, parsing.number == .singular);
-                    mark_button(&self.plural.type.button.toggle, parsing.number == .plural);
+                    mark_button(&self.singular.type.button.toggle, formsHaveNumber(valid_forms.items, .singular));
+                    mark_button(&self.plural.type.button.toggle, formsHaveNumber(valid_forms.items, .plural));
 
                     // Gender
-                    mark_button(&self.masculine.type.button.toggle, parsing.gender == .masculine);
-                    mark_button(&self.feminine.type.button.toggle, parsing.gender == .feminine);
-                    mark_button(&self.neuter.type.button.toggle, parsing.gender == .neuter);
+                    mark_button(&self.masculine.type.button.toggle, formsHaveGender(valid_forms.items, .masculine));
+                    mark_button(&self.feminine.type.button.toggle, formsHaveGender(valid_forms.items, .feminine));
+                    mark_button(&self.neuter.type.button.toggle, formsHaveGender(valid_forms.items, .neuter));
                 } else {
                     // Person
-                    mark_button(&self.first.type.button.toggle, parsing.person == .first);
-                    mark_button(&self.second.type.button.toggle, parsing.person == .second);
-                    mark_button(&self.third.type.button.toggle, parsing.person == .third);
+                    mark_button(&self.first.type.button.toggle, formsHavePerson(valid_forms.items, .first));
+                    mark_button(&self.second.type.button.toggle, formsHavePerson(valid_forms.items, .second));
+                    mark_button(&self.third.type.button.toggle, formsHavePerson(valid_forms.items, .third));
 
                     // Number
-                    mark_button(&self.singular.type.button.toggle, parsing.number == .singular);
-                    mark_button(&self.plural.type.button.toggle, parsing.number == .plural);
+                    mark_button(&self.singular.type.button.toggle, formsHaveNumber(valid_forms.items, .singular));
+                    mark_button(&self.plural.type.button.toggle, formsHaveNumber(valid_forms.items, .plural));
                 }
+            },
+
+            .personal_pronoun => {
+                if (form.lexeme) |lexeme| {
+                    if (std.mem.eql(u8, lexeme.word, "αὐτός")) {
+                        // Gender
+                        mark_button(&self.masculine.type.button.toggle, formsHaveGender(valid_forms.items, .masculine));
+                        mark_button(&self.feminine.type.button.toggle, formsHaveGender(valid_forms.items, .feminine));
+                        mark_button(&self.neuter.type.button.toggle, formsHaveGender(valid_forms.items, .neuter));
+
+                        // Person
+                        mark_button(&self.first.type.button.toggle, false);
+                        mark_button(&self.second.type.button.toggle, false);
+                        mark_button(&self.third.type.button.toggle, true);
+
+                        // Number
+                        mark_button(&self.singular.type.button.toggle, formsHaveNumber(valid_forms.items, .singular));
+                        mark_button(&self.plural.type.button.toggle, formsHaveNumber(valid_forms.items, .plural));
+                    }
+                } else {
+                    // Person
+                    mark_button(&self.first.type.button.toggle, formsHavePerson(valid_forms.items, .first));
+                    mark_button(&self.second.type.button.toggle, formsHavePerson(valid_forms.items, .second));
+                    mark_button(&self.third.type.button.toggle, formsHavePerson(valid_forms.items, .third));
+
+                    // Number
+                    mark_button(&self.singular.type.button.toggle, formsHaveRefNumber(valid_forms.items, .ref_singular));
+                    mark_button(&self.plural.type.button.toggle, formsHaveRefNumber(valid_forms.items, .ref_plural));
+                }
+
+                // Case
+                mark_button(&self.nominative.type.button.toggle, formsHaveCase(valid_forms.items, .nominative));
+                mark_button(&self.accusative.type.button.toggle, formsHaveCase(valid_forms.items, .accusative));
+                mark_button(&self.dative.type.button.toggle, formsHaveCase(valid_forms.items, .dative));
+                mark_button(&self.genitive.type.button.toggle, formsHaveCase(valid_forms.items, .genitive));
             },
 
             .noun, .adjective => {
                 // Case
-                mark_button(&self.nominative.type.button.toggle, parsing.case == .nominative);
-                mark_button(&self.accusative.type.button.toggle, parsing.case == .accusative);
-                mark_button(&self.dative.type.button.toggle, parsing.case == .dative);
-                mark_button(&self.genitive.type.button.toggle, parsing.case == .genitive);
+                mark_button(&self.nominative.type.button.toggle, formsHaveCase(valid_forms.items, .nominative));
+                mark_button(&self.accusative.type.button.toggle, formsHaveCase(valid_forms.items, .accusative));
+                mark_button(&self.dative.type.button.toggle, formsHaveCase(valid_forms.items, .dative));
+                mark_button(&self.genitive.type.button.toggle, formsHaveCase(valid_forms.items, .genitive));
 
                 // Person
-                mark_button(&self.singular.type.button.toggle, parsing.number == .singular);
-                mark_button(&self.plural.type.button.toggle, parsing.number == .plural);
+                mark_button(&self.singular.type.button.toggle, formsHaveNumber(valid_forms.items, .singular));
+                mark_button(&self.plural.type.button.toggle, formsHaveNumber(valid_forms.items, .plural));
 
                 // Gender
-                mark_button(&self.masculine.type.button.toggle, parsing.gender == .masculine);
-                mark_button(&self.feminine.type.button.toggle, parsing.gender == .feminine);
-                mark_button(&self.neuter.type.button.toggle, parsing.gender == .neuter);
+                mark_button(&self.masculine.type.button.toggle, formsHaveGender(valid_forms.items, .masculine));
+                mark_button(&self.feminine.type.button.toggle, formsHaveGender(valid_forms.items, .feminine));
+                mark_button(&self.neuter.type.button.toggle, formsHaveGender(valid_forms.items, .neuter));
             },
             else => {
                 err("mark_answers() unimplemented for {s}", .{@tagName(parsing.part_of_speech)});
             },
         }
+        return correct;
     }
 }{};
 
@@ -1425,23 +1585,43 @@ pub fn show_next_quiz_card(display: *Display) error{OutOfMemory}!bool {
     const text = std.fmt.bufPrint(&help_line_buffer[help_line_buffer_i], "Describe the grammar of {s}.", .{form.*.word}) catch "Describe the grammar of this word.";
     try help_line.set_text(display, text, false);
 
-    if (form.*.parsing.part_of_speech == .verb) {
-        pickers.case.visible = .hidden;
-        pickers.number.visible = .hidden;
-        pickers.gender.visible = .hidden;
-        pickers.tense_form.visible = .visible;
-        pickers.voice.visible = .visible;
-        pickers.mood.visible = .visible;
-        pickers.person.visible = .visible;
-        pickers.number.visible = .visible;
-    } else {
-        pickers.case.visible = .visible;
-        pickers.number.visible = .visible;
-        pickers.gender.visible = .visible;
-        pickers.tense_form.visible = .hidden;
-        pickers.voice.visible = .hidden;
-        pickers.mood.visible = .hidden;
-        pickers.person.visible = .hidden;
+    switch (form.*.parsing.part_of_speech) {
+        .verb => {
+            pickers.case.visible = .hidden;
+            pickers.number.visible = .hidden;
+            pickers.gender.visible = .hidden;
+            pickers.tense_form.visible = .visible;
+            pickers.voice.visible = .visible;
+            pickers.mood.visible = .visible;
+            pickers.person.visible = .visible;
+            pickers.number.visible = .visible;
+        },
+        .noun, .adjective, .proper_noun => {
+            pickers.case.visible = .visible;
+            pickers.number.visible = .visible;
+            pickers.gender.visible = .visible;
+            pickers.tense_form.visible = .hidden;
+            pickers.voice.visible = .hidden;
+            pickers.mood.visible = .hidden;
+            pickers.person.visible = .hidden;
+        },
+        .personal_pronoun => {
+            pickers.case.visible = .visible;
+            pickers.number.visible = .visible;
+            pickers.gender.visible = .hidden;
+            pickers.tense_form.visible = .hidden;
+            pickers.voice.visible = .hidden;
+            pickers.mood.visible = .hidden;
+            pickers.person.visible = .visible;
+            if (form.lexeme) |lexeme| {
+                if (std.mem.eql(u8, lexeme.word, "αὐτός")) {
+                    pickers.gender.visible = .visible;
+                }
+            }
+        },
+        else => {
+            err("show_next_quiz_card doesnt handle {s}", .{@tagName(form.*.parsing.part_of_speech)});
+        },
     }
 
     buttons.clear_options();
@@ -1453,22 +1633,17 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
     std.debug.assert(ac.app_context.?.parsing_quiz.form_bank.items.len > 0);
     const current_form = ac.app_context.?.parsing_quiz.form_bank.items[0];
     if (buttons.options_picked(current_form)) |parsing| {
-        var out = std.ArrayList(u8).init(ac.app_context.?.allocator);
-        defer out.deinit();
-        parsing.string(out.writer()) catch |e| {
+        var chose_value = std.ArrayList(u8).init(ac.app_context.?.allocator);
+        defer chose_value.deinit();
+        parsing.string(chose_value.writer()) catch |e| {
             if (e == error.Incomplete) {
                 debug("invalid state. parsing incomplete after user picking.", .{});
             }
         };
-        if (parsing == current_form.parsing) {
-            info("User chose {s} correct.", .{out.items});
-            buttons.mark_answers(current_form);
-            correct_panel.visible = .visible;
-            incorrect_panel.visible = .hidden;
-            _ = ac.app_context.?.parsing_quiz.remove_current_form();
-        } else if (alternateFormCorrect(current_form, parsing)) |alt| {
-            info("User chose {s} alternate form correct", .{out.items});
-            buttons.mark_answers(alt);
+
+        const correct = try buttons.mark_answers(current_form, parsing, display.allocator);
+        if (correct) {
+            info("User chose {s} correct.", .{chose_value.items});
             correct_panel.visible = .visible;
             incorrect_panel.visible = .hidden;
             _ = ac.app_context.?.parsing_quiz.remove_current_form();
@@ -1480,8 +1655,7 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
                     debug("invalid state. parsing incomplete after user picking.", .{});
                 }
             };
-            info("User chose {s} incorrect. Expecting {s}", .{ out.items, out2.items });
-            buttons.mark_answers(current_form);
+            info("User chose {s} incorrect. Expecting {s}", .{ chose_value.items, out2.items });
             correct_panel.visible = .hidden;
             incorrect_panel.visible = .visible;
         }
@@ -1491,20 +1665,6 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
         trace("user still picking", .{});
     }
     return;
-}
-
-fn alternateFormCorrect(form: *Form, parsing: praxis.Parsing) ?*Form {
-    if (form.lexeme == null) {
-        return null;
-    }
-    for (form.lexeme.?.forms.items) |item| {
-        if (std.mem.eql(u8, form.word, item.word)) {
-            if (item.parsing == parsing) {
-                return item;
-            }
-        }
-    }
-    return null;
 }
 
 fn case_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
@@ -1615,6 +1775,62 @@ fn clear_other_toggles(current: *Element, others: []const *Element) void {
             other.*.type.button.toggle = .off;
         }
     }
+}
+
+fn formsHaveTenseForm(forms: []*praxis.Form, tense_form: praxis.TenseForm) bool {
+    for (forms) |form|
+        if (form.parsing.tense_form == tense_form)
+            return true;
+    return false;
+}
+
+fn formsHaveVoice(forms: []*praxis.Form, voice: praxis.Voice) bool {
+    for (forms) |form|
+        if (form.parsing.voice == voice)
+            return true;
+    return false;
+}
+
+fn formsHaveGender(forms: []*praxis.Form, gender: praxis.Gender) bool {
+    for (forms) |form|
+        if (form.parsing.gender == gender)
+            return true;
+    return false;
+}
+
+fn formsHaveMood(forms: []*praxis.Form, mood: praxis.Mood) bool {
+    for (forms) |form|
+        if (form.parsing.mood == mood)
+            return true;
+    return false;
+}
+
+fn formsHaveCase(forms: []*praxis.Form, case: praxis.Case) bool {
+    for (forms) |form|
+        if (form.parsing.case == case)
+            return true;
+    return false;
+}
+
+fn formsHaveNumber(forms: []*praxis.Form, number: praxis.Number) bool {
+    for (forms) |form|
+        if (form.parsing.number == number)
+            return true;
+    return false;
+}
+
+fn formsHaveRefNumber(forms: []*praxis.Form, number: praxis.TenseForm) bool {
+    for (forms) |form|
+        if (form.parsing.tense_form == number)
+            return true;
+    return false;
+}
+
+fn formsHavePerson(forms: []*praxis.Form, person: praxis.Person) bool {
+    for (forms) |form|
+        if (form.parsing.person == person)
+            return true;
+    return false;
 }
 
 const std = @import("std");

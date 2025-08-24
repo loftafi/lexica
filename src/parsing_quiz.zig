@@ -160,7 +160,7 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
         if (!ac.preference.participle and form.parsing.mood == .participle) {
             return;
         }
-    } else if (form.parsing.part_of_speech == .noun or form.parsing.part_of_speech == .adjective or form.parsing.part_of_speech == .proper_noun) {
+    } else if (form.parsing.part_of_speech == .noun or form.parsing.part_of_speech == .adjective or form.parsing.part_of_speech == .proper_noun or form.parsing.part_of_speech == .personal_pronoun) {
         if (self.lexeme) |lexeme| {
             if (lexeme.pos.part_of_speech == .verb and form.parsing.part_of_speech != .verb)
                 return;
@@ -191,7 +191,7 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
     } else {
         var ps: std.ArrayListUnmanaged(u8) = .empty;
         form.parsing.string(ps.writer(self.form_bank.allocator)) catch {};
-        warn("Skip unsupported form for wordbank. {s} {s}", .{ form.word, ps.items });
+        warn("Skip unsupported form {s} for wordbank. {s} {s}", .{ @tagName(form.parsing.part_of_speech), form.word, ps.items });
         ps.deinit(self.form_bank.allocator);
         return;
     }

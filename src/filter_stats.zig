@@ -73,6 +73,12 @@ pub const Stats = struct {
                     self.genitive.update(form.parsing.case == .genitive);
                     self.dative.update(form.parsing.case == .dative);
                 },
+                .personal_pronoun => {
+                    self.nominative.update(form.parsing.case == .nominative);
+                    self.accusative.update(form.parsing.case == .accusative);
+                    self.genitive.update(form.parsing.case == .genitive);
+                    self.dative.update(form.parsing.case == .dative);
+                },
                 else => {
                     err("Stats.count() called with unsupported form: {s}", .{@tagName(part_of_speech)});
                     std.debug.assert(part_of_speech == .noun or
@@ -131,9 +137,8 @@ pub inline fn can_practice_form(form: *Form) bool {
     if (form.lexeme.?.forms.items.len < 2)
         return false;
     const pos = form.parsing.part_of_speech;
-    if (pos == .noun or pos == .adjective or pos == .verb) {
+    if (pos == .noun or pos == .adjective or pos == .verb or pos == .personal_pronoun)
         return true;
-    }
     if (pos == .proper_noun and form.lexeme.?.pos.indeclinable == false)
         return true;
     return false;
@@ -145,7 +150,7 @@ pub inline fn can_practice_lexeme(lexeme: *Lexeme) bool {
     if (lexeme.forms.items.len < 2)
         return false;
     const pos = lexeme.pos.part_of_speech;
-    if (pos == .noun or pos == .adjective or pos == .verb) {
+    if (pos == .noun or pos == .adjective or pos == .verb or pos == .personal_pronoun) {
         return true;
     }
     if (pos == .proper_noun and lexeme.pos.indeclinable == false)
