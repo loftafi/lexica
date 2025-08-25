@@ -265,6 +265,17 @@ pub fn init(context: *AppContext) !void {
         },
     ));
 
+    try panel.add_element(try engine.create_expander(
+        display,
+        .{
+            .name = "end.expander",
+            .rect = .{ .width = 100, .height = 5 },
+            .minimum = .{ .width = 100, .height = 5 },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .type = .{ .expander = .{ .weight = 1 } },
+        },
+    ));
+
     // Don't allow expanders to push under the menu area.
     var spacer = try context.display.add_spacer(panel, 130);
     spacer.on_resized = MenuUI.update_bottom_spacing;
