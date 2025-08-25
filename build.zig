@@ -121,8 +121,12 @@ pub export fn build(b: *std.Build) void {
         // Build an iOS native library
         const target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64 });
 
-        if (optimize != .ReleaseFast) {
-            std.log.warn("Building ios lib without -Doptimize=ReleaseFast", .{});
+        if (optimize != .ReleaseFast and optimize != .ReleaseSafe) {
+            std.log.warn("Building ios lib without -Doptimize=ReleaseFast or -Doptomize=ReleaseSafe", .{});
+        }
+
+        if (std.mem.eql(u8, app_id, "org.example.lexica")) {
+            std.log.warn("Building ios lib with default app_id=org.example.lexica", .{});
         }
 
         const mod = b.createModule(.{
@@ -142,7 +146,7 @@ pub export fn build(b: *std.Build) void {
             .root_module = mod,
             .linkage = .static,
         });
-        if (optimize != .ReleaseFast) {
+        if (optimize != .ReleaseFast and optimize != .ReleaseSafe) {
             lib.bundle_ubsan_rt = true;
             lib.bundle_compiler_rt = true;
         }
@@ -172,9 +176,12 @@ pub export fn build(b: *std.Build) void {
         const libc_file = b.path("android_libc.txt");
         const target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
 
-        if (optimize != .ReleaseFast) {
-            std.log.warn("Building android lib without -Doptimize=ReleaseFast", .{});
-            //@panic("ios requires -Doptimize=ReleaseFast to avoid ubsan dependency");
+        if (optimize != .ReleaseFast and optimize != .ReleaseSafe) {
+            std.log.warn("Building android lib without -Doptimize=ReleaseFast or -Doptomize=ReleaseSafe", .{});
+        }
+
+        if (std.mem.eql(u8, app_id, "org.example.lexica")) {
+            std.log.warn("Building android lib with default app_id=org.example.lexica", .{});
         }
 
         const mod = b.createModule(.{
@@ -195,7 +202,7 @@ pub export fn build(b: *std.Build) void {
             .linkage = .dynamic,
         });
         lib.setLibCFile(libc_file);
-        if (optimize != .ReleaseFast) {
+        if (optimize != .ReleaseFast and optimize != .ReleaseSafe) {
             lib.bundle_ubsan_rt = true;
             lib.bundle_compiler_rt = true;
         }
