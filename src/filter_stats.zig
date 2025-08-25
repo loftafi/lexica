@@ -136,6 +136,8 @@ pub inline fn can_practice_form(form: *Form) bool {
         return false;
     if (form.lexeme.?.forms.items.len < 2)
         return false;
+    if (!ac.study_optative and form.parsing.part_of_speech == .verb and form.parsing.mood == .optative)
+        return false;
     const pos = form.parsing.part_of_speech;
     if (pos == .noun or pos == .adjective or pos == .verb or pos == .personal_pronoun)
         return true;
