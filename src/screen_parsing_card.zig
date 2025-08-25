@@ -1585,6 +1585,8 @@ pub fn show_next_quiz_card(display: *Display) error{OutOfMemory}!bool {
     const text = std.fmt.bufPrint(&help_line_buffer[help_line_buffer_i], "Describe the grammar of {s}.", .{form.*.word}) catch "Describe the grammar of this word.";
     try help_line.set_text(display, text, false);
 
+    info("showing card {s} ({any})", .{ form.*.word, form.*.parsing });
+
     switch (form.*.parsing.part_of_speech) {
         .verb => {
             pickers.case.visible = .hidden;
@@ -1614,9 +1616,8 @@ pub fn show_next_quiz_card(display: *Display) error{OutOfMemory}!bool {
             pickers.mood.visible = .hidden;
             pickers.person.visible = .visible;
             if (form.lexeme) |lexeme| {
-                if (std.mem.eql(u8, lexeme.word, "αὐτός")) {
+                if (std.mem.eql(u8, lexeme.word, "αὐτός"))
                     pickers.gender.visible = .visible;
-                }
             }
         },
         else => {
@@ -1633,29 +1634,14 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
     std.debug.assert(ac.app_context.?.parsing_quiz.form_bank.items.len > 0);
     const current_form = ac.app_context.?.parsing_quiz.form_bank.items[0];
     if (buttons.options_picked(current_form)) |parsing| {
-        var chose_value = std.ArrayList(u8).init(ac.app_context.?.allocator);
-        defer chose_value.deinit();
-        parsing.string(chose_value.writer()) catch |e| {
-            if (e == error.Incomplete) {
-                debug("invalid state. parsing incomplete after user picking.", .{});
-            }
-        };
-
         const correct = try buttons.mark_answers(current_form, parsing, display.allocator);
         if (correct) {
-            info("User chose {s} correct.", .{chose_value.items});
+            info("User chose {any} correct.", .{parsing});
             correct_panel.visible = .visible;
             incorrect_panel.visible = .hidden;
             _ = ac.app_context.?.parsing_quiz.remove_current_form();
         } else {
-            var out2 = std.ArrayList(u8).init(ac.app_context.?.allocator);
-            defer out2.deinit();
-            current_form.parsing.string(out2.writer()) catch |e| {
-                if (e == error.Incomplete) {
-                    debug("invalid state. parsing incomplete after user picking.", .{});
-                }
-            };
-            info("User chose {s} incorrect. Expecting {s}", .{ chose_value.items, out2.items });
+            info("User chose {any} incorrect. Expecting {any}", .{ parsing, current_form.parsing });
             correct_panel.visible = .hidden;
             incorrect_panel.visible = .visible;
         }
@@ -1771,9 +1757,8 @@ fn person_changed(display: *Display, element: *Element) error{OutOfMemory}!void 
 
 fn clear_other_toggles(current: *Element, others: []const *Element) void {
     for (others) |*other| {
-        if (current != other.*) {
+        if (current != other.*)
             other.*.type.button.toggle = .off;
-        }
     }
 }
 
