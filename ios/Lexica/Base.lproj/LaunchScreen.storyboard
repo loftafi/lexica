@@ -11,7 +11,7 @@
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <imageView key="view" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="splash-screen.jpg" id="uoz-Oh-Sg8">
+                    <imageView key="view" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="3br-Kr-8GF">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     </imageView>
@@ -22,6 +22,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="splash-screen.jpg" width="921.5999755859375" height="921.5999755859375"/>
+        <image name="Splash" width="1280" height="1280"/>
     </resources>
 </document>
