@@ -38,3 +38,4 @@ android_libc.txt
 android/app/build.gradle
 android/app/src/main/AndroidManifest.xml
 ios/Lexica.xcodeproj/project.pbxproj
+ios/Lexica.xcodeproj/xcshareddata/

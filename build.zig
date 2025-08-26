@@ -21,22 +21,20 @@ pub export fn build(b: *std.Build) void {
     app_info.addOption([]const u8, "app_build", build_number_step.app_build);
     const app_info_module = app_info.createModule();
 
-    const zigimg = b.dependency("zigimg", .{});
-    const zigimg_module = zigimg.module("zigimg");
-
-    const praxis = b.dependency("praxis", .{});
-    const praxis_module = praxis.module("praxis");
-
-    const resources = b.dependency("resources", .{});
-    const resources_module = resources.module("resources");
-
-    const engine = b.dependency("engine", .{});
-    const engine_module = engine.module("engine");
-    const dep_sdl_module = engine.module("sdl");
-
     if (platform.len == 0) {
         // Build a binary to run on macOS
         const target = b.standardTargetOptions(.{});
+
+        const engine = b.dependency("engine", .{ .target = target, .optimize = optimize });
+        const engine_module = engine.module("engine");
+        const dep_sdl_module = engine.module("sdl");
+
+        const zigimg = b.dependency("zigimg", .{ .target = target, .optimize = optimize });
+        const zigimg_module = zigimg.module("zigimg");
+        const resources = engine.builder.dependency("resources", .{ .target = target, .optimize = optimize });
+        const resources_module = resources.module("resources");
+        const praxis = resources.builder.dependency("praxis", .{ .target = target, .optimize = optimize });
+        const praxis_module = praxis.module("praxis");
 
         const mod = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
@@ -49,6 +47,8 @@ pub export fn build(b: *std.Build) void {
         mod.addImport("zigimg", zigimg_module);
         mod.addImport("engine", engine_module);
         mod.addImport("dep_sdl_module", dep_sdl_module);
+
+        add_imports(b, &target, dep_sdl_module);
 
         const exe = b.addExecutable(.{
             .name = "lexica",
@@ -74,11 +74,12 @@ pub export fn build(b: *std.Build) void {
         });
         real_tests.root_module.addImport("zigimg", zigimg_module);
         real_tests.root_module.addImport("app_info", app_info_module);
-        real_tests.root_module.addImport("praxis", praxis_module);
+        //real_tests.root_module.addImport("praxis", praxis_module);
         real_tests.root_module.addImport("resources", resources_module);
+        real_tests.root_module.addImport("engine", engine_module);
         real_tests.root_module.addImport("dep_sdl_module", dep_sdl_module);
-        real_tests.linkLibrary(b.dependency("sdl", .{}).artifact("SDL3"));
-        real_tests.linkLibrary(b.dependency("sdl_ttf", .{}).artifact("SDL_ttf"));
+        real_tests.linkLibrary(b.dependency("sdl", .{ .target = target, .optimize = optimize }).artifact("SDL3"));
+        real_tests.linkLibrary(b.dependency("sdl_ttf", .{ .target = target, .optimize = optimize }).artifact("SDL_ttf"));
         const run_real_tests = b.addRunArtifact(real_tests);
 
         const exe_unit_tests = b.addTest(.{
@@ -94,6 +95,16 @@ pub export fn build(b: *std.Build) void {
     if (std.ascii.eqlIgnoreCase("simulator", platform)) {
         // Build an iOS-simulator library
         const target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64, .abi = .simulator });
+
+        const engine = b.dependency("engine", .{ .target = target, .optimize = optimize });
+        const engine_module = engine.module("engine");
+        const zigimg = b.dependency("zigimg", .{ .target = target, .optimize = optimize });
+        const zigimg_module = zigimg.module("zigimg");
+        const resources = engine.builder.dependency("resources", .{ .target = target, .optimize = optimize });
+        const resources_module = resources.module("resources");
+        const praxis = resources.builder.dependency("praxis", .{ .target = target, .optimize = optimize });
+        const praxis_module = praxis.module("praxis");
+        //const dep_sdl_module = engine.module("sdl");
 
         const mod = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
@@ -121,6 +132,16 @@ pub export fn build(b: *std.Build) void {
         // Build an iOS native library
         const target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64 });
 
+        const engine = b.dependency("engine", .{ .target = target, .optimize = optimize });
+        const engine_module = engine.module("engine");
+        const dep_sdl_module = engine.module("sdl");
+        const zigimg = b.dependency("zigimg", .{ .target = target, .optimize = optimize });
+        const zigimg_module = zigimg.module("zigimg");
+        const resources = engine.builder.dependency("resources", .{ .target = target, .optimize = optimize });
+        const resources_module = resources.module("resources");
+        const praxis = resources.builder.dependency("praxis", .{ .target = target, .optimize = optimize });
+        const praxis_module = praxis.module("praxis");
+
         if (optimize != .ReleaseFast and optimize != .ReleaseSafe) {
             std.log.warn("Building ios lib without -Doptimize=ReleaseFast or -Doptomize=ReleaseSafe", .{});
         }
@@ -128,6 +149,8 @@ pub export fn build(b: *std.Build) void {
         if (std.mem.eql(u8, app_id, "org.example.lexica")) {
             std.log.warn("Building ios lib with default app_id=org.example.lexica", .{});
         }
+
+        add_imports(b, &target, dep_sdl_module);
 
         const mod = b.createModule(.{
             .root_source_file = b.path("src/ios_main.zig"),
@@ -176,6 +199,28 @@ pub export fn build(b: *std.Build) void {
         const libc_file = b.path("android_libc.txt");
         const target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
 
+        const engine = b.dependency("engine", .{ .target = target, .optimize = optimize });
+        const engine_module = engine.module("engine");
+        const dep_sdl_module = engine.module("sdl");
+        const zigimg = b.dependency("zigimg", .{ .target = target, .optimize = optimize });
+        const zigimg_module = zigimg.module("zigimg");
+        const resources = engine.builder.dependency("resources", .{ .target = target, .optimize = optimize });
+        const resources_module = resources.module("resources");
+        const praxis = resources.builder.dependency("praxis", .{ .target = target, .optimize = optimize });
+        const praxis_module = praxis.module("praxis");
+
+        const ndk_path = FindNDK.find(b.allocator);
+        if (ndk_path == null) {
+            std.log.err("lexica android requires the android ndk not found. Specify ANDROID_NDK_HOME", .{});
+        } else {
+            const loc = ndk_path.?.realpathAlloc(b.allocator, ".") catch |e| {
+                std.log.info("error reading ndk path folder. {any}", .{e});
+                return;
+            };
+            defer b.allocator.free(loc);
+            std.log.info("lexica for android building with android ndk in {s}", .{loc});
+        }
+
         if (optimize != .ReleaseFast and optimize != .ReleaseSafe) {
             std.log.warn("Building android lib without -Doptimize=ReleaseFast or -Doptomize=ReleaseSafe", .{});
         }
@@ -183,6 +228,10 @@ pub export fn build(b: *std.Build) void {
         if (std.mem.eql(u8, app_id, "org.example.lexica")) {
             std.log.warn("Building android lib with default app_id=org.example.lexica", .{});
         }
+
+        add_imports(b, &target, engine_module);
+        add_imports(b, &target, resources_module);
+        add_imports(b, &target, dep_sdl_module);
 
         const mod = b.createModule(.{
             .root_source_file = b.path("src/android_main.zig"),
@@ -292,6 +341,141 @@ pub fn git_commit_number(b: *std.Build) !usize {
     return build_number;
 }
 
+/// Attempt to find the location of the NDK by searching ANDROID_NDK_HOME,
+/// ANDROID_SDK_ROOT, and fallback to searching known locations inside the
+/// user home folder.
+const FindNDK = struct {
+    const ndk_versions = [_][]const u8{
+        "29.0.13846066", // Pre-release
+        "28.2.13676358", // Stable
+        "27.3.13750724", // LTS
+        "27.0.12077973",
+        "25.1.8937393",
+        "23.2.8568313",
+        "23.1.7779620",
+        "21.0.6113669",
+        "20.1.5948944",
+    };
+
+    pub fn find(gpa: std.mem.Allocator) ?std.fs.Dir {
+        const android_ndk_home = find_android_ndk_home(gpa) catch |e| {
+            std.log.err("error while searching for ndk: {any}", .{e});
+            return null;
+        };
+        if (android_ndk_home != null) return android_ndk_home.?;
+
+        const android_sdk_root = find_android_sdk_root(gpa) catch |e| {
+            std.log.err("error while searching for sdk: {any}", .{e});
+            return null;
+        };
+        if (android_sdk_root != null) {
+            if (android_sdk_root.?.openDir("ndk", .{})) |dir| {
+                std.log.debug("searching inside ANDROID_SDK_ROOT/ndk", .{});
+                const found = search_ndk_folder(gpa, dir);
+                if (found != null) return found.?;
+            } else |_| {
+                std.log.debug("no ndk in ANDROID_SDK_ROOT", .{});
+            }
+        }
+
+        const home = find_user_home(gpa) catch |e| {
+            std.log.err("error while searching for ndk: {any}", .{e});
+            return null;
+        };
+        if (home == null) {
+            std.log.err("ndk not found. No HOME or USERPROFILE set.", .{});
+            return null;
+        }
+        const ndk_base = home.?.openDir("Library/Android/sdk/ndk/", .{}) catch |e| {
+            std.log.err("ndk not found. Error {any} reading HOME/Library/Android/sdk/ndk/", .{e});
+            return null;
+        };
+        return search_ndk_folder(gpa, ndk_base);
+    }
+
+    pub fn search_ndk_folder(_: std.mem.Allocator, ndk_base: std.fs.Dir) ?std.fs.Dir {
+        for (ndk_versions) |version| {
+            const folder = ndk_base.openDir(version, .{}) catch {
+                std.log.debug("ndk version {s} not found", .{version});
+                continue;
+            };
+            std.log.debug("ndk version found: {any}", .{folder});
+            return folder;
+        }
+        return null;
+    }
+
+    /// If ANDROID_NDK_HOME is set, just use that
+    pub fn find_android_ndk_home(gpa: std.mem.Allocator) !?std.fs.Dir {
+        var env_map = try std.process.getEnvMap(gpa);
+        defer env_map.deinit();
+        var iter = env_map.iterator();
+        var home: ?[]const u8 = null;
+        while (iter.next()) |entry| {
+            if (std.ascii.eqlIgnoreCase("ANDROID_NDK_HOME", entry.key_ptr.*)) {
+                home = entry.value_ptr.*;
+                break;
+            }
+        }
+        if (home == null) {
+            std.log.info("ANDROID_NDK_HOME not set.", .{});
+            return null;
+        }
+        const d = std.fs.openDirAbsolute(home.?, .{}) catch {
+            std.log.warn("Failed to read ANDROID_NDK_HOME directory {any}", .{home.?});
+            return null;
+        };
+        return d;
+    }
+
+    /// If ANDROID_SDK_ROOT is set, just use that
+    pub fn find_android_sdk_root(gpa: std.mem.Allocator) !?std.fs.Dir {
+        var env_map = try std.process.getEnvMap(gpa);
+        defer env_map.deinit();
+        var iter = env_map.iterator();
+        var home: ?[]const u8 = null;
+        while (iter.next()) |entry| {
+            if (std.ascii.eqlIgnoreCase("ANDROID_SDK_ROOT", entry.key_ptr.*)) {
+                home = entry.value_ptr.*;
+                break;
+            }
+        }
+        if (home == null) {
+            std.log.info("ANDROID_SDK_ROOT not set.", .{});
+            return null;
+        }
+        const d = std.fs.openDirAbsolute(home.?, .{}) catch {
+            std.log.warn("Failed to read ANDROID_SDK_ROOT directory {any}", .{home.?});
+            return null;
+        };
+        return d;
+    }
+
+    /// Sometimes, the NDK is in the users home folder
+    pub fn find_user_home(gpa: std.mem.Allocator) !?std.fs.Dir {
+        var env_map = try std.process.getEnvMap(gpa);
+        defer env_map.deinit();
+        var iter = env_map.iterator();
+        var home: ?[]const u8 = null;
+        while (iter.next()) |entry| {
+            if (std.ascii.eqlIgnoreCase("HOME", entry.key_ptr.*)) {
+                home = entry.value_ptr.*;
+            }
+            if (std.ascii.eqlIgnoreCase("UserProfile", entry.key_ptr.*)) {
+                home = entry.value_ptr.*;
+            }
+        }
+        if (home != null) {
+            const d = std.fs.openDirAbsolute(home.?, .{}) catch {
+                std.log.warn("Failed to read directory {any}", .{home.?});
+                return null;
+            };
+            return d;
+        }
+        return null;
+    }
+};
+
 const IncrementBuildNumberStep = struct {
     b: *std.Build,
     step: std.Build.Step,
@@ -362,6 +546,66 @@ const IncrementBuildNumberStep = struct {
         );
     }
 };
+
+pub fn add_imports(
+    b: *std.Build,
+    target: *const std.Build.ResolvedTarget,
+    lib: *std.Build.Module,
+) void {
+    // For TranslateC to work, we need the system library headers
+    switch (target.result.os.tag) {
+        .macos => {
+            const sdk = std.zig.system.darwin.getSdk(b.allocator, target.result) orelse
+                @panic("macOS SDK is missing");
+            lib.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{
+                sdk,
+                "/usr/include",
+            }) });
+            lib.addSystemFrameworkPath(.{ .cwd_relative = b.pathJoin(&.{
+                sdk,
+                "/System/Library/Frameworks",
+            }) });
+        },
+        .ios => {
+            const sdk = std.zig.system.darwin.getSdk(b.allocator, target.result) orelse
+                @panic("macOS SDK is missing");
+            lib.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{
+                sdk,
+                "/usr/include",
+            }) });
+            lib.addSystemFrameworkPath(.{ .cwd_relative = b.pathJoin(&.{
+                sdk,
+                "/System/Library/Frameworks",
+            }) });
+        },
+        .linux => {
+            // When building for android, we need to use the android linux headers
+            if (FindNDK.find(b.allocator)) |android_ndk| {
+                const ndk_location = android_ndk.realpathAlloc(b.allocator, ".") catch {
+                    @panic("printing ndk path failed");
+                };
+                defer b.allocator.free(ndk_location);
+                lib.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{
+                    ndk_location,
+                    "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/",
+                }) });
+                lib.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{
+                    ndk_location,
+                    "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/aarch64-linux-android/",
+                }) });
+            } else {
+                @panic("android/linux build requires ndk. Set ANDROID_NDK_HOME");
+            }
+        },
+        else => {
+            std.log.debug(
+                "add_imports not supported on {s}",
+                .{@tagName(target.result.os.tag)},
+            );
+            @panic("add_imports only supports macos, ios, and linux. Please add windows support");
+        },
+    }
+}
 
 const std = @import("std");
 const update_xcode_variables = @import("src/xcode_version_update.zig").update_xcode_variables;

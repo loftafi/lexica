@@ -33,6 +33,12 @@ android folder:
         -Dapp_id=com.scripturial.bgd3
         -Dorg="Jacob Rhoden"
 
+To build for android, also set the ndk environemnt variable, i.e:
+
+    export ANDROID_NDK_HOME=/Users/user/Library/Android/sdk/ndk/27.3.13750724
+
+And update android_libc.txt to point to the same ndk.
+
 ## Setup for the android project
 
 The home folder contains an `android_libc.txt` file which zig uses
