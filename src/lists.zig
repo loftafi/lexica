@@ -11,8 +11,8 @@ dictionary: *Dictionary,
 
 const FILENAME = "sets.txt";
 
-pub fn create(allocator: Allocator, dictionary: *Dictionary) *Self {
-    var sets = allocator.create(Self);
+pub fn create(allocator: Allocator, dictionary: *Dictionary) error{OutOfMemory}!*Self {
+    var sets = try allocator.create(Self);
     sets.dictionary = dictionary;
     sets.sets = ArrayList(*WordSet).init(allocator);
     return sets;
@@ -21,7 +21,7 @@ pub fn create(allocator: Allocator, dictionary: *Dictionary) *Self {
 pub fn destroy(self: *Self) void {
     const allocator = self.sets.allocator;
     for (self.sets.items) |*list| {
-        list.destroy();
+        list.*.destroy();
         allocator.destroy(list);
     }
     self.sets.deinit();
@@ -360,8 +360,10 @@ const Form = praxis.Form;
 const Dictionary = praxis.Dictionary;
 
 test "list file" {
-    var list = Self.create(std.testing.allocator);
-    defer list.destroy();
+    const dict = try praxis.test_dictionary(std.testing.allocator);
+    defer dict.destroy(std.testing.allocator);
+    const list = try Self.create(std.testing.allocator, dict);
+    defer list.*.destroy();
     //var sets = Self.create(std.testing.allocator, dictionary);
     //defer sets.destroy();
 }

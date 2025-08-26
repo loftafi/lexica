@@ -25,7 +25,17 @@ resources.bd file to `/tmp/resources.bd`
 Compile the zig library and install it into the ios or
 android folder:
 
-    zig build -Doptimize=ReleaseFast -Dplatform=ios install
+    zig build -Doptimize=ReleaseFast -Dplatform=ios \
+        -Dapp_name="Lexica"\
+        -Dapp_version="1.0"\
+        -Dapp_id=com.example.lexica
+        -Dorg="Example"
+
+To build for android, also set the ndk environemnt variable, i.e:
+
+    export ANDROID_NDK_HOME=/Users/user/Library/Android/sdk/ndk/27.3.13750724
+
+And update android_libc.txt to point to the same ndk.
 
 ## Setup for the android project
 
