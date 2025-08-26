@@ -11,6 +11,7 @@
 		6D2A3A592E586BED00D248E9 /* SDL3.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		6D2A3A5B2E586BFB00D248E9 /* SDL3_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; };
 		6D2A3A5C2E586BFB00D248E9 /* SDL3_ttf.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		6D383DB12E5C1AC10028089B /* splash-screen.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 6D383DA82E5C1AC10028089B /* splash-screen.jpg */; };
 		6D8B74022E5826E800E265BA /* SDL3.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; };
 		6D8B74032E5826EA00E265BA /* SDL3_ttf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F32E58244000E265BA /* SDL3_ttf.framework */; };
 		6D8B74092E5827FF00E265BA /* SDL3.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6D8B73F22E58244000E265BA /* SDL3.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -46,6 +47,8 @@
 
 /* Begin PBXFileReference section */
 		6D2A3A3E2E586B6500D248E9 /* Lexica Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Lexica Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6D383D9E2E5C1AC10028089B /* app-icon-3-full.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "app-icon-3-full.png"; sourceTree = "<group>"; };
+		6D383DA82E5C1AC10028089B /* splash-screen.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "splash-screen.jpg"; sourceTree = "<group>"; };
 		6D56F8492DA4F35A0040B3D6 /* Lexica.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lexica.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D8B73F22E58244000E265BA /* SDL3.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL3.framework; sourceTree = "<group>"; };
 		6D8B73F32E58244000E265BA /* SDL3_ttf.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL3_ttf.framework; sourceTree = "<group>"; };
@@ -62,7 +65,6 @@
 		6D2A3A5E2E586C1200D248E9 /* Exceptions for "Lexica" folder in "Lexica Mac" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"liblexica-ios.a",
 				resources.bd,
 			);
 			target = 6D2A3A3D2E586B6500D248E9 /* Lexica Mac */;
@@ -70,8 +72,6 @@
 		6D8B74062E5827A300E265BA /* Exceptions for "Lexica" folder in "Lexica" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"assets/app-icon-3-full.png",
-				"assets/splash-screen.jpg",
 				Info.plist,
 			);
 			target = 6D56F8482DA4F35A0040B3D6 /* Lexica */;
@@ -123,6 +123,8 @@
 		6D56F8402DA4F35A0040B3D6 = {
 			isa = PBXGroup;
 			children = (
+				6D383DA82E5C1AC10028089B /* splash-screen.jpg */,
+				6D383D9E2E5C1AC10028089B /* app-icon-3-full.png */,
 				6D56F84B2DA4F35A0040B3D6 /* Lexica */,
 				6D2A3A3F2E586B6500D248E9 /* Lexica Mac */,
 				6D56F8792DA4F7010040B3D6 /* Frameworks */,
@@ -246,6 +248,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6D383DB12E5C1AC10028089B /* splash-screen.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -289,6 +292,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -325,6 +329,7 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -344,6 +349,7 @@
 		6D56F8622DA4F35C0040B3D6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -399,12 +405,15 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "xrsimulator xros watchsimulator watchos macosx iphonesimulator iphoneos driverkit appletvsimulator appletvos";
+				SUPPORTS_MACCATALYST = YES;
 			};
 			name = Debug;
 		};
 		6D56F8632DA4F35C0040B3D6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -453,6 +462,8 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "xrsimulator xros watchsimulator watchos macosx iphonesimulator iphoneos driverkit appletvsimulator appletvos";
+				SUPPORTS_MACCATALYST = YES;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -460,8 +471,10 @@
 		6D56F8652DA4F35C0040B3D6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Lexica/Lexica.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2010;
@@ -476,6 +489,10 @@
 				INFOPLIST_FILE = Lexica/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Does not use Bluetooth";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Does not use Camera";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Does not use Microphone";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Does not use Photos";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = metal;
@@ -492,10 +509,14 @@
 					"$(PROJECT_DIR)/cc",
 					"$(PROJECT_DIR)/Lexica",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.example.lexica;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -504,8 +525,10 @@
 		6D56F8662DA4F35C0040B3D6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Lexica/Lexica.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2010;
@@ -520,6 +543,10 @@
 				INFOPLIST_FILE = Lexica/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Lexica;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Does not use Bluetooth";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Does not use Camera";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Does not use Microphone";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Does not use Photos";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = metal;
@@ -536,10 +563,14 @@
 					"$(PROJECT_DIR)/cc",
 					"$(PROJECT_DIR)/Lexica",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.example.lexica;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
