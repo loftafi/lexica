@@ -22,8 +22,7 @@ pub fn show(display: *Display, element: *Element) error{OutOfMemory}!void {
         try ParsingMenuScreen.show(display, element);
     }
 
-    correct_panel.visible = .hidden;
-    incorrect_panel.visible = .hidden;
+    try slide_panel_out(display);
     MenuUI.progress_bar.type.progress_bar.progress = 0;
     MenuUI.progress_bar.visible = .visible;
     MenuUI.toolbar.visible = .hidden;
@@ -1324,10 +1323,10 @@ pub fn init(context: *AppContext) error{
             "",
             .{
                 .name = "correct.panel.align",
-                .rect = .{ .x = 0, .y = 0, .width = 600, .height = 90 },
-                .layout = .{ .x = .grows, .y = .shrinks },
+                .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
+                .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
                 .child_align = .{ .x = .centre, .y = .end },
-                .minimum = .{ .width = 600, .height = 90 },
+                .minimum = .{ .width = 700, .height = 90 },
                 .visible = .hidden,
                 .type = .{
                     .panel = .{
@@ -1344,11 +1343,11 @@ pub fn init(context: *AppContext) error{
             "white rounded rect",
             .{
                 .name = "correct.panel",
-                .rect = .{ .x = 0, .y = 0, .width = 600, .height = 90 },
+                .rect = .{ .x = 0, .y = 0, .width = 700, .height = 90 },
                 .layout = .{ .x = .shrinks, .y = .shrinks },
                 .child_align = .{ .x = .centre, .y = .start },
                 .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 600, .height = 90 },
+                .minimum = .{ .width = 700, .height = 90 },
                 .visible = .visible,
                 .type = .{ .panel = .{
                     .spacing = 10,
@@ -1407,10 +1406,10 @@ pub fn init(context: *AppContext) error{
             "",
             .{
                 .name = "incorrect.panel.align",
-                .rect = .{ .x = 0, .y = 0, .width = 600, .height = 90 },
-                .layout = .{ .x = .grows, .y = .shrinks },
+                .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
+                .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
                 .child_align = .{ .x = .centre, .y = .end },
-                .minimum = .{ .width = 600, .height = 90 },
+                .minimum = .{ .width = 700, .height = 90 },
                 .visible = .hidden,
                 .type = .{
                     .panel = .{
@@ -1548,8 +1547,7 @@ fn make_parsing_button(display: *Display, name: []const u8, text: []const u8, ha
 }
 
 pub fn next_clicked(display: *Display, element: *Element) error{OutOfMemory}!void {
-    correct_panel.visible = .hidden;
-    incorrect_panel.visible = .hidden;
+    try slide_panel_out(display);
     if (ac.app_context.?.parsing_quiz.form_bank.items.len == 0) {
         MenuUI.progress_bar.visible = .hidden;
         MenuUI.toolbar.visible = .visible;
@@ -1561,6 +1559,58 @@ pub fn next_clicked(display: *Display, element: *Element) error{OutOfMemory}!voi
         return;
     }
     _ = try show_next_quiz_card(display);
+}
+
+const panel_slide_duration = 250 * 1000;
+
+pub fn slide_panel_in(display: *Display, slide_panel: *Element) error{OutOfMemory}!void {
+    correct_panel.visible = .hidden;
+    incorrect_panel.visible = .hidden;
+    slide_panel.visible = .visible;
+    slide_panel.rect.x = display.root.rect.width / 2 - slide_panel.rect.width / 2;
+    slide_panel.rect.y = display.root.rect.height + 2;
+    const animation: engine.Animator = .{
+        .target = slide_panel,
+        .mode = .move,
+        .movement = .ease,
+        .duration = panel_slide_duration,
+        .start = slide_panel.rect,
+        .end = .{
+            .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
+            .y = display.root.rect.height - slide_panel.rect.height - 20,
+            .width = slide_panel.rect.width,
+            .height = slide_panel.rect.height,
+        },
+    };
+    try display.add_animator(animation);
+}
+
+pub fn slide_panel_out(display: *Display) error{OutOfMemory}!void {
+    if (correct_panel.visible != .hidden) {
+        try slide_panel_down(display, correct_panel);
+    }
+    if (incorrect_panel.visible != .hidden) {
+        try slide_panel_down(display, incorrect_panel);
+    }
+}
+
+pub fn slide_panel_down(display: *Display, slide_panel: *Element) error{OutOfMemory}!void {
+    slide_panel.rect.x = display.root.rect.width / 2 - slide_panel.rect.width / 2;
+    slide_panel.rect.y = display.root.rect.height - slide_panel.rect.height - 20;
+    const animation: engine.Animator = .{
+        .target = slide_panel,
+        .mode = .move,
+        .movement = .ease,
+        .duration = panel_slide_duration,
+        .start = slide_panel.rect,
+        .end = .{
+            .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
+            .y = display.root.rect.height + 2,
+            .width = slide_panel.rect.width,
+            .height = slide_panel.rect.height,
+        },
+    };
+    try display.add_animator(animation);
 }
 
 var help_line_buffer: [2][500]u8 = undefined;
@@ -1637,13 +1687,11 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
         const correct = try buttons.mark_answers(current_form, parsing, display.allocator);
         if (correct) {
             info("User chose {any} correct.", .{parsing});
-            correct_panel.visible = .visible;
-            incorrect_panel.visible = .hidden;
+            try slide_panel_in(display, correct_panel);
             _ = ac.app_context.?.parsing_quiz.remove_current_form();
         } else {
             info("User chose {any} incorrect. Expecting {any}", .{ parsing, current_form.parsing });
-            correct_panel.visible = .hidden;
-            incorrect_panel.visible = .visible;
+            try slide_panel_in(display, incorrect_panel);
         }
         buttons.lock_unpicked_toggles();
         display.need_relayout = true;

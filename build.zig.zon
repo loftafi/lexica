@@ -17,8 +17,8 @@
             .hash = "zigimg-0.1.0-lly-O_qZEgAP5eJWUbcWtL9Jv4V_BGcK5p-570Hiaj7k",
         },
         .engine = .{
-            .url = "git+https://github.com/loftafi/engine.git#fdee5533ae6efdfa008c2388898a7fbc62c73493",
-            .hash = "engine-0.1.20-1VilCpHkIgO6Mog_XtUPNiXcsYVz0bsO8xAfddSXahXw",
+            .url = "git+https://github.com/loftafi/engine.git#9820d1bec4ca4d1937d0ed51e9de8a1168b54c81",
+            .hash = "engine-0.1.22-1VilCqLmIgPi7yOHXR4Mf0d7mZbf60nejPETN8HYs-fr",
         },
     },
 
