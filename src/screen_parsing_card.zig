@@ -55,6 +55,8 @@ pub fn deinit() void {
 pub fn cancel_quiz(display: *Display, element: *Element) error{OutOfMemory}!void {
     MenuUI.progress_bar.visible = .hidden;
     MenuUI.toolbar.visible = .visible;
+    correct_panel.visible = .hidden;
+    incorrect_panel.visible = .hidden;
 
     const pc = ac.app_context.?.parsing_quiz;
     if (pc.lexeme) |lexeme| {
@@ -1561,6 +1563,31 @@ pub fn next_clicked(display: *Display, element: *Element) error{OutOfMemory}!voi
     _ = try show_next_quiz_card(display);
 }
 
+pub fn button_bounce(display: *Display, button: *Element) error{OutOfMemory}!void {
+    button.layout.x = .fixed;
+    button.layout.y = .fixed;
+    const animation: engine.Animator = .{
+        .target = button,
+        .mode = .move,
+        .movement = .stretch,
+        .duration = 100 * 1000,
+        .start = button.rect,
+        .end = .{
+            .x = button.rect.x,
+            .y = button.rect.y,
+            .width = 10,
+            .height = 2,
+        },
+        .on_end = button_bounce_end,
+    };
+    try display.add_animator(animation);
+}
+
+pub fn button_bounce_end(_: *Display, button: *Element) void {
+    button.layout.x = .shrinks;
+    button.layout.y = .shrinks;
+}
+
 const panel_slide_duration = 250 * 1000;
 
 pub fn slide_panel_in(display: *Display, slide_panel: *Element) error{OutOfMemory}!void {
@@ -1709,6 +1736,7 @@ fn case_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
             buttons.genitive,
             buttons.dative,
         });
+        try button_bounce(display, element);
     }
     try show_answer_if_ready(display);
 }
@@ -1719,6 +1747,7 @@ fn number_changed(display: *Display, element: *Element) error{OutOfMemory}!void 
             buttons.singular,
             buttons.plural,
         });
+        try button_bounce(display, element);
     }
     try show_answer_if_ready(display);
 }
@@ -1730,6 +1759,7 @@ fn gender_changed(display: *Display, element: *Element) error{OutOfMemory}!void 
             buttons.feminine,
             buttons.neuter,
         });
+        try button_bounce(display, element);
     }
     try show_answer_if_ready(display);
 }
@@ -1744,6 +1774,7 @@ fn tense_form_changed(display: *Display, element: *Element) error{OutOfMemory}!v
             buttons.perfect,
             buttons.pluperfect,
         });
+        try button_bounce(display, element);
     }
     try show_answer_if_ready(display);
 }
@@ -1757,6 +1788,7 @@ fn mood_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
             buttons.infinitive,
             buttons.imperative,
         });
+        try button_bounce(display, element);
     }
 
     if (buttons.participle.type.button.toggle == .on) {
@@ -1788,6 +1820,7 @@ fn voice_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
             buttons.middle,
             buttons.passive,
         });
+        try button_bounce(display, element);
     }
     try show_answer_if_ready(display);
 }
@@ -1799,6 +1832,7 @@ fn person_changed(display: *Display, element: *Element) error{OutOfMemory}!void 
             buttons.second,
             buttons.third,
         });
+        try button_bounce(display, element);
     }
     try show_answer_if_ready(display);
 }
