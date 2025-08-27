@@ -1327,8 +1327,8 @@ pub fn init(context: *AppContext) error{
                 .name = "correct.panel.align",
                 .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
                 .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-                .child_align = .{ .x = .centre, .y = .end },
-                .minimum = .{ .width = 700, .height = 90 },
+                .child_align = .{ .x = .centre, .y = .centre },
+                .minimum = .{ .width = 700, .height = 120 },
                 .visible = .hidden,
                 .type = .{
                     .panel = .{
@@ -1345,11 +1345,11 @@ pub fn init(context: *AppContext) error{
             "white rounded rect",
             .{
                 .name = "correct.panel",
-                .rect = .{ .x = 0, .y = 0, .width = 700, .height = 90 },
+                .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
                 .layout = .{ .x = .shrinks, .y = .shrinks },
-                .child_align = .{ .x = .centre, .y = .start },
+                .child_align = .{ .x = .centre, .y = .centre },
                 .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 700, .height = 90 },
+                .minimum = .{ .width = 700, .height = 100 },
                 .visible = .visible,
                 .type = .{ .panel = .{
                     .spacing = 10,
@@ -1365,8 +1365,8 @@ pub fn init(context: *AppContext) error{
             "",
             .{
                 .name = "correct.feedback",
-                .rect = .{ .width = 450, .height = 20 },
-                .minimum = .{ .width = 450 },
+                .rect = .{ .width = 510, .height = 20 },
+                .minimum = .{ .width = 510 },
                 .layout = .{ .y = .shrinks, .x = .shrinks },
                 .type = .{ .label = .{
                     .text = "Great.",
@@ -1410,8 +1410,8 @@ pub fn init(context: *AppContext) error{
                 .name = "incorrect.panel.align",
                 .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
                 .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-                .child_align = .{ .x = .centre, .y = .end },
-                .minimum = .{ .width = 700, .height = 90 },
+                .child_align = .{ .x = .centre, .y = .centre },
+                .minimum = .{ .width = 700, .height = 100 },
                 .visible = .hidden,
                 .type = .{
                     .panel = .{
@@ -1428,11 +1428,11 @@ pub fn init(context: *AppContext) error{
             "white rounded rect",
             .{
                 .name = "incorrect.panel",
-                .rect = .{ .x = 0, .y = 0, .width = 600, .height = 90 },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-                .child_align = .{ .x = .centre, .y = .start },
+                .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
+                .layout = .{ .x = .grows, .y = .shrinks },
+                .child_align = .{ .x = .centre, .y = .centre },
                 .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 600, .height = 90 },
+                .minimum = .{ .width = 700, .height = 100 },
                 .type = .{ .panel = .{
                     .spacing = 10,
                     .direction = .left_to_right,
@@ -1447,8 +1447,8 @@ pub fn init(context: *AppContext) error{
             "",
             .{
                 .name = "incorrect.feedback",
-                .rect = .{ .width = 450, .height = 20 },
-                .minimum = .{ .width = 450 },
+                .rect = .{ .width = 510, .height = 20 },
+                .minimum = .{ .width = 510 },
                 .layout = .{ .y = .shrinks, .x = .shrinks },
                 .type = .{ .label = .{
                     .text = "Try again.",
@@ -1604,7 +1604,7 @@ pub fn slide_panel_in(display: *Display, slide_panel: *Element) error{OutOfMemor
         .start = slide_panel.rect,
         .end = .{
             .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
-            .y = display.root.rect.height - slide_panel.rect.height - 20,
+            .y = display.root.rect.height - display.root.pad.bottom - slide_panel.rect.height - 20,
             .width = slide_panel.rect.width,
             .height = slide_panel.rect.height,
         },
@@ -1623,7 +1623,7 @@ pub fn slide_panel_out(display: *Display) error{OutOfMemory}!void {
 
 pub fn slide_panel_down(display: *Display, slide_panel: *Element) error{OutOfMemory}!void {
     slide_panel.rect.x = display.root.rect.width / 2 - slide_panel.rect.width / 2;
-    slide_panel.rect.y = display.root.rect.height - slide_panel.rect.height - 20;
+    slide_panel.rect.y = display.root.rect.height - display.root.pad.bottom - slide_panel.rect.height - 20;
     const animation: engine.Animator = .{
         .target = slide_panel,
         .mode = .move,
