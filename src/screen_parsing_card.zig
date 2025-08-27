@@ -335,7 +335,7 @@ var buttons = struct {
                     return null;
                 }
             },
-            .noun, .proper_noun => {
+            .noun, .adjective, .proper_noun => {
                 // Case
                 if (self.nominative.type.button.toggle == .on) {
                     parsing.case = .nominative;
@@ -351,7 +351,7 @@ var buttons = struct {
                     count += 1;
                 }
 
-                // Person
+                // Number
                 if (self.singular.type.button.toggle == .on) {
                     parsing.number = .singular;
                     count += 1;
@@ -360,18 +360,15 @@ var buttons = struct {
                     count += 1;
                 }
 
-                // Gender - Nouns have gender, but puersonal pronouns don't
-                if (form.parsing.part_of_speech == .noun) {
-                    if (self.masculine.type.button.toggle == .on) {
-                        parsing.gender = .masculine;
-                        count += 1;
-                    } else if (self.feminine.type.button.toggle == .on) {
-                        parsing.gender = .feminine;
-                        count += 1;
-                    } else if (self.neuter.type.button.toggle == .on) {
-                        parsing.gender = .neuter;
-                        count += 1;
-                    }
+                if (self.masculine.type.button.toggle == .on) {
+                    parsing.gender = .masculine;
+                    count += 1;
+                } else if (self.feminine.type.button.toggle == .on) {
+                    parsing.gender = .feminine;
+                    count += 1;
+                } else if (self.neuter.type.button.toggle == .on) {
+                    parsing.gender = .neuter;
+                    count += 1;
                 }
 
                 if (count > 2) {

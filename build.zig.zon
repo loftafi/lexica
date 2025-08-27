@@ -1,6 +1,6 @@
 .{
     .name = .lexica,
-    .version = "0.2.5",
+    .version = "0.2.6",
     .fingerprint = 0x2ce87c922558d28,
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
