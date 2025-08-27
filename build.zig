@@ -185,8 +185,8 @@ pub export fn build(b: *std.Build) void {
         const icon1024 = ap.join(allocator, "generated/app-icon-1024x1024.png") catch @panic("OOM");
         const splash = ap.join(allocator, "generated/splash-screen.jpg") catch @panic("OOM");
 
-        b.getInstallStep().dependOn(&b.addInstallFile(splash, "../ios/Lexica/assets/splash-screen.jpg").step);
-        b.getInstallStep().dependOn(&b.addInstallFile(icon1024, "../ios/Lexica/assets/app-icon-3-full.png").step);
+        b.getInstallStep().dependOn(&b.addInstallFile(splash, "../ios/splash-screen.jpg").step);
+        b.getInstallStep().dependOn(&b.addInstallFile(icon1024, "../ios/app-icon-3-full.png").step);
         b.getInstallStep().dependOn(&b.addInstallFile(icon1024, "../ios/Lexica/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png").step);
         b.getInstallStep().dependOn(&b.addInstallFile(icon1024, "../ios/Lexica/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png").step);
         b.getInstallStep().dependOn(&b.addInstallFile(icon1024, "../ios/Lexica/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png").step);

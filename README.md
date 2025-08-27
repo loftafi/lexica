@@ -29,7 +29,8 @@ android folder:
         -Dapp_name="Lexica"\
         -Dapp_version="1.0"\
         -Dapp_id=com.example.lexica
-        -Dorg="Example"
+        -Dorg="Example"\
+        -Dassets="assets"
 
 To build for android, also set the ndk environemnt variable, i.e:
 
