@@ -198,3 +198,46 @@ pub const FindNDK = struct {
         return null;
     }
 };
+
+pub fn generate_libc_txt(
+    gpa: std.mem.Allocator,
+    b: *const std.Build,
+    ndk: *const std.fs.Dir,
+) !void {
+    var libc_txt = std.ArrayList(u8).init(gpa);
+    errdefer libc_txt.deinit();
+    var out = libc_txt.writer();
+
+    // i.e. include_dir=/Users/username/Library/Android/sdk/ndk27.3.13750724/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include
+    const include_dir = try ndk.realpathAlloc(gpa, "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include");
+    defer gpa.free(include_dir);
+    try out.print("include_dir={s}\n", .{include_dir});
+
+    // The system-specific include directory. May be the same as `include_dir`.
+    // On Windows it's the directory that includes `vcruntime.h`.
+    // On POSIX it's the directory that includes `sys/errno.h`.
+    //
+    // i.e. sys_include_dir=/Users/username/Library/Android/sdk/ndk27.3.13750724/27.0.12077973/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include
+    const sys_include_dir = try ndk.realpathAlloc(gpa, "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include");
+    defer gpa.free(sys_include_dir);
+    try out.print("sys_include_dir={s}\n", .{sys_include_dir});
+
+    // The directory that contains `crt1.o` or `crt2.o`.
+    // On POSIX, can be found with `cc -print-file-name=crt1.o`.
+    // Not needed when targeting MacOS.
+    //
+    // i.e. crt_dir=/Users/username/Library/Android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/21
+    const crt_dir = try ndk.realpathAlloc(gpa, "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/aarch64-linux-android/21");
+    defer gpa.free(crt_dir);
+    try out.print("crt_dir={s}\n", .{crt_dir});
+
+    // These do not need to be set
+    try out.writeAll("msvc_lib_dir=\n");
+    try out.writeAll("kernel32_lib_dir=\n");
+    try out.writeAll("gcc_dir=\n");
+
+    var loc = try std.fs.cwd().openDir(b.build_root.path.?, .{});
+    var file = try loc.createFile("android_libc.txt", .{ .truncate = true });
+    defer file.close();
+    try file.writeAll(libc_txt.items);
+}

@@ -196,7 +196,6 @@ pub export fn build(b: *std.Build) void {
 
     if (std.ascii.eqlIgnoreCase("android", platform)) {
         // Build an android shared library
-        const libc_file = b.path("android_libc.txt");
         const target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
 
         const engine = b.dependency("engine", .{ .target = target, .optimize = optimize });
@@ -228,6 +227,9 @@ pub export fn build(b: *std.Build) void {
         if (std.mem.eql(u8, app_id, "org.example.lexica")) {
             std.log.warn("Building android lib with default app_id=org.example.lexica", .{});
         }
+
+        const libc_file = b.path("android_libc.txt");
+        generate_libc_txt(b.allocator, b, &ndk_path.?) catch @panic("failed to generate libc.txt");
 
         add_imports(b, &target, engine_module);
         add_imports(b, &target, resources_module);
@@ -417,5 +419,6 @@ const update_xcode_variables = @import("src/xcode_version_update.zig").update_xc
 const update_android_metadata = @import("src/android_version_update.zig").update_android_metadata;
 
 const add_imports = @import("build/add_imports.zig").add_imports;
+const generate_libc_txt = @import("build/add_imports.zig").generate_libc_txt;
 const FindNDK = @import("build/add_imports.zig").FindNDK;
 //const generate_dictionary = @import("src/build/generate_dictionary.zig").generate_dictionary;
