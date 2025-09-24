@@ -27,9 +27,12 @@ var heading: *Element = undefined;
 
 /// Study all forms of a specific lexeme
 pub fn study_by_form(display: *Display, called_lexeme: *praxis.Lexeme, from_caller: ac.Screen) error{OutOfMemory}!void {
+    const ctx = ac.app_context.?;
+    const allocator = ctx.allocator;
+
     called_by = from_caller;
     lexeme = called_lexeme;
-    ac.app_context.?.word_lexeme = lexeme;
+    ctx.word_lexeme = lexeme;
     list = null;
     button_bar_spacer.visible = .hidden;
     edit_button.visible = .hidden;
@@ -43,17 +46,17 @@ pub fn study_by_form(display: *Display, called_lexeme: *praxis.Lexeme, from_call
     checkboxes.load_preferences();
 
     // Only show filter options that are valid for these word forms
-    try ac.app_context.?.parsing_quiz.setup_with_lexeme(called_lexeme);
-    checkboxes.update_statistics(ac.app_context.?.parsing_quiz.all_forms.items);
+    try ctx.parsing_quiz.setup_with_lexeme(called_lexeme);
+    checkboxes.update_statistics(ctx.parsing_quiz.all_forms.items);
 
     debug("parsing picker for {s}", .{called_lexeme.word});
-    try heading.set_text(display, "", false);
-    try heading.set_text(display, called_lexeme.word, false);
-    try help_line.set_text(display, "", false);
+    try heading.set_text(allocator, display, "", false);
+    try heading.set_text(allocator, display, called_lexeme.word, false);
+    try help_line.set_text(allocator, display, "", false);
     if (new_help_line(display, "Choose which forms of {s} to study.", .{called_lexeme.word})) {
-        try help_line.set_text(display, help_text, false);
+        try help_line.set_text(allocator, display, help_text, false);
     } else |_| {
-        try help_line.set_text(display, "Choose which forms to study.", false);
+        try help_line.set_text(allocator, display, "Choose which forms to study.", false);
     }
     help_line.visible = .hidden;
 
@@ -64,6 +67,8 @@ pub fn study_by_form(display: *Display, called_lexeme: *praxis.Lexeme, from_call
 
 /// Study all forms of lexemes in a word set.
 pub fn study_by_list(display: *Display, study_list: *WordSet, from_caller: ac.Screen) error{OutOfMemory}!void {
+    const allocator = ac.app_context.?.allocator;
+
     called_by = from_caller;
     list = study_list;
     ac.app_context.?.word_lexeme = null;
@@ -84,8 +89,8 @@ pub fn study_by_list(display: *Display, study_list: *WordSet, from_caller: ac.Sc
     checkboxes.update_statistics(try study_list.study_forms());
 
     debug("parsing picker for {s}", .{study_list.name.items});
-    try heading.set_text(display, "", false);
-    try heading.set_text(display, study_list.name.items, false);
+    try heading.set_text(allocator, display, "", false);
+    try heading.set_text(allocator, display, study_list.name.items, false);
     help_line.visible = .hidden;
 
     try refresh_menu(display);
@@ -155,10 +160,11 @@ pub fn deinit() void {
 
 pub fn init(context: *AppContext) !void {
     var display = context.display;
+    const allocator = context.allocator;
 
-    panel = try display.root.add(try engine.create_panel(
+    panel = try display.root.add(allocator, try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "parsing.setup",
             .rect = .{ .x = 0, .y = 0 },
@@ -172,11 +178,11 @@ pub fn init(context: *AppContext) !void {
         },
     ));
 
-    back_button = try display.add_back_button(panel, go_back);
+    back_button = try display.add_back_button(allocator, panel, go_back);
 
-    heading = try panel.add(try engine.create_label(
+    heading = try panel.add(allocator, try engine.create_label(
+        allocator,
         display,
-        "",
         .{
             .name = "parsing.setup.word",
             .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
@@ -192,8 +198,8 @@ pub fn init(context: *AppContext) !void {
     heading.pad.top = 30;
 
     scroller = try engine.create_panel(
+        allocator,
         context.display,
-        "",
         .{
             .name = "scroll.panel",
             .layout = .{ .x = .grows, .y = .shrinks },
@@ -212,11 +218,11 @@ pub fn init(context: *AppContext) !void {
             .on_resized = handle_resize,
         },
     );
-    try panel.add_element(scroller);
+    try panel.add_element(allocator, scroller);
 
     help_line = try engine.create_label(
+        allocator,
         display,
-        "",
         .{
             .name = "parsing.setup.heading",
             .rect = .{ .width = 500, .height = 20 },
@@ -229,9 +235,10 @@ pub fn init(context: *AppContext) !void {
             } },
         },
     );
-    try scroller.add_element(help_line);
+    try scroller.add_element(allocator, help_line);
 
-    try scroller.add_element(try engine.create_expander(
+    try scroller.add_element(allocator, try engine.create_expander(
+        allocator,
         display,
         .{
             .name = "top.expander",
@@ -243,25 +250,21 @@ pub fn init(context: *AppContext) !void {
     ));
 
     {
-        noun_panel = try engine.create_panel(
-            display,
-            "white rounded rect",
-            .{
-                .name = "noun.config.panel",
-                .rect = .{ .width = 500, .height = 30 },
-                .layout = .{ .x = .grows, .y = .shrinks },
-                .child_align = .{ .x = .centre },
-                .pad = .{ .top = 20, .bottom = 20 },
-                .minimum = .{ .width = 500, .height = 30 },
-                .maximum = .{ .width = 1000 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
-            },
-        );
-        try scroller.add_element(noun_panel);
+        noun_panel = try scroller.add_alloc(allocator, display, .{
+            .name = "noun.config.panel",
+            .background_texture_name = "white rounded rect",
+            .rect = .{ .width = 500, .height = 30 },
+            .layout = .{ .x = .grows, .y = .shrinks },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .top = 20, .bottom = 20 },
+            .minimum = .{ .width = 500, .height = 30 },
+            .maximum = .{ .width = 1000 },
+            .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
+        });
 
         checkboxes.nominative_accusative = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.na",
                 .rect = .{ .width = 600, .height = 20 },
@@ -274,11 +277,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try noun_panel.add_element(checkboxes.nominative_accusative);
+        try noun_panel.add_element(allocator, checkboxes.nominative_accusative);
 
-        checkboxes.genitive_dative = try noun_panel.add(try engine.create_checkbox(
+        checkboxes.genitive_dative = try noun_panel.add(allocator, try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.gd",
                 .rect = .{ .width = 600, .height = 20 },
@@ -293,9 +296,9 @@ pub fn init(context: *AppContext) !void {
             },
         ));
 
-        checkboxes.third_declension = try noun_panel.add(try engine.create_checkbox(
+        checkboxes.third_declension = try noun_panel.add(allocator, try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.third",
                 .layout = .{ .y = .shrinks, .x = .grows },
@@ -310,9 +313,9 @@ pub fn init(context: *AppContext) !void {
         ));
     }
 
-    noun_verb_spacer = try scroller.add(try engine.create_panel(
+    noun_verb_spacer = try scroller.add(allocator, try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "noun_verb_spacer",
             .rect = .{ .width = 20, .height = 20 },
@@ -324,10 +327,11 @@ pub fn init(context: *AppContext) !void {
 
     {
         verb_panel = try engine.create_panel(
+            allocator,
             display,
-            "white rounded rect",
             .{
                 .name = "verb.config.panel",
+                .background_texture_name = "white rounded rect",
                 .layout = .{ .x = .grows, .y = .shrinks },
                 .child_align = .{ .x = .centre },
                 .pad = .{ .top = 20, .bottom = 20 },
@@ -337,8 +341,8 @@ pub fn init(context: *AppContext) !void {
             },
         );
         checkboxes.present_future = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.pf",
                 .rect = .{ .width = 600, .height = 20 },
@@ -351,11 +355,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try verb_panel.add_element(checkboxes.present_future);
+        try verb_panel.add_element(allocator, checkboxes.present_future);
 
         checkboxes.imperfect = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.impf",
                 .layout = .{ .y = .shrinks, .x = .grows },
@@ -367,11 +371,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try verb_panel.add_element(checkboxes.imperfect);
+        try verb_panel.add_element(allocator, checkboxes.imperfect);
 
         checkboxes.aorist = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.aor",
                 .rect = .{ .width = 600, .height = 20 },
@@ -384,11 +388,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try verb_panel.add_element(checkboxes.aorist);
+        try verb_panel.add_element(allocator, checkboxes.aorist);
 
         checkboxes.perfect_pluperfect = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.pfplpf",
                 .rect = .{ .width = 600, .height = 20 },
@@ -401,11 +405,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try verb_panel.add_element(checkboxes.perfect_pluperfect);
+        try verb_panel.add_element(allocator, checkboxes.perfect_pluperfect);
 
         checkboxes.middle_passive_spacer = try engine.create_panel(
+            allocator,
             display,
-            "",
             .{
                 .name = "spacer",
                 .rect = .{ .width = 20, .height = 20 },
@@ -414,11 +418,11 @@ pub fn init(context: *AppContext) !void {
                 .type = .{ .panel = .{} },
             },
         );
-        try verb_panel.add_element(checkboxes.middle_passive_spacer);
+        try verb_panel.add_element(allocator, checkboxes.middle_passive_spacer);
 
         checkboxes.middle_passive = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.midpsv",
                 .rect = .{ .width = 600, .height = 20 },
@@ -431,10 +435,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try verb_panel.add_element(checkboxes.middle_passive);
-        try scroller.add_element(verb_panel);
+        try verb_panel.add_element(allocator, checkboxes.middle_passive);
+        try scroller.add_element(allocator, verb_panel);
 
-        try scroller.add_element(try engine.create_expander(
+        try scroller.add_element(allocator, try engine.create_expander(
+            allocator,
             display,
             .{
                 .name = "middle.expander",
@@ -446,8 +451,8 @@ pub fn init(context: *AppContext) !void {
         ));
 
         checkboxes.indicative = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.indicative",
                 .rect = .{ .width = 600, .height = 20 },
@@ -460,11 +465,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try scroller.add_element(checkboxes.indicative);
+        try scroller.add_element(allocator, checkboxes.indicative);
 
         checkboxes.participles = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.ptcp",
                 .rect = .{ .width = 600, .height = 20 },
@@ -477,11 +482,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try scroller.add_element(checkboxes.participles);
+        try scroller.add_element(allocator, checkboxes.participles);
 
         checkboxes.subjunctive = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.sbj",
                 .rect = .{ .width = 600, .height = 20 },
@@ -494,11 +499,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try scroller.add_element(checkboxes.subjunctive);
+        try scroller.add_element(allocator, checkboxes.subjunctive);
 
         checkboxes.infinitive = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.inf",
                 .rect = .{ .width = 600, .height = 20 },
@@ -511,11 +516,11 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try scroller.add_element(checkboxes.infinitive);
+        try scroller.add_element(allocator, checkboxes.infinitive);
 
         checkboxes.imperative = try engine.create_checkbox(
+            allocator,
             display,
-            "",
             .{
                 .name = "include.impv",
                 .rect = .{ .width = 600, .height = 20 },
@@ -528,14 +533,14 @@ pub fn init(context: *AppContext) !void {
                 } },
             },
         );
-        try scroller.add_element(checkboxes.imperative);
+        try scroller.add_element(allocator, checkboxes.imperative);
 
-        _ = try display.add_spacer(scroller, 20);
+        _ = try display.add_spacer(allocator, scroller, 20);
     }
 
     counter = try engine.create_label(
+        allocator,
         display,
-        "",
         .{
             .name = "filter.count",
             .rect = .{ .width = 500, .height = 50 },
@@ -550,12 +555,12 @@ pub fn init(context: *AppContext) !void {
             } },
         },
     );
-    try scroller.add_element(counter);
+    try scroller.add_element(allocator, counter);
 
     {
-        var wrapper = try scroller.add(try engine.create_panel(
+        var wrapper = try scroller.add(allocator, try engine.create_panel(
+            allocator,
             display,
-            "",
             .{
                 .name = "start.parsing.panel",
                 .layout = .{ .x = .grows, .y = .shrinks },
@@ -569,11 +574,12 @@ pub fn init(context: *AppContext) !void {
             },
         ));
 
-        button_bar = try wrapper.add(try engine.create_panel(
+        button_bar = try wrapper.add(allocator, try engine.create_panel(
+            allocator,
             display,
-            "white rounded rect",
             .{
                 .name = "start.parsing.panel",
+                .background_texture_name = "white rounded rect",
                 .layout = .{ .x = .shrinks, .y = .shrinks },
                 .child_align = .{ .x = .centre },
                 .pad = .{ .left = 10, .right = 30, .top = 20, .bottom = 20 },
@@ -587,106 +593,84 @@ pub fn init(context: *AppContext) !void {
             },
         ));
 
-        edit_button = try button_bar.add(try engine.create_button(
-            display,
-            "edit-list-button",
-            "edit-list-button",
-            "edit-list-button",
-            .{
-                .name = "list.edit.button",
-                .minimum = .{ .width = 10, .height = 15 },
-                .pad = .{ .left = ICON_PAD, .right = ICON_PAD / 2, .top = ICON_PAD, .bottom = ICON_PAD },
-                .child_align = .{ .x = .start, .y = .start },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-                .type = .{
-                    .button = .{
-                        .text = "Edit",
-                        .on_click = show_list_editor,
-                        .icon_size = .{ .x = 80, .y = 80 },
-                        .spacing = 15,
-                    },
+        edit_button = try button_bar.add_alloc(allocator, display, .{
+            .name = "list.edit.button",
+            .minimum = .{ .width = 10, .height = 15 },
+            .pad = .{ .left = ICON_PAD, .right = ICON_PAD / 2, .top = ICON_PAD, .bottom = ICON_PAD },
+            .child_align = .{ .x = .start, .y = .start },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .type = .{
+                .button = .{
+                    .icon_default_name = "edit-list-button",
+                    .icon_hover_name = "edit-list-button",
+                    .icon_pressed_name = "edit-list-button",
+                    .text = "Edit",
+                    .on_click = show_list_editor,
+                    .icon_size = .{ .x = 80, .y = 80 },
+                    .spacing = 15,
                 },
             },
-            "",
-            "",
-            "",
-        ));
+        });
 
-        delete_button = try button_bar.add(try engine.create_button(
-            display,
-            "delete list button",
-            "delete list button",
-            "delete list button",
-            .{
-                .name = "delete.button",
-                .minimum = .{ .width = 10, .height = 15 },
-                .pad = .{ .left = ICON_PAD / 2, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-                .type = .{
-                    .button = .{
-                        .text = "Delete",
-                        .on_click = show_list_delete,
-                        .icon_size = .{ .x = 80, .y = 80 },
-                        .spacing = 15,
-                    },
+        delete_button = try button_bar.add_alloc(allocator, display, .{
+            .name = "delete.button",
+            .minimum = .{ .width = 10, .height = 15 },
+            .pad = .{ .left = ICON_PAD / 2, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .type = .{
+                .button = .{
+                    .icon_default_name = "delete list button",
+                    .icon_hover_name = "delete list button",
+                    .icon_pressed_name = "delete list button",
+                    .text = "Delete",
+                    .on_click = show_list_delete,
+                    .icon_size = .{ .x = 80, .y = 80 },
+                    .spacing = 15,
                 },
             },
-            "",
-            "",
-            "",
-        ));
+        });
 
-        button_bar_spacer = try button_bar.add(try engine.create_panel(
-            display,
-            "",
-            .{
-                .name = "button.spacer",
-                .rect = .{ .width = 30, .height = 20 },
-                .minimum = .{ .width = 30, .height = 20 },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-                .type = .{ .panel = .{} },
-            },
-        ));
+        button_bar_spacer = try button_bar.add_alloc(allocator, display, .{
+            .name = "button.spacer",
+            .rect = .{ .width = 30, .height = 20 },
+            .minimum = .{ .width = 30, .height = 20 },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .type = .{ .panel = .{} },
+        });
 
-        start_button = try button_bar.add(try engine.create_button(
-            display,
-            "parsing button",
-            "parsing button",
-            "parsing button",
-            .{
-                .name = "start.button",
-                .rect = .{ .x = 0, .y = 0, .width = 10, .height = 15 },
-                .minimum = .{ .width = 10, .height = 15 },
-                .pad = .{ .left = 30, .right = 30, .top = 30, .bottom = 30 },
-                .child_align = .{ .x = .start, .y = .start },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-                .type = .{
-                    .button = .{
-                        .text = "Practice",
-                        .on_click = show_parsing_card,
-                        .icon_size = .{ .x = 80, .y = 80 },
-                        .spacing = 20,
-                    },
+        start_button = try button_bar.add_alloc(allocator, display, .{
+            .name = "start.button",
+            .rect = .{ .x = 0, .y = 0, .width = 10, .height = 15 },
+            .minimum = .{ .width = 10, .height = 15 },
+            .pad = .{ .left = 30, .right = 30, .top = 30, .bottom = 30 },
+            .child_align = .{ .x = .start, .y = .start },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .background_texture_name = "white rounded rect",
+            .type = .{
+                .button = .{
+                    .icon_default_name = "parsing button",
+                    .icon_pressed_name = "parsing button",
+                    .icon_hover_name = "parsing button",
+                    .background_hover_name = "white rounded rect",
+                    .background_pressed_name = "white rounded rect",
+                    .text = "Practice",
+                    .on_click = show_parsing_card,
+                    .icon_size = .{ .x = 80, .y = 80 },
+                    .spacing = 20,
                 },
             },
-            "white rounded rect",
-            "white rounded rect",
-            "white rounded rect",
-        ));
+        });
     }
 
-    try scroller.add_element(try engine.create_expander(
-        display,
-        .{
-            .name = "bottom.expander",
-            .rect = .{ .width = 100, .height = 5 },
-            .minimum = .{ .width = 100, .height = 5 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 0.7 } },
-        },
-    ));
+    _ = try scroller.add_alloc(allocator, display, .{
+        .name = "bottom.expander",
+        .rect = .{ .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 0.7 } },
+    });
 
-    _ = try display.add_spacer(scroller, 70);
+    _ = try display.add_spacer(allocator, scroller, 70);
 }
 
 pub fn go_back(display: *Display, element: *Element) std.mem.Allocator.Error!void {
@@ -813,16 +797,17 @@ fn is_visible(visible: bool) engine.Visibility {
 }
 
 pub fn update_counter_text(display: *Display) void {
+    const allocator = ac.app_context.?.allocator;
     const count = ac.app_context.?.parsing_quiz.total_cards;
     if (count == 0) {
-        counter.set_text(display, "No word forms.", false) catch {};
+        counter.set_text(allocator, display, "No word forms.", false) catch {};
     } else if (count == 1) {
-        counter.set_text(display, "1 word form.", false) catch {};
+        counter.set_text(allocator, display, "1 word form.", false) catch {};
     } else {
         if (new_count_line(display, "{d} forms", .{count})) {
-            counter.set_text(display, count_text, false) catch {};
+            counter.set_text(allocator, display, count_text, false) catch {};
         } else |_| {
-            counter.set_text(display, "", false) catch {};
+            counter.set_text(allocator, display, "", false) catch {};
         }
     }
 }

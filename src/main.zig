@@ -33,7 +33,7 @@ pub fn startup(dev_resource_repo: []const u8, allocator: Allocator, gui_flags: u
     defer app.app_context.?.destroy();
     try app.app_context.?.display.initial_draw();
     try app.app_context.?.setup_screens();
-    try app.app_context.?.display.main();
+    try app.app_context.?.display.main(allocator);
 }
 
 pub const std_options: std.Options = .{

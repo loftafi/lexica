@@ -8,9 +8,10 @@ var list_name_help: *Element = undefined;
 const ICON_PAD = 30;
 
 pub fn show(display: *Display, _: *Element) error{OutOfMemory}!void {
+    const allocator = ac.app_context.?.allocator;
     const list = ParsingSetupScreen.list.?;
-    try heading.set_text(display, "", false);
-    try heading.set_text(display, list.name.items, false);
+    try heading.set_text(allocator, display, "", false);
+    try heading.set_text(allocator, display, list.name.items, false);
     display.choose_panel("delete.list.screen");
 }
 
@@ -18,34 +19,31 @@ pub fn deinit() void {
     //
 }
 
-pub fn init(context: *AppContext) error{ OutOfMemory, ResourceNotFound, ResourceReadError, UnknownImageFormat }!void {
+pub fn init(context: *AppContext) (error{ OutOfMemory, ResourceNotFound, ResourceReadError, UnknownImageFormat } || ResourceErrors)!void {
     var display = context.display;
+    const allocator = context.allocator;
 
-    panel = try engine.create_panel(
+    panel = try display.root.add_alloc(allocator, display, .{
+        .name = "delete.list.screen",
+        .rect = .{ .x = 0, .y = 0 },
+        .layout = .{ .x = .grows, .y = .grows },
+        .child_align = .{ .x = .centre, .y = .centre },
+        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
+        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .type = .{ .panel = .{
+            .direction = .top_to_bottom,
+            .spacing = 35,
+        } },
+        .visible = .hidden,
+        .on_resized = handle_resize,
+    });
+
+    _ = try display.add_back_button(allocator, panel, go_back);
+
+    heading = try panel.add(allocator, try engine.create_label(
+        allocator,
         display,
-        "",
-        .{
-            .name = "delete.list.screen",
-            .rect = .{ .x = 0, .y = 0 },
-            .layout = .{ .x = .grows, .y = .grows },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-            .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-            .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-            .type = .{ .panel = .{
-                .direction = .top_to_bottom,
-                .spacing = 35,
-            } },
-            .visible = .hidden,
-            .on_resized = handle_resize,
-        },
-    );
-
-    _ = try display.add_back_button(panel, go_back);
-
-    heading = try panel.add(try engine.create_label(
-        display,
-        "",
         .{
             .name = "delete.list.heading",
             .layout = .{ .y = .shrinks, .x = .grows },
@@ -55,14 +53,13 @@ pub fn init(context: *AppContext) error{ OutOfMemory, ResourceNotFound, Resource
                 .text_size = .heading,
                 .text_colour = .tinted,
             } },
+            .pad = .{ .top = 30 },
         },
     ));
-    heading.pad.top = 30;
-    heading.pad.bottom = 0;
 
-    list_name_help = try panel.add(try engine.create_label(
+    list_name_help = try panel.add(allocator, try engine.create_label(
+        allocator,
         context.display,
-        "",
         .{
             .name = "list_name",
             .layout = .{ .x = .grows },
@@ -75,8 +72,8 @@ pub fn init(context: *AppContext) error{ OutOfMemory, ResourceNotFound, Resource
     ));
 
     var button_bar = try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "delete_list_row",
             .layout = .{ .x = .grows, .y = .shrinks },
@@ -89,30 +86,25 @@ pub fn init(context: *AppContext) error{ OutOfMemory, ResourceNotFound, Resource
             } },
         },
     );
-    try panel.add_element(button_bar);
+    try panel.add_element(allocator, button_bar);
 
-    delete_button = try button_bar.add(try engine.create_button(
-        display,
-        "edit list button",
-        "edit list button",
-        "edit list button",
-        .{
-            .name = "delete.word.set.button",
-            .minimum = .{ .width = 10, .height = 15 },
-            .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .button = .{
-                .text = "Delete Word Set",
-                .on_click = delete_list,
-                .spacing = 20,
-            } },
-        },
-        "white rounded rect2",
-        "white rounded rect2",
-        "white rounded rect2",
-    ));
-
-    try display.add_element(panel);
+    delete_button = try button_bar.add_alloc(allocator, display, .{
+        .name = "delete.word.set.button",
+        .minimum = .{ .width = 10, .height = 15 },
+        .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .button = .{
+            .text = "Delete Word Set",
+            .on_click = delete_list,
+            .spacing = 20,
+            .icon_default_name = "edit list button",
+            .icon_pressed_name = "edit list button",
+            .icon_hover_name = "edit list button",
+            .background_default_name = "white rounded rect2",
+            .background_pressed_name = "white rounded rect2",
+            .background_hover_name = "white rounded rect2",
+        } },
+    });
 }
 
 fn go_back(display: *Display, element: *Element) error{OutOfMemory}!void {
@@ -162,6 +154,7 @@ const Display = engine.Display;
 const err = engine.err;
 const info = engine.info;
 const ac = @import("app_context.zig");
+const ResourceErrors = @import("resources").Resources.Error;
 const AppContext = ac.AppContext;
 const Lists = @import("lists.zig");
 const ParsingMenuScreen = @import("screen_parsing_menu.zig");
