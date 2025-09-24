@@ -16,123 +16,100 @@ pub fn show(display: *Display, _: *Element) std.mem.Allocator.Error!void {
 
 pub fn init(context: *AppContext) !void {
     var display = context.display;
-    panel = try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "license.screen",
-            .rect = .{ .x = 0, .y = 0 },
-            .layout = .{ .x = .grows, .y = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-            .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-            .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-            .visible = .hidden,
-            .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
-        },
-    );
+    const allocator = context.allocator;
 
-    back_button = try display.add_back_button(panel, close_me);
+    panel = try display.root.add_alloc(allocator, display, .{
+        .name = "license.screen",
+        .rect = .{ .x = 0, .y = 0 },
+        .layout = .{ .x = .grows, .y = .grows },
+        .child_align = .{ .x = .centre, .y = .start },
+        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
+        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .visible = .hidden,
+        .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
+    });
 
-    var heading = try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "licenses_heading",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "Resources",
-                .text_size = .heading,
-                .text_colour = .tinted,
-            } },
-        },
-    );
-    try panel.add_element(heading);
-    heading.pad.top = 30;
+    back_button = try display.add_back_button(allocator, panel, close_me);
 
-    _ = try display.add_spacer(panel, 60);
+    _ = try panel.add_alloc(allocator, display, .{
+        .name = "licenses_heading",
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Resources",
+            .text_size = .heading,
+            .text_colour = .tinted,
+        } },
+        .pad = .{ .top = 30 },
+    });
 
-    scroller = try engine.create_panel(
-        context.display,
-        "",
-        .{
-            .name = "scroll.panel",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .minimum = .{ .width = 600, .height = 500 },
-            .type = .{
-                .panel = .{
-                    .scrollable = .{
-                        .scroll = .{ .x = false, .y = true },
-                        .size = .{ .width = 600, .height = 600 },
-                    },
-                    .direction = .top_to_bottom,
-                    .spacing = 2,
+    _ = try display.add_spacer(allocator, panel, 60);
+
+    scroller = try panel.add_alloc(allocator, context.display, .{
+        .name = "scroll.panel",
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .minimum = .{ .width = 600, .height = 500 },
+        .type = .{
+            .panel = .{
+                .scrollable = .{
+                    .scroll = .{ .x = false, .y = true },
+                    .size = .{ .width = 600, .height = 600 },
                 },
+                .direction = .top_to_bottom,
+                .spacing = 2,
             },
-            .on_resized = vertical_scroller_resize,
         },
-    );
-    try panel.add_element(scroller);
+        .on_resized = vertical_scroller_resize,
+    });
 
-    try display.add_paragraph(scroller, .normal, "p1", "To support the goal that these resources should be available free of charge and restriction. This app only uses or supports components and resources that are available under a public domain or comparable license (i.e. MIT, CC0, ZLIB).");
-    _ = try display.add_spacer(scroller, 60);
+    try display.add_paragraph(allocator, scroller, .normal, "p1", "To support the goal that these resources should be available free of charge and restriction. This app only uses or supports components and resources that are available under a public domain or comparable license (i.e. MIT, CC0, ZLIB).");
+    _ = try display.add_spacer(allocator, scroller, 60);
 
-    try display.add_paragraph(scroller, .normal, "p2", "Koine Greek glosses are public domain. They are a combination of public domain sources and original work of the author.");
-    _ = try display.add_spacer(scroller, 30);
+    try display.add_paragraph(allocator, scroller, .normal, "p2", "Koine Greek glosses are public domain. They are a combination of public domain sources and original work of the author.");
+    _ = try display.add_spacer(allocator, scroller, 30);
 
-    try display.add_paragraph(scroller, .normal, "p3", "Hand and computer generated parsing data is combined with the public domain Robinson and Pierpoint Byzantine text.");
-    try scroller.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "byz.link",
-            .layout = .{ .x = .grows },
-            .type = .{ .label = .{
-                .text = "Robinson Pierpoint Text",
-                .text_size = .small,
-                .text_colour = .tinted,
-                .on_click = show_byz_screen,
-            } },
-        },
-    ));
-    _ = try display.add_spacer(scroller, 30);
+    try display.add_paragraph(allocator, scroller, .normal, "p3", "Hand and computer generated parsing data is combined with the public domain Robinson and Pierpoint Byzantine text.");
 
-    try display.add_paragraph(scroller, .normal, "p4", "NotoSans, and NotoSansTC font used under the SIL Open font license.");
-    try scroller.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "noto.link",
-            .layout = .{ .x = .grows },
-            .type = .{ .label = .{
-                .text = "Noto Sans and Noto Sans TC",
-                .text_size = .small,
-                .text_colour = .tinted,
-                .on_click = show_noto_screen,
-            } },
-        },
-    ));
-    _ = try display.add_spacer(scroller, 30);
+    _ = try scroller.add_alloc(allocator, display, .{
+        .name = "byz.link",
+        .layout = .{ .x = .grows },
+        .type = .{ .label = .{
+            .text = "Robinson Pierpoint Text",
+            .text_size = .small,
+            .text_colour = .tinted,
+            .on_click = show_byz_screen,
+        } },
+    });
 
-    try display.add_paragraph(scroller, .normal, "p5", "SDL3 is used under the zlib license.");
-    try scroller.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "sdl.link",
-            .layout = .{ .x = .grows },
-            .type = .{ .label = .{
-                .text = "SDL 3.0 License",
-                .text_size = .small,
-                .text_colour = .tinted,
-                .on_click = show_sdl_screen,
-            } },
-        },
-    ));
+    _ = try display.add_spacer(allocator, scroller, 30);
 
-    try display.add_element(panel);
+    try display.add_paragraph(allocator, scroller, .normal, "p4", "NotoSans, and NotoSansTC font used under the SIL Open font license.");
+
+    _ = try scroller.add_alloc(allocator, display, .{
+        .name = "noto.link",
+        .layout = .{ .x = .grows },
+        .type = .{ .label = .{
+            .text = "Noto Sans and Noto Sans TC",
+            .text_size = .small,
+            .text_colour = .tinted,
+            .on_click = show_noto_screen,
+        } },
+    });
+    _ = try display.add_spacer(allocator, scroller, 30);
+
+    try display.add_paragraph(allocator, scroller, .normal, "p5", "SDL3 is used under the zlib license.");
+    _ = try scroller.add_alloc(allocator, display, .{
+        .name = "sdl.link",
+        .layout = .{ .x = .grows },
+        .type = .{ .label = .{
+            .text = "SDL 3.0 License",
+            .text_size = .small,
+            .text_colour = .tinted,
+            .on_click = show_sdl_screen,
+        } },
+    });
 }
 
 pub fn deinit() void {

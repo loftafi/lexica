@@ -21,31 +21,28 @@ pub fn deinit() void {
     //
 }
 
-pub fn init(context: *AppContext) error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError }!void {
+pub fn init(context: *AppContext) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || ResourcesError)!void {
     var display = context.display;
+    const allocator = context.allocator;
 
-    panel = try display.root.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "parsing.menu",
-            .visible = .hidden,
-            .rect = .{ .x = 0, .y = 0 },
-            .layout = .{ .x = .grows, .y = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-            .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-            .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-            .type = .{ .panel = .{
-                .direction = .top_to_bottom,
-                .spacing = 5,
-            } },
-        },
-    ));
+    panel = try display.root.add_alloc(allocator, display, .{
+        .name = "parsing.menu",
+        .visible = .hidden,
+        .rect = .{ .x = 0, .y = 0 },
+        .layout = .{ .x = .grows, .y = .grows },
+        .child_align = .{ .x = .centre, .y = .start },
+        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
+        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .type = .{ .panel = .{
+            .direction = .top_to_bottom,
+            .spacing = 5,
+        } },
+    });
 
     const title = try engine.create_label(
+        allocator,
         display,
-        "",
         .{
             .name = "parsing.heading",
             .minimum = .{ .width = 500, .height = 10 },
@@ -60,11 +57,11 @@ pub fn init(context: *AppContext) error{ OutOfMemory, UnknownImageFormat, Resour
     );
     title.pad.top = 30;
     title.pad.bottom = 30;
-    try panel.add_element(title);
+    try panel.add_element(allocator, title);
 
     scroller = try engine.create_panel(
+        allocator,
         context.display,
-        "",
         .{
             .name = "scroll.panel",
             .rect = .{ .x = 0, .y = 0 },
@@ -84,9 +81,10 @@ pub fn init(context: *AppContext) error{ OutOfMemory, UnknownImageFormat, Resour
             .on_resized = vertical_scroller_resize,
         },
     );
-    try panel.add_element(scroller);
+    try panel.add_element(allocator, scroller);
 
-    try scroller.add_element(try engine.create_expander(
+    try scroller.add_element(allocator, try engine.create_expander(
+        allocator,
         display,
         .{
             .name = "top.expander",
@@ -97,9 +95,9 @@ pub fn init(context: *AppContext) error{ OutOfMemory, UnknownImageFormat, Resour
         },
     ));
 
-    try scroller.add_element(try engine.create_label(
+    try scroller.add_element(allocator, try engine.create_label(
+        allocator,
         display,
-        "",
         .{
             .name = "parsing instructions",
             .layout = .{ .x = .grows, .y = .shrinks },
@@ -117,99 +115,84 @@ pub fn init(context: *AppContext) error{ OutOfMemory, UnknownImageFormat, Resour
     try make_button_bar(display, scroller, "contract.buttons", &[_][]const u8{ "ἀγαπάω", "ποιέω", "πληρόω" });
     try make_button_bar(display, scroller, "other.buttons", &[_][]const u8{ "ῥύομαι", "δίδωμι", "ἐγώ", "εἰμί" });
 
-    _ = try display.add_spacer(scroller, 20);
+    _ = try display.add_spacer(allocator, scroller, 20);
 
     try make_button_bar(display, scroller, "masculine.buttons", &[_][]const u8{ "ἄνθρωπος", "λόγος", "θεός" });
     try make_button_bar(display, scroller, "feminine.buttons", &[_][]const u8{ "γραφή", "ἠμέρα", "δόξα" });
     try make_button_bar(display, scroller, "neuter.buttons", &[_][]const u8{ "βιβλίον", "ἔργον", "τέκνον" });
 
-    _ = try display.add_spacer(scroller, 20);
+    _ = try display.add_spacer(allocator, scroller, 20);
 
     try make_button_bar(display, scroller, "parsing.other", &[_][]const u8{ "βασιλεύς", "πόλις", "σάρξ", "πᾶς" });
 
-    try scroller.add_element(try engine.create_expander(
-        display,
-        .{
-            .name = "bottom.expander",
-            .rect = .{ .width = 100, .height = 20 },
-            .minimum = .{ .width = 100, .height = 20 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 1.2 } },
-        },
-    ));
+    _ = try scroller.add_alloc(allocator, display, .{
+        .name = "bottom.expander",
+        .rect = .{ .width = 100, .height = 20 },
+        .minimum = .{ .width = 100, .height = 20 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1.2 } },
+    });
 
-    try scroller.add_element(try engine.create_expander(
-        display,
-        .{
-            .name = "bottom.pad",
-            .rect = .{ .width = 70, .height = 120 },
-            .minimum = .{ .width = 70, .height = 20 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 0 } },
-        },
-    ));
+    _ = try scroller.add_alloc(allocator, display, .{
+        .name = "bottom.pad",
+        .rect = .{ .width = 70, .height = 120 },
+        .minimum = .{ .width = 70, .height = 20 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 0 } },
+    });
 
-    info2 = try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "list.instructions",
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .minimum = .{ .width = 500, .height = 10 },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "Parsing Sets",
-                .text_size = .normal,
-                .text_colour = .tinted,
-            } },
-        },
-    );
-    info2.pad.top = 0;
-    try scroller.add_element(info2);
+    info2 = try scroller.add_alloc(allocator, display, .{
+        .name = "list.instructions",
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .minimum = .{ .width = 500, .height = 10 },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Parsing Sets",
+            .text_size = .normal,
+            .text_colour = .tinted,
+        } },
+        .pad = .{ .top = 0, .left = 0.001 },
+    });
 
-    const list_menu = try scroller.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "list_menu",
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 30, .right = 30, .top = 8, .bottom = 8 },
-            .minimum = .{ .width = 200, .height = 20 },
-            .type = .{ .panel = .{
-                .direction = .left_to_right,
-                .spacing = 22,
-            } },
-        },
-    ));
-    new_button = try list_menu.add(try engine.create_button(
-        display,
-        "new list button",
-        "new list button",
-        "new list button",
-        .{
-            .name = "new.word.list",
-            .minimum = .{ .width = 10, .height = 15 },
-            .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .button = .{
-                .text = "New Word Set",
-                .on_click = show_new_word_list,
-                .spacing = 15,
-                .icon_size = .{ .x = 40, .y = 40 },
-            } },
-        },
-        "white rounded rect2",
-        "white rounded rect2",
-        "white rounded rect2",
-    ));
+    const list_menu = try scroller.add_alloc(allocator, display, .{
+        .name = "list_menu",
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .child_align = .{ .x = .centre },
+        .pad = .{ .left = 30, .right = 30, .top = 8, .bottom = 8 },
+        .minimum = .{ .width = 200, .height = 20 },
+        .type = .{ .panel = .{
+            .direction = .left_to_right,
+            .spacing = 22,
+        } },
+    });
 
-    bottom_spacer = try context.display.add_spacer(panel, 80);
+    new_button = try list_menu.add_alloc(allocator, display, .{
+        .name = "new.word.list",
+        .minimum = .{ .width = 10, .height = 15 },
+        .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .button = .{
+            .text = "New Word Set",
+            .icon_default_name = "new list button",
+            .icon_hover_name = "new list button",
+            .icon_pressed_name = "new list button",
+            .background_default_name = "white rounded rect2",
+            .background_pressed_name = "white rounded rect2",
+            .background_hover_name = "white rounded rect2",
+            .on_click = show_new_word_list,
+            .spacing = 15,
+            .icon_size = .{ .x = 40, .y = 40 },
+        } },
+    });
+
+    bottom_spacer = try context.display.add_spacer(allocator, panel, 80);
     bottom_spacer.on_resized = MenuUI.update_bottom_spacing;
 }
 
-pub fn update_sets() error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError }!void {
-    const display = ac.app_context.?.display;
+pub fn update_sets() (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || ResourcesError)!void {
+    const ctx = ac.app_context.?;
+    const display = ctx.display;
+    const allocator = ctx.allocator;
 
     // Remove existing list items
     var list_pos: usize = 0;
@@ -235,8 +218,8 @@ pub fn update_sets() error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, R
     for (ac.app_context.?.lists.sets.items) |list| {
         // Add refreshed list items
         const item = try engine.create_label(
+            allocator,
             display,
-            "",
             .{
                 .name = "list.item",
                 .layout = .{ .x = .grows, .y = .shrinks },
@@ -250,7 +233,7 @@ pub fn update_sets() error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, R
                 } },
             },
         );
-        try scroller.insert_element(list_pos, item);
+        try scroller.insert_element(allocator, list_pos, item);
     }
     display.relayout();
 }
@@ -261,9 +244,10 @@ fn make_button_bar(
     row_name: []const u8,
     words: []const []const u8,
 ) !void {
+    const allocator = ac.app_context.?.allocator;
     var button_bar = try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = row_name,
             .layout = .{ .x = .grows, .y = .shrinks },
@@ -276,14 +260,12 @@ fn make_button_bar(
             } },
         },
     );
-    try parent.add_element(button_bar);
+    try parent.add_element(allocator, button_bar);
 
     for (words) |word| {
         const button = try engine.create_button(
+            allocator,
             display,
-            "", // No image on this button
-            "", // No image on this button
-            "", // No image on this button
             .{
                 .name = word,
                 .minimum = .{ .width = 10, .height = 15 },
@@ -292,13 +274,13 @@ fn make_button_bar(
                 .type = .{ .button = .{
                     .text = word,
                     .on_click = show_parsing_setup,
+                    .background_default_name = "white rounded rect2",
+                    .background_pressed_name = "white rounded rect2",
+                    .background_hover_name = "white rounded rect2",
                 } },
             },
-            "white rounded rect2",
-            "white rounded rect2",
-            "white rounded rect2",
         );
-        try button_bar.add_element(button);
+        try button_bar.add_element(allocator, button);
     }
 }
 
@@ -397,3 +379,4 @@ const Element = engine.Element;
 const praxis = @import("praxis");
 const Lang = praxis.Lang;
 const vertical_scroller_resize = @import("screen_search.zig").vertical_scroller_resize;
+const ResourcesError = @import("resources").Resources.Error;

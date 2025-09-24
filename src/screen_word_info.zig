@@ -31,14 +31,16 @@ var tags_buffer: ArrayList(u8) = undefined;
 
 pub fn init(context: *AppContext) !void {
     var display = context.display;
+    const allocator = context.allocator;
+
     gloss_buffer = ArrayList(u8).init(display.allocator);
     strongs_buffer = ArrayList(u8).init(display.allocator);
     tags_buffer = ArrayList(u8).init(display.allocator);
     string_buffers_i = 0;
 
-    panel = try display.root.add(try engine.create_panel(
+    panel = try display.root.add(allocator, try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "word.info",
             .rect = .{ .x = 0, .y = 0 },
@@ -55,386 +57,296 @@ pub fn init(context: *AppContext) !void {
         },
     ));
 
-    back_button = try display.add_back_button(panel, SearchScreen.show);
+    back_button = try display.add_back_button(allocator, panel, SearchScreen.show);
 
-    _ = try display.add_spacer(panel, 20);
+    _ = try display.add_spacer(allocator, panel, 20);
 
-    word_title = try panel.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "word",
-            .child_align = .{ .x = .centre },
-            .layout = .{ .x = .grows },
-            .type = .{ .label = .{
-                .text = "ἄρτος",
-                .text_size = .heading,
-                .text_colour = .tinted,
-            } },
+    word_title = try panel.add_alloc(allocator, display, .{
+        .name = "word",
+        .child_align = .{ .x = .centre },
+        .layout = .{ .x = .grows },
+        .type = .{ .label = .{
+            .text = "ἄρτος",
+            .text_size = .heading,
+            .text_colour = .tinted,
+        } },
+        .pad = .{ .top = 30, .bottom = 5 },
+    });
+
+    word_transliteration = try panel.add_alloc(allocator, display, .{
+        .name = "transliteration",
+        .child_align = .{ .x = .centre },
+        .layout = .{ .x = .grows },
+        .type = .{ .label = .{
+            .text = "artos",
+            .text_size = .normal,
+            .text_colour = .normal,
+        } },
+        .pad = .{ .top = 0, .left = 0.001 },
+    });
+
+    word_glosses = try panel.add_alloc(allocator, display, .{
+        .name = "glosses",
+        .child_align = .{ .x = .centre },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .type = .{ .label = .{
+            .text = "Bread, food.",
+            .text_size = .normal,
+            .text_colour = .normal,
+        } },
+        .pad = .{ .top = 36, .bottom = 36 },
+    });
+
+    _ = try panel.add_alloc(allocator, display, .{
+        .name = "spacer",
+        .minimum = .{ .width = 20, .height = 20 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .panel = .{} },
+    });
+
+    row_pos = try panel.add_alloc(allocator, display, .{
+        .name = "row_pos",
+        .child_align = .{ .x = .centre },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .minimum = .{ .width = 500, .height = 40 },
+        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
+    });
+
+    _ = try row_pos.add_alloc(allocator, display, .{
+        .name = "pos_label",
+        .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 80 },
+        .minimum = .{ .width = FIELD_LABEL_WIDTH },
+        .child_align = .{ .x = .end },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "Part of Speech",
+                .text_size = .normal,
+                .text_colour = .emphasised,
+            },
         },
-    ));
-    word_title.pad.top = 30;
-    word_title.pad.bottom = 5;
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
 
-    word_transliteration = try panel.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "transliteration",
-            .child_align = .{ .x = .centre },
-            .layout = .{ .x = .grows },
-            .type = .{ .label = .{
-                .text = "artos",
+    word_pos = try row_pos.add_alloc(allocator, display, .{
+        .name = "pos",
+        .rect = .{ .width = FIELD_WIDTH, .height = 40 },
+        .minimum = .{ .width = FIELD_WIDTH },
+        .child_align = .{ .x = .start },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "Verb",
                 .text_size = .normal,
                 .text_colour = .normal,
-            } },
+            },
         },
-    ));
-    word_transliteration.pad.top = 0;
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
 
-    word_glosses = try panel.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "glosses",
-            .child_align = .{ .x = .centre },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .type = .{ .label = .{
-                .text = "Bread, food.",
+    row_strongs = try panel.add_alloc(allocator, display, .{
+        .name = "row_strongs",
+        .rect = .{ .width = 20, .height = 40 },
+        .minimum = .{ .width = 200, .height = 40 },
+        .child_align = .{ .x = .centre },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
+    });
+
+    _ = try row_strongs.add_alloc(allocator, display, .{
+        .name = "strongs_label",
+        .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 40 },
+        .minimum = .{ .width = FIELD_LABEL_WIDTH },
+        .child_align = .{ .x = .end },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "Strongs",
+                .text_size = .normal,
+                .text_colour = .emphasised,
+            },
+        },
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
+
+    word_strongs = try row_strongs.add_alloc(allocator, display, .{
+        .name = "strongs",
+        .rect = .{ .width = FIELD_WIDTH, .height = 80 },
+        .minimum = .{ .width = FIELD_WIDTH },
+        .child_align = .{ .x = .start },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "",
                 .text_size = .normal,
                 .text_colour = .normal,
-            } },
-        },
-    ));
-    word_glosses.pad.top = 36;
-    word_glosses.pad.bottom = 36;
-
-    try panel.add_element(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "spacer",
-            .minimum = .{ .width = 20, .height = 20 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .panel = .{} },
-        },
-    ));
-
-    row_pos = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "row_pos",
-            .child_align = .{ .x = .centre },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .minimum = .{ .width = 500, .height = 40 },
-            .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
-        },
-    ));
-
-    const pos_label = try row_pos.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "pos_label",
-            .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 80 },
-            .minimum = .{ .width = FIELD_LABEL_WIDTH },
-            .child_align = .{ .x = .end },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .label = .{
-                    .text = "Part of Speech",
-                    .text_size = .normal,
-                    .text_colour = .emphasised,
-                },
             },
         },
-    ));
-    pos_label.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
 
-    word_pos = try row_pos.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "pos",
-            .rect = .{ .width = FIELD_WIDTH, .height = 40 },
-            .minimum = .{ .width = FIELD_WIDTH },
-            .child_align = .{ .x = .start },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .label = .{
-                    .text = "Verb",
-                    .text_size = .normal,
-                    .text_colour = .normal,
-                },
+    row_articles = try panel.add_alloc(allocator, display, .{
+        .name = "row_articles",
+        .child_align = .{ .x = .centre },
+        .minimum = .{ .width = 20, .height = 40 },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
+    });
+
+    _ = try row_articles.add_alloc(allocator, display, .{
+        .name = "articles_label",
+        .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 40 },
+        .minimum = .{ .width = FIELD_LABEL_WIDTH },
+        .child_align = .{ .x = .end },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "Articles",
+                .text_size = .normal,
+                .text_colour = .emphasised,
             },
         },
-    ));
-    word_pos.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
 
-    row_strongs = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "row_strongs",
-            .rect = .{ .width = 20, .height = 40 },
-            .minimum = .{ .width = 200, .height = 40 },
-            .child_align = .{ .x = .centre },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
-        },
-    ));
-
-    const strongs_label = try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "strongs_label",
-            .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 40 },
-            .minimum = .{ .width = FIELD_LABEL_WIDTH },
-            .child_align = .{ .x = .end },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .label = .{
-                    .text = "Strongs",
-                    .text_size = .normal,
-                    .text_colour = .emphasised,
-                },
+    word_articles = try row_articles.add_alloc(allocator, display, .{
+        .name = "articles",
+        .rect = .{ .width = FIELD_WIDTH, .height = 40 },
+        .minimum = .{ .width = FIELD_WIDTH },
+        .child_align = .{ .x = .start },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "---",
+                .text_size = .normal,
+                .text_colour = .normal,
             },
         },
-    );
-    try row_strongs.add_element(strongs_label);
-    strongs_label.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
 
-    word_strongs = try row_strongs.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "strongs",
-            .rect = .{ .width = FIELD_WIDTH, .height = 80 },
-            .minimum = .{ .width = FIELD_WIDTH },
-            .child_align = .{ .x = .start },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .label = .{
-                    .text = "",
-                    .text_size = .normal,
-                    .text_colour = .normal,
-                },
+    row_tags = try panel.add_alloc(allocator, display, .{
+        .name = "row_tags",
+        .rect = .{ .width = 20, .height = 40 },
+        .minimum = .{ .width = 200, .height = 40 },
+        .child_align = .{ .x = .centre },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
+    });
+
+    _ = try row_tags.add_alloc(allocator, display, .{
+        .name = "tags_label",
+        .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 40 },
+        .minimum = .{ .width = FIELD_LABEL_WIDTH },
+        .child_align = .{ .x = .end },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "Tags",
+                .text_size = .normal,
+                .text_colour = .emphasised,
             },
         },
-    ));
-    word_strongs.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
 
-    row_articles = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "row_articles",
-            .child_align = .{ .x = .centre },
-            .minimum = .{ .width = 20, .height = 40 },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
-        },
-    ));
-
-    const article_label = try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "articles_label",
-            .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 40 },
-            .minimum = .{ .width = FIELD_LABEL_WIDTH },
-            .child_align = .{ .x = .end },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 },
-            .type = .{
-                .label = .{
-                    .text = "Articles",
-                    .text_size = .normal,
-                    .text_colour = .emphasised,
-                },
+    word_tags = try row_tags.add_alloc(allocator, display, .{
+        .name = "tags",
+        .rect = .{ .width = FIELD_WIDTH, .height = 80 },
+        .minimum = .{ .width = FIELD_WIDTH },
+        .child_align = .{ .x = .start },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .label = .{
+                .text = "",
+                .text_size = .normal,
+                .text_colour = .normal,
             },
         },
-    );
-    try row_articles.add_element(article_label);
-    article_label.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
+        .pad = .{ .top = 0, .left = 0, .right = 0.001, .bottom = 0 },
+    });
 
-    word_articles = try row_articles.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "articles",
-            .rect = .{ .width = FIELD_WIDTH, .height = 40 },
-            .minimum = .{ .width = FIELD_WIDTH },
-            .child_align = .{ .x = .start },
-            .pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .label = .{
-                    .text = "---",
-                    .text_size = .normal,
-                    .text_colour = .normal,
-                },
+    _ = try display.add_spacer(allocator, panel, 10);
+
+    _ = try panel.add_alloc(allocator, display, .{
+        .name = "top.expander",
+        .rect = .{ .x = 0, .y = 0, .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1 } },
+    });
+
+    scroller = try panel.add_alloc(allocator, display, .{
+        .name = "parsing_table_panels",
+        .rect = .{ .width = 600, .height = 300 },
+        .minimum = .{ .width = 600, .height = 300 },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .pad = .{ .left = 40, .right = 40 },
+        .type = .{ .panel = .{
+            .direction = .left_to_right,
+            .spacing = 25,
+            .scrollable = .{
+                .scroll = .{ .x = true, .y = false },
+                .size = .{ .width = 600, .height = 300 },
             },
-        },
-    ));
-    word_articles.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
-
-    row_tags = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "row_tags",
-            .rect = .{ .width = 20, .height = 40 },
-            .minimum = .{ .width = 200, .height = 40 },
-            .child_align = .{ .x = .centre },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 20 } },
-        },
-    ));
-
-    const tags_label = try row_tags.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "tags_label",
-            .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 40 },
-            .minimum = .{ .width = FIELD_LABEL_WIDTH },
-            .child_align = .{ .x = .end },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .label = .{
-                    .text = "Tags",
-                    .text_size = .normal,
-                    .text_colour = .emphasised,
-                },
-            },
-        },
-    ));
-    tags_label.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
-
-    word_tags = try row_tags.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "tags",
-            .rect = .{ .width = FIELD_WIDTH, .height = 80 },
-            .minimum = .{ .width = FIELD_WIDTH },
-            .child_align = .{ .x = .start },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .label = .{
-                    .text = "",
-                    .text_size = .normal,
-                    .text_colour = .normal,
-                },
-            },
-        },
-    ));
-    word_tags.pad = .{ .top = 0, .left = 0, .right = 0, .bottom = 0 };
-
-    _ = try display.add_spacer(panel, 10);
-
-    try panel.add_element(try engine.create_expander(
-        display,
-        .{
-            .name = "top.expander",
-            .rect = .{ .x = 0, .y = 0, .width = 100, .height = 5 },
-            .minimum = .{ .width = 100, .height = 5 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 1 } },
-        },
-    ));
-
-    scroller = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "parsing_table_panels",
-            .rect = .{ .width = 600, .height = 300 },
-            .minimum = .{ .width = 600, .height = 300 },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .pad = .{ .left = 40, .right = 40 },
-            .type = .{ .panel = .{
-                .direction = .left_to_right,
-                .spacing = 25,
-                .scrollable = .{
-                    .scroll = .{ .x = true, .y = false },
-                    .size = .{ .width = 600, .height = 300 },
-                },
-            } },
-        },
-    ));
+        } },
+    });
 
     for (0..ac.MAX_PANEL_TABLES) |i| {
-        const parsing_panel = try create_panel_table(display, scroller);
+        const parsing_panel = try create_panel_table(allocator, display, scroller);
         ac.app_context.?.panel_tables[i] = parsing_panel;
     }
 
-    _ = try display.add_spacer(panel, 10);
+    _ = try display.add_spacer(allocator, panel, 10);
 
-    try panel.add_element(try engine.create_expander(
-        display,
-        .{
-            .name = "middle.expander",
-            .rect = .{ .width = 100, .height = 5 },
-            .minimum = .{ .width = 100, .height = 5 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 1 } },
-        },
-    ));
+    _ = try panel.add_alloc(allocator, display, .{
+        .name = "middle.expander",
+        .rect = .{ .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1 } },
+    });
 
-    var button_align = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "parsing.button.align",
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 30, .right = 30, .top = 8, .bottom = 8 },
-            .minimum = .{ .width = 500, .height = 20 },
-            .type = .{ .panel = .{
-                .direction = .left_to_right,
-                .spacing = 26,
-            } },
-        },
-    ));
+    var button_align = try panel.add_alloc(allocator, display, .{
+        .name = "parsing.button.align",
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .child_align = .{ .x = .centre },
+        .pad = .{ .left = 30, .right = 30, .top = 8, .bottom = 8 },
+        .minimum = .{ .width = 500, .height = 20 },
+        .type = .{ .panel = .{
+            .direction = .left_to_right,
+            .spacing = 26,
+        } },
+    });
 
-    practice_button = try button_align.add(try engine.create_button(
-        display,
-        "parsing button",
-        "parsing button",
-        "parsing button",
-        .{
-            .name = "start.button",
-            .pad = .{ .left = 30, .right = 30, .top = 30, .bottom = 30 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{
-                .button = .{
-                    .text = "Practice",
-                    .on_click = show_parsing_setup,
-                    .spacing = 20,
-                },
+    practice_button = try button_align.add_alloc(allocator, display, .{
+        .name = "start.button",
+        .pad = .{ .left = 30, .right = 30, .top = 30, .bottom = 30 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{
+            .button = .{
+                .icon_default_name = "parsing button",
+                .icon_hover_name = "parsing button",
+                .icon_pressed_name = "parsing button",
+                .background_default_name = "white rounded rect",
+                .background_pressed_name = "white rounded rect",
+                .background_hover_name = "white rounded rect",
+                .text = "Practice",
+                .on_click = show_parsing_setup,
+                .spacing = 20,
             },
         },
-        "white rounded rect",
-        "white rounded rect",
-        "white rounded rect",
-    ));
+    });
 
-    try panel.add_element(try engine.create_expander(
-        display,
-        .{
-            .name = "bottom.expander",
-            .rect = .{ .width = 100, .height = 5 },
-            .minimum = .{ .width = 100, .height = 5 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 1 } },
-        },
-    ));
+    _ = try panel.add_alloc(allocator, display, .{
+        .name = "bottom.expander",
+        .rect = .{ .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1 } },
+    });
 
-    _ = try display.add_spacer(panel, 80);
+    _ = try display.add_spacer(allocator, panel, 80);
 }
 
 pub fn deinit() void {
@@ -466,12 +378,13 @@ pub fn handle_resize(display: *Display, _: *Element) bool {
     return updated;
 }
 
-pub fn create_panel_table(display: *Display, parent_panel: *Element) !*Element {
+pub fn create_panel_table(allocator: Allocator, display: *Display, parent_panel: *Element) !*Element {
     var parsing_panel = try engine.create_panel(
+        allocator,
         display,
-        "white rounded rect",
         .{
             .name = "present",
+            .background_texture_name = "white rounded rect",
             .rect = .{ .x = 0, .y = 0, .width = 290, .height = 260 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .child_align = .{ .x = .centre },
@@ -482,11 +395,11 @@ pub fn create_panel_table(display: *Display, parent_panel: *Element) !*Element {
             } },
         },
     );
-    try parent_panel.add_element(parsing_panel);
+    try parent_panel.add_element(allocator, parsing_panel);
 
-    const panel_heading = try engine.create_label(
+    try parsing_panel.add_element(allocator, try engine.create_label(
+        allocator,
         display,
-        "",
         .{
             .name = "panel.heading",
             .rect = .{ .width = 270, .height = 10 },
@@ -496,17 +409,13 @@ pub fn create_panel_table(display: *Display, parent_panel: *Element) !*Element {
                 .text = "Present",
                 .text_colour = .tinted,
             } },
+            .pad = .{ .left = 2, .right = 2, .top = 0, .bottom = 0 },
         },
-    );
-    try parsing_panel.add_element(panel_heading);
-    panel_heading.pad.left = 2;
-    panel_heading.pad.right = 2;
-    panel_heading.pad.top = 0;
-    panel_heading.pad.bottom = 0;
+    ));
 
     const panel_subheading = try engine.create_label(
+        allocator,
         display,
-        "",
         .{
             .name = "panel.subheading",
             .rect = .{ .width = 270, .height = 15 },
@@ -516,22 +425,19 @@ pub fn create_panel_table(display: *Display, parent_panel: *Element) !*Element {
                 .text = "Active",
                 .text_colour = .tinted,
             } },
+            .pad = .{ .left = 2, .right = 2, .top = 0, .bottom = 0 },
         },
     );
-    try parsing_panel.add_element(panel_subheading);
-    panel_subheading.pad.left = 2;
-    panel_subheading.pad.right = 2;
-    panel_subheading.pad.top = 0;
-    panel_subheading.pad.bottom = 0;
+    try parsing_panel.add_element(allocator, panel_subheading);
 
-    _ = try display.add_spacer(parsing_panel, 15);
+    _ = try display.add_spacer(allocator, parsing_panel, 15);
 
     for (0..8) |i| {
         if (i == 3 or i == 4) {
-            _ = try display.add_spacer(parsing_panel, 15);
+            _ = try display.add_spacer(allocator, parsing_panel, 15);
         }
 
-        const row = try engine.create_panel(display, "", .{
+        const row = try engine.create_panel(allocator, display, .{
             .name = "row",
             .rect = .{ .width = 150, .height = 10 },
             .layout = .{ .x = .grows, .y = .shrinks },
@@ -541,11 +447,11 @@ pub fn create_panel_table(display: *Display, parent_panel: *Element) !*Element {
                 .spacing = 15,
             } },
         });
-        try parsing_panel.add_element(row);
+        try parsing_panel.add_element(allocator, row);
 
         const article = try engine.create_label(
+            allocator,
             display,
-            "",
             .{
                 .name = "col.article",
                 .rect = .{ .width = 70, .height = 10 },
@@ -555,17 +461,19 @@ pub fn create_panel_table(display: *Display, parent_panel: *Element) !*Element {
                 } },
                 .child_align = .{ .x = .end },
                 .layout = .{ .x = .shrinks, .y = .shrinks },
+                .pad = .{
+                    .left = 2,
+                    .right = 2,
+                    .top = display.text_height * 0.15,
+                    .bottom = display.text_height * 0.15,
+                },
             },
         );
-        try row.add_element(article);
-        article.pad.left = 2;
-        article.pad.right = 2;
-        article.pad.top = display.text_height * 0.15;
-        article.pad.bottom = display.text_height * 0.15;
+        try row.add_element(allocator, article);
 
         const form_entry = try engine.create_label(
+            allocator,
             display,
-            "",
             .{
                 .name = "col.form",
                 .rect = .{ .width = 150, .height = 0 },
@@ -574,37 +482,41 @@ pub fn create_panel_table(display: *Display, parent_panel: *Element) !*Element {
                     .text = "ἄρτος",
                 } },
                 .layout = .{ .x = .shrinks, .y = .shrinks },
+                .pad = .{
+                    .left = 0,
+                    .right = 0,
+                    .top = display.text_height * 0.15,
+                    .bottom = display.text_height * 0.15,
+                },
             },
         );
-        form_entry.pad.left = 0;
-        form_entry.pad.right = 0;
-        form_entry.pad.top = display.text_height * 0.15;
-        form_entry.pad.bottom = display.text_height * 0.15;
-        try row.add_element(form_entry);
+        try row.add_element(allocator, form_entry);
     }
     return parsing_panel;
 }
 
 pub fn show(display: *Display, lexeme: *praxis.Lexeme) Allocator.Error!void {
+    const allocator = ac.app_context.?.allocator;
+
     ac.app_context.?.word_lexeme = lexeme;
-    try word_title.set_text(display, lexeme.word, false);
+    try word_title.set_text(allocator, display, lexeme.word, false);
 
     const pos = praxis.pos_to_english(lexeme.pos);
-    try word_pos.set_text(display, pos, false);
+    try word_pos.set_text(allocator, display, pos, false);
 
     gloss_buffer.clearRetainingCapacity();
-    try word_glosses.set_text(display, "", false);
+    try word_glosses.set_text(allocator, display, "", false);
     if (lexeme.glosses_by_lang(Lang.english)) |value| {
         try value.string(gloss_buffer.writer());
     }
-    try word_glosses.set_text(display, gloss_buffer.items, false);
+    try word_glosses.set_text(allocator, display, gloss_buffer.items, false);
 
     string_buffers_i += 1;
     if (string_buffers_i >= string_buffers.len) {
         string_buffers_i = 0;
     }
     const transliterated = praxis.transliterate(lexeme.word, true, &string_buffers[string_buffers_i]) catch "";
-    try word_transliteration.set_text(display, transliterated, false);
+    try word_transliteration.set_text(allocator, display, transliterated, false);
 
     const uk = ac.app_context.?.preference.uk_order;
 
@@ -612,7 +524,7 @@ pub fn show(display: *Display, lexeme: *praxis.Lexeme) Allocator.Error!void {
 
     row_strongs.visible = .hidden;
     if (ac.app_context.?.preference.show_strongs and lexeme.strongs.items.len > 0) {
-        try word_strongs.set_text(display, "", false);
+        try word_strongs.set_text(allocator, display, "", false);
         strongs_buffer.clearRetainingCapacity();
         row_strongs.visible = .visible;
         for (lexeme.strongs.items, 0..) |strongs, i| {
@@ -623,13 +535,13 @@ pub fn show(display: *Display, lexeme: *praxis.Lexeme) Allocator.Error!void {
                 return Allocator.Error.OutOfMemory;
             };
         }
-        try word_strongs.set_text(display, strongs_buffer.items, false);
+        try word_strongs.set_text(allocator, display, strongs_buffer.items, false);
     }
 
     row_tags.visible = .hidden;
     if (lexeme.tags) |tags| {
         if (tags.len > 0) {
-            try word_tags.set_text(display, "", false);
+            try word_tags.set_text(allocator, display, "", false);
             tags_buffer.clearRetainingCapacity();
             row_tags.visible = .visible;
             for (tags, 0..) |tag, i| {
@@ -640,30 +552,30 @@ pub fn show(display: *Display, lexeme: *praxis.Lexeme) Allocator.Error!void {
                     return Allocator.Error.OutOfMemory;
                 };
             }
-            try word_tags.set_text(display, tags_buffer.items, false);
+            try word_tags.set_text(allocator, display, tags_buffer.items, false);
         }
     }
 
     switch (lexeme.article) {
         .masculine => {
             row_articles.visible = .visible;
-            try word_articles.set_text(display, "ὁ", false);
+            try word_articles.set_text(allocator, display, "ὁ", false);
         },
         .feminine => {
             row_articles.visible = .visible;
-            try word_articles.set_text(display, "ἡ", false);
+            try word_articles.set_text(allocator, display, "ἡ", false);
         },
         .neuter => {
             row_articles.visible = .visible;
-            try word_articles.set_text(display, "τό", false);
+            try word_articles.set_text(allocator, display, "τό", false);
         },
         .masculine_feminine => {
             row_articles.visible = .visible;
-            try word_articles.set_text(display, "ὁ ἡ", false);
+            try word_articles.set_text(allocator, display, "ὁ ἡ", false);
         },
         .masculine_neuter => {
             row_articles.visible = .visible;
-            try word_articles.set_text(display, "ὁ τό", false);
+            try word_articles.set_text(allocator, display, "ὁ τό", false);
         },
         else => row_articles.visible = .hidden,
     }
@@ -691,8 +603,8 @@ pub fn show(display: *Display, lexeme: *praxis.Lexeme) Allocator.Error!void {
         var current = ac.app_context.?.panel_tables[i];
         var items = current.type.panel.children.items;
         current.visible = .visible;
-        try items[HEADING].set_text(display, table.*.title, false);
-        try items[SUBHEADING].set_text(display, table.*.subtitle, false);
+        try items[HEADING].set_text(allocator, display, table.*.title, false);
+        try items[SUBHEADING].set_text(allocator, display, table.*.subtitle, false);
 
         {
             // Clear the panel
@@ -827,18 +739,20 @@ pub fn show(display: *Display, lexeme: *praxis.Lexeme) Allocator.Error!void {
 
 /// Clear row contents
 fn clear_row(display: *Display, row: *Element) error{OutOfMemory}!void {
-    try row.type.panel.children.items[0].set_text(display, "", false);
-    try row.type.panel.children.items[1].set_text(display, "", false);
+    const allocator = ac.app_context.?.allocator;
+    try row.type.panel.children.items[0].set_text(allocator, display, "", false);
+    try row.type.panel.children.items[1].set_text(allocator, display, "", false);
     row.visible = .hidden;
 }
 
 /// Set row contents
 fn set_row(display: *Display, row: *Element, article: []const u8, form: ?*praxis.Form) error{OutOfMemory}!void {
+    const allocator = ac.app_context.?.allocator;
     const show_article = article.len > 0;
     row.type.panel.children.items[0].visible = if (show_article) .visible else .hidden;
-    try row.type.panel.children.items[0].set_text(display, article, false);
+    try row.type.panel.children.items[0].set_text(allocator, display, article, false);
     if (form != null) {
-        try row.type.panel.children.items[1].set_text(display, form.?.word, false);
+        try row.type.panel.children.items[1].set_text(allocator, display, form.?.word, false);
     }
     row.visible = .visible;
 }

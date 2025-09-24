@@ -17,10 +17,11 @@ pub const ICON_PAD = 20;
 
 pub fn init(context: *AppContext) !void {
     var display = context.display;
+    const allocator = context.allocator;
 
-    panel = try display.root.add(try engine.create_panel(
+    panel = try display.root.add(allocator, try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "menu",
             .visible = .hidden,
@@ -33,7 +34,8 @@ pub fn init(context: *AppContext) !void {
         },
     ));
 
-    progress_bar = try panel.add(try engine.create_progress_bar(
+    progress_bar = try panel.add(allocator, try engine.create_progress_bar(
+        allocator,
         display,
         .{
             .name = "progress_bar",
@@ -47,9 +49,9 @@ pub fn init(context: *AppContext) !void {
         },
     ));
 
-    toolbar = try panel.add(try engine.create_panel(
+    toolbar = try panel.add(allocator, try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "toolbar",
             .rect = .{ .x = 0, .y = 100, .width = 150, .height = 100 },
@@ -61,92 +63,70 @@ pub fn init(context: *AppContext) !void {
         },
     ));
 
-    bg = try toolbar.add(try engine.create_rect(display, .{
+    bg = try toolbar.add_alloc(allocator, display, .{
         .name = "menu_bg",
         .rect = .{ .x = 0, .y = 0, .width = 550, .height = 100 },
         .minimum = .{ .width = 300, .height = 130 },
         .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
         .background_colour = .{ .r = 99, .g = 150, .b = 50, .a = 255 },
         .type = .{ .rectangle = .{ .style = .background } },
-    }));
+    });
 
-    buttons = try toolbar.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "buttons",
-            .rect = .{ .x = 0, .y = 0, .width = 300, .height = 100 },
-            .minimum = .{ .width = 300, .height = 100 },
-            //.pad = .{ .left = 20, .right = 20, .top = 30, .bottom = 30 },
-            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-            .child_align = .{ .x = .centre, .y = .end },
-            .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 5 } },
-        },
-    ));
+    buttons = try toolbar.add_alloc(allocator, display, .{
+        .name = "buttons",
+        .rect = .{ .x = 0, .y = 0, .width = 300, .height = 100 },
+        .minimum = .{ .width = 300, .height = 100 },
+        //.pad = .{ .left = 20, .right = 20, .top = 30, .bottom = 30 },
+        .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
+        .child_align = .{ .x = .centre, .y = .end },
+        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 5 } },
+    });
 
-    search_button = try buttons.add(try engine.create_button(
-        display,
-        "icon-list-search",
-        "icon-list-search",
-        "icon-list-search",
-        .{
-            .name = "search.tool",
-            .rect = .{ .x = 150, .y = 40, .width = 120, .height = 120 },
-            .minimum = .{ .width = 120, .height = 120 },
-            .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = show_search_screen,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    search_button = try buttons.add_alloc(allocator, display, .{
+        .name = "search.tool",
+        .rect = .{ .x = 150, .y = 40, .width = 120, .height = 120 },
+        .minimum = .{ .width = 120, .height = 120 },
+        .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .text = "",
+            .icon_default_name = "icon-list-search",
+            .icon_hover_name = "icon-list-search",
+            .icon_pressed_name = "icon-list-search",
+            .on_click = show_search_screen,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 
-    parsing_button = try buttons.add(try engine.create_button(
-        display,
-        "icon-parsing-check",
-        "icon-parsing-check",
-        "icon-parsing-check",
-        .{
-            .name = "parsing.tool",
-            .rect = .{ .x = 250, .y = 40, .width = 120, .height = 120 },
-            .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = show_parsing_menu,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    parsing_button = try buttons.add_alloc(allocator, display, .{
+        .name = "parsing.tool",
+        .rect = .{ .x = 250, .y = 40, .width = 120, .height = 120 },
+        .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .text = "",
+            .icon_default_name = "icon-parsing-check",
+            .icon_hover_name = "icon-parsing-check",
+            .icon_pressed_name = "icon-parsing-check",
+            .on_click = show_parsing_menu,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 
-    preferences_button = try buttons.add(try engine.create_button(
-        display,
-        "icon settings",
-        "icon settings",
-        "icon settings",
-        .{
-            .name = "preferences.tool",
-            .rect = .{ .x = 390, .y = 40, .width = 120, .height = 120 },
-            .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = pick_preferences_menu,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    preferences_button = try buttons.add_alloc(allocator, display, .{
+        .name = "preferences.tool",
+        .rect = .{ .x = 390, .y = 40, .width = 120, .height = 120 },
+        .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .text = "",
+            .icon_default_name = "icon settings",
+            .icon_hover_name = "icon settings",
+            .icon_pressed_name = "icon settings",
+            .on_click = pick_preferences_menu,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 }
 
 /// Handle tap on the preferences menu icon

@@ -101,7 +101,7 @@ pub const AppContext = struct {
     // Complete all setup needed to get to the blank startup screen.
     // Setup continues on in a background thread so that initial startup
     // screen drawing may occur.
-    pub fn create(allocator: Allocator, dev_resource_folder: []const u8, gui_flags: usize) error{
+    pub fn create(allocator: Allocator, dev_resource_folder: []const u8, gui_flags: usize) (error{
         OutOfMemory,
         NoResources,
         ResourceReadError,
@@ -120,7 +120,7 @@ pub const AppContext = struct {
         Utf8EncodesSurrogateHalf,
         Utf8CodepointTooLarge,
         Utf8InvalidStartByte,
-    }!*AppContext {
+    } || Resources.Error)!*AppContext {
         info("Starting app {s} {d}", .{ APP_NAME, APP_BUILD });
         var ac = try allocator.create(AppContext);
         errdefer allocator.destroy(ac);
@@ -141,15 +141,15 @@ pub const AppContext = struct {
             RESOURCE_TRANSLATION_FILE,
             gui_flags,
         );
-        errdefer ac.display.destroy();
+        errdefer ac.display.destroy(allocator);
 
         debug("Loading preferences", .{});
         ac.load_preferences();
         debug("Apply preferences", .{});
         if (ac.preference.use_koine) {
-            try ac.display.set_language(Lang.greek);
+            try ac.display.set_language(allocator, Lang.greek);
         } else {
-            try ac.display.set_language(Lang.english);
+            try ac.display.set_language(allocator, Lang.english);
         }
         ac.display.set_scale(ac.preference.size);
         ac.display.event_hook = event_hook;
@@ -178,7 +178,7 @@ pub const AppContext = struct {
             WordInfoScreen.deinit();
         }
         ac.view_history.deinit();
-        ac.display.destroy();
+        ac.display.destroy(ac.allocator);
         ac.panels.destroy();
         ac.parsing_quiz.deinit();
         ac.lists.deinit();
@@ -198,10 +198,10 @@ pub const AppContext = struct {
         }
     }
 
-    pub fn start_dictionary_load(ac: *AppContext) error{ OutOfMemory, ThreadCreationFailed }!void {
+    pub fn start_dictionary_load(ac: *AppContext) (error{ OutOfMemory, ThreadCreationFailed } || ResourcesError)!void {
         debug("Lookup dictionary data file", .{});
         // Load dictionary from resource bundle
-        if (ac.display.resources.lookupOne("dict", .bin)) |resource| {
+        if (try ac.display.resources.lookupOne("dict", .bin)) |resource| {
             if (sdl_load_resource(ac.display.resources, resource, ac.allocator)) |data| {
                 // Data freed in loader
                 DATA_LOADED_EVENT = sdl.SDL_RegisterEvents(1);
@@ -223,8 +223,8 @@ pub const AppContext = struct {
         // Load fonts after screen initialisation so that the
         // screen pixel density can be accounted for.
         var start = std.time.milliTimestamp();
-        _ = try ac.display.load_font("NotoSans-Regular");
-        _ = try ac.display.load_font("NotoSansTC-Regular");
+        _ = try ac.display.load_font(ac.allocator, "NotoSans-Regular");
+        _ = try ac.display.load_font(ac.allocator, "NotoSansTC-Regular");
         var end = std.time.milliTimestamp();
         info("Font load time {d}ms.", .{end - start});
 
@@ -281,29 +281,29 @@ pub const AppContext = struct {
         try ParsingMenuScreen.update_sets();
 
         debug("Adding keybindings.", .{});
-        try ac.display.keybindings.put(sdl.SDLK_SPACE, pick_search_screen);
-        try ac.display.keybindings.put(sdl.SDLK_S, pick_search_screen);
-        try ac.display.keybindings.put(sdl.SDLK_P, pick_preferences_screen);
-        try ac.display.keybindings.put(sdl.SDLK_Q, pick_parsing_screen);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_SPACE, pick_search_screen);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_S, pick_search_screen);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_P, pick_preferences_screen);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_Q, pick_parsing_screen);
 
         if (engine.dev_build) {
-            try ac.display.keybindings.put(sdl.SDLK_M, toggle_menu);
+            try ac.display.keybindings.put(ac.allocator, sdl.SDLK_M, toggle_menu);
         }
 
         if (builtin.target.os.tag != .ios and
             !builtin.target.abi.isAndroid())
         {
-            try ac.display.keybindings.put(sdl.SDLK_ESCAPE, escape_quit);
+            try ac.display.keybindings.put(ac.allocator, sdl.SDLK_ESCAPE, escape_quit);
         }
-        try ac.display.keybindings.put(sdl.SDLK_AC_BACK, android_back);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_AC_BACK, android_back);
 
         // override keybindings for screen size preference saving
-        try ac.display.keybindings.put(sdl.SDLK_X, increase_size);
-        try ac.display.keybindings.put(sdl.SDLK_PLUS, increase_size);
-        try ac.display.keybindings.put(sdl.SDLK_EQUALS, increase_size);
-        try ac.display.keybindings.put(sdl.SDLK_MINUS, decrease_size);
-        try ac.display.keybindings.put(sdl.SDLK_KP_PLUS, increase_size);
-        try ac.display.keybindings.put(sdl.SDLK_KP_MINUS, decrease_size);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_X, increase_size);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_PLUS, increase_size);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_EQUALS, increase_size);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_MINUS, decrease_size);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_KP_PLUS, increase_size);
+        try ac.display.keybindings.put(ac.allocator, sdl.SDLK_KP_MINUS, decrease_size);
 
         if (ac.display.get_panel("menu")) |menu| {
             menu.visible = .visible;
@@ -636,7 +636,8 @@ pub fn app_version_z() [:0]const u8 {
 const builtin = @import("builtin");
 const praxis = @import("praxis");
 const Lang = praxis.Lang;
-const Resources = praxis.Resources;
+const Resources = @import("resources").Resources;
+const ResourcesError = @import("resources").Resources.Error;
 const Dictionary = praxis.Dictionary;
 const Panels = praxis.Panels;
 const engine = @import("engine");

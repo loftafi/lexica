@@ -23,32 +23,26 @@ pub fn init(context: *AppContext) !void {
     }
     string_buffer_index = 0;
 
-    panel = try context.display.root.add(try engine.create_panel(
-        context.display,
-        "",
-        .{
-            .name = "search.screen",
-            .rect = .{ .x = 0, .y = 0 },
-            .layout = .{ .x = .grows, .y = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-            .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-            .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-            .visible = .hidden,
-            .type = .{ .panel = .{ .direction = .top_to_bottom, .spacing = 35 } },
-        },
-    ));
+    panel = try context.display.root.add_alloc(context.allocator, context.display, .{
+        .name = "search.screen",
+        .rect = .{ .x = 0, .y = 0 },
+        .layout = .{ .x = .grows, .y = .grows },
+        .child_align = .{ .x = .centre, .y = .start },
+        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
+        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .visible = .hidden,
+        .type = .{ .panel = .{ .direction = .top_to_bottom, .spacing = 35 } },
+    });
 
-    _ = try context.display.add_spacer(panel, 1);
+    _ = try context.display.add_spacer(context.allocator, panel, 1);
 
-    text_input = try panel.add(try engine.create_text_input(
+    text_input = try panel.add(context.allocator, try engine.create_text_input(
+        context.allocator,
         context.display,
-        "",
-        "αγαπη, agape, love",
-        "icon search",
-        "white rounded rect",
         .{
             .name = "search_query",
+            .background_texture_name = "white rounded rect",
             .rect = .{ .width = 500, .height = 20 },
             .layout = .{ .x = .grows },
             .minimum = .{ .height = 20 },
@@ -56,31 +50,29 @@ pub fn init(context: *AppContext) !void {
                 .max_runes = @min(30, praxis.MAX_WORD_SIZE),
                 .on_change = search_query_changed,
                 .on_submit = search_query_changed,
+                .placeholder_text = "αγαπη, agape, love",
+                .icon_texture_name = "icon search",
             } },
         },
     ));
 
-    scroller = try panel.add(try engine.create_panel(
-        context.display,
-        "",
-        .{
-            .name = "scroll.panel",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .minimum = .{ .width = 400, .height = 600 },
-            .type = .{
-                .panel = .{
-                    .scrollable = .{
-                        .scroll = .{ .x = false, .y = true },
-                        .size = .{ .width = 600, .height = 600 },
-                    },
-                    .direction = .top_to_bottom,
-                    .spacing = 20,
+    scroller = try panel.add_alloc(context.allocator, context.display, .{
+        .name = "scroll.panel",
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .minimum = .{ .width = 400, .height = 600 },
+        .type = .{
+            .panel = .{
+                .scrollable = .{
+                    .scroll = .{ .x = false, .y = true },
+                    .size = .{ .width = 600, .height = 600 },
                 },
+                .direction = .top_to_bottom,
+                .spacing = 20,
             },
-            .on_resized = vertical_scroller_resize,
         },
-    ));
+        .on_resized = vertical_scroller_resize,
+    });
 
     // Keep a global array of these for easy access to their position in the element tree.
     var x: usize = 0;
@@ -92,7 +84,7 @@ pub fn init(context: *AppContext) !void {
             search_result_form[i] = ac.app_context.?.view_history.items[i];
             try update_search_result_row(search_result_form[i].?, &x, &seen_result, "");
         }
-        try scroller.add_element(element);
+        try scroller.add_element(context.allocator, element);
     }
 }
 
@@ -170,6 +162,7 @@ pub fn search_result_tap(display: *Display, element: *Element) error{OutOfMemory
 /// When the search query text input box changes, update the search results entities.
 pub fn search_query_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
     const query = element.type.text_input.text.items;
+    const allocator = ac.app_context.?.allocator;
 
     trace("search query text_input changed: {s}", .{query});
 
@@ -220,9 +213,9 @@ pub fn search_query_changed(display: *Display, element: *Element) error{OutOfMem
 
     while (i < MAX_SEARCH_RESULTS) : (i += 1) {
         const top = search_results[i].type.panel.children.items[0];
-        try top.type.panel.children.items[0].set_text(display, "", false);
-        try top.type.panel.children.items[1].set_text(display, "", false);
-        try search_results[i].type.panel.children.items[1].set_text(display, "", false);
+        try top.type.panel.children.items[0].set_text(allocator, display, "", false);
+        try top.type.panel.children.items[1].set_text(allocator, display, "", false);
+        try search_results[i].type.panel.children.items[1].set_text(allocator, display, "", false);
         search_results[i].visible = .hidden;
         search_result_form[i] = null;
     }
@@ -233,6 +226,7 @@ pub fn search_query_changed(display: *Display, element: *Element) error{OutOfMem
 }
 
 pub fn show_search_history(display: *Display) error{OutOfMemory}!void {
+    const allocator = ac.app_context.?.allocator;
     var x: usize = 0;
     for (0..MAX_SEARCH_RESULTS) |i| {
         if (i < ac.app_context.?.view_history.items.len) {
@@ -240,9 +234,9 @@ pub fn show_search_history(display: *Display) error{OutOfMemory}!void {
             try update_search_result_row(search_result_form[i].?, &x, &seen_result, "");
         } else {
             const top = search_results[i].type.panel.children.items[0];
-            try top.type.panel.children.items[0].set_text(display, "", false);
-            try top.type.panel.children.items[1].set_text(display, "", false);
-            try search_results[i].type.panel.children.items[1].set_text(display, "", false);
+            try top.type.panel.children.items[0].set_text(allocator, display, "", false);
+            try top.type.panel.children.items[1].set_text(allocator, display, "", false);
+            try search_results[i].type.panel.children.items[1].set_text(allocator, display, "", false);
             search_results[i].visible = .hidden;
             search_result_form[i] = null;
         }
@@ -287,6 +281,7 @@ inline fn update_search_result_row(
 ) !void {
     var search_result = search_results[i.*];
     const display = ac.app_context.?.display;
+    const allocator = ac.app_context.?.allocator;
 
     if (form.lexeme) |lexeme| {
         if (seen.contains(lexeme.uid)) {
@@ -305,9 +300,9 @@ inline fn update_search_result_row(
 
     const top = search_result.type.panel.children.items[0];
     const bottom = search_result.type.panel.children.items[1];
-    try top.type.panel.children.items[0].set_text(display, form.word, false);
-    try top.type.panel.children.items[1].set_text(display, transliterated, false);
-    try bottom.set_text(display, string_buffers[string_buffer_index].items, false);
+    try top.type.panel.children.items[0].set_text(allocator, display, form.word, false);
+    try top.type.panel.children.items[1].set_text(allocator, display, transliterated, false);
+    try bottom.set_text(allocator, display, string_buffers[string_buffer_index].items, false);
     search_result.visible = .visible;
     search_result_form[i.*] = form;
     string_buffer_index += 1;
@@ -356,9 +351,10 @@ pub fn select_primary_form(word: *praxis.Form, query: []const u8) *Form {
 }
 
 pub fn create_search_result_panel(display: *Display, y_offset: f32) !*Element {
+    const allocator = ac.app_context.?.allocator;
     var result = try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "search.result",
             .focus = .never_focus,
@@ -372,85 +368,58 @@ pub fn create_search_result_panel(display: *Display, y_offset: f32) !*Element {
         },
     );
 
-    var top = try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "search.result.top.row",
-            .focus = .never_focus,
-            .minimum = .{ .width = 300, .height = 10 },
-            .pad = .{ .left = 0, .right = 0, .top = 10, .bottom = 5 },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .start, .y = .start },
-            .type = .{ .panel = .{
-                .direction = .left_to_right,
-                .spacing = 20,
-            } },
-        },
-    );
-    try result.add_element(top);
-    var l1 = try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "word",
-            .minimum = .{ .width = 50, .height = 10 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .label = .{
-                .text = "",
-                .text_size = .subheading,
-                .text_colour = .tinted,
-                .on_click = search_word_tap,
-            } },
-        },
-    );
-    l1.pad.left = 5;
-    l1.pad.right = 5;
-    l1.pad.top = 2;
-    l1.pad.bottom = 2;
-    try top.add_element(l1);
+    var top = try result.add_alloc(allocator, display, .{
+        .name = "search.result.top.row",
+        .focus = .never_focus,
+        .minimum = .{ .width = 300, .height = 10 },
+        .pad = .{ .left = 0, .right = 0, .top = 10, .bottom = 5 },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .child_align = .{ .x = .start, .y = .start },
+        .type = .{ .panel = .{
+            .direction = .left_to_right,
+            .spacing = 20,
+        } },
+    });
 
-    var l2 = try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "transliteration",
-            .focus = .never_focus,
-            .minimum = .{ .width = 50 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .label = .{
-                .text = "",
-                .text_size = .normal,
-                .text_colour = .tinted,
-            } },
-        },
-    );
-    l2.pad.left = 5;
-    l2.pad.right = 0;
-    l2.pad.top = 9;
-    l2.pad.bottom = 5;
-    try top.add_element(l2);
+    _ = try top.add_alloc(allocator, display, .{
+        .name = "word",
+        .minimum = .{ .width = 50, .height = 10 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .label = .{
+            .text = "",
+            .text_size = .subheading,
+            .text_colour = .tinted,
+            .on_click = search_word_tap,
+        } },
+        .pad = .{ .left = 5, .right = 5, .top = 2, .bottom = 2 },
+    });
 
-    const l3 = try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "glosses.row",
-            .focus = .never_focus,
-            .rect = .{ .x = 0, .y = y_offset + 50, .width = 600, .height = 60 },
-            .minimum = .{ .width = 300, .height = 10 },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .type = .{ .label = .{
-                .text = "",
-                .text_size = .normal,
-                .text_colour = .normal,
-            } },
-        },
-    );
-    l3.pad.top = 0;
-    l3.pad.bottom = 2;
-    l3.pad.left = 8;
-    try result.add_element(l3);
+    _ = try top.add_alloc(allocator, display, .{
+        .name = "transliteration",
+        .focus = .never_focus,
+        .minimum = .{ .width = 50 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .label = .{
+            .text = "",
+            .text_size = .normal,
+            .text_colour = .tinted,
+        } },
+        .pad = .{ .left = 5, .right = 0, .top = 9, .bottom = 5 },
+    });
+
+    _ = try result.add_alloc(allocator, display, .{
+        .name = "glosses.row",
+        .focus = .never_focus,
+        .rect = .{ .x = 0, .y = y_offset + 50, .width = 600, .height = 60 },
+        .minimum = .{ .width = 300, .height = 10 },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .type = .{ .label = .{
+            .text = "",
+            .text_size = .normal,
+            .text_colour = .normal,
+        } },
+        .pad = .{ .left = 8, .right = 0, .top = 0, .bottom = 2 },
+    });
 
     return result;
 }

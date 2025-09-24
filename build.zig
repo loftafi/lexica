@@ -74,12 +74,10 @@ pub export fn build(b: *std.Build) void {
         });
         real_tests.root_module.addImport("zigimg", zigimg_module);
         real_tests.root_module.addImport("app_info", app_info_module);
-        //real_tests.root_module.addImport("praxis", praxis_module);
+        real_tests.root_module.addImport("praxis", praxis_module);
         real_tests.root_module.addImport("resources", resources_module);
         real_tests.root_module.addImport("engine", engine_module);
         real_tests.root_module.addImport("dep_sdl_module", dep_sdl_module);
-        real_tests.linkLibrary(b.dependency("sdl", .{ .target = target, .optimize = optimize }).artifact("SDL3"));
-        real_tests.linkLibrary(b.dependency("sdl_ttf", .{ .target = target, .optimize = optimize }).artifact("SDL_ttf"));
         const run_real_tests = b.addRunArtifact(real_tests);
 
         const exe_unit_tests = b.addTest(.{

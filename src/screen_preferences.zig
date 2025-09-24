@@ -16,81 +16,63 @@ pub fn show(display: *Display) void {
 
 pub fn init(context: *AppContext) !void {
     var display = context.display;
-    panel = try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "preferences.screen",
-            .layout = .{ .x = .grows, .y = .grows },
-            .child_align = .{ .x = .centre },
-            .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-            .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-            .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-            .visible = .hidden,
-            .type = .{ .panel = .{ .spacing = 1, .direction = .top_to_bottom } },
-            .on_resized = update_ring,
-        },
-    );
-    try display.add_element(panel);
 
-    ring_panel = try panel.add(try engine.create_panel(
-        display,
-        "white rounded rect",
-        .{
-            .name = "ring",
-            .rect = .{ .width = 20, .height = 20 },
-            .layout = .{ .position = .float, .x = .fixed, .y = .fixed },
-            .type = .{ .panel = .{ .style = .emphasised } },
-        },
-    ));
+    panel = try display.root.add_alloc(context.allocator, display, .{
+        .name = "preferences.screen",
+        .layout = .{ .x = .grows, .y = .grows },
+        .child_align = .{ .x = .centre },
+        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
+        .visible = .hidden,
+        .type = .{ .panel = .{ .spacing = 1, .direction = .top_to_bottom } },
+        .on_resized = update_ring,
+    });
 
-    var heading = try panel.add(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "preferences_heading",
-            .focus = .never_focus,
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "Preferences",
-                .text_size = .heading,
-                .text_colour = .tinted,
-                .on_click = heading_tap,
-            } },
-        },
-    ));
-    heading.pad.top = 30;
+    ring_panel = try panel.add_alloc(context.allocator, display, .{
+        .name = "ring",
+        .background_texture_name = "white rounded rect",
+        .rect = .{ .width = 20, .height = 20 },
+        .layout = .{ .position = .float, .x = .fixed, .y = .fixed },
+        .type = .{ .panel = .{ .style = .emphasised } },
+    });
 
-    try panel.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "case_order_info",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "Which noun order you prefer?",
-                .text_size = .normal,
-                .text_colour = .normal,
-            } },
-        },
-    ));
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "preferences_heading",
+        .focus = .never_focus,
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Preferences",
+            .text_size = .heading,
+            .text_colour = .tinted,
+            .on_click = heading_tap,
+        } },
+        .pad = .{ .top = 30 },
+    });
 
-    const picker_panel = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "preferences.screen",
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 20, .right = 20, .top = 20, .bottom = 20 },
-            .minimum = .{ .width = 200, .height = 200 },
-            .type = .{ .panel = .{ .spacing = 20, .direction = .left_to_right } },
-        },
-    ));
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "case_order_info",
+        .layout = .{ .y = .shrinks, .x = .grows },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Which noun order you prefer?",
+            .text_size = .normal,
+            .text_colour = .normal,
+        } },
+    });
+
+    const picker_panel = try panel.add_alloc(context.allocator, display, .{
+        .name = "preferences.screen",
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .child_align = .{ .x = .centre },
+        .pad = .{ .left = 20, .right = 20, .top = 20, .bottom = 20 },
+        .minimum = .{ .width = 200, .height = 200 },
+        .type = .{ .panel = .{ .spacing = 20, .direction = .left_to_right } },
+    });
 
     us_panel = try create_picker_table(
+        context.allocator,
         display,
         picker_panel,
         &[4][]const u8{ "ὁ", "τοῦ", "τῷ", "τόν" },
@@ -99,6 +81,7 @@ pub fn init(context: *AppContext) !void {
     us_panel.type.panel.on_click = choose_us_order;
 
     uk_panel = try create_picker_table(
+        context.allocator,
         display,
         picker_panel,
         &[4][]const u8{ "ὁ", "τόν", "τοῦ", "τῷ" },
@@ -106,7 +89,8 @@ pub fn init(context: *AppContext) !void {
     );
     uk_panel.type.panel.on_click = choose_uk_order;
 
-    try panel.add_element(try engine.create_expander(
+    try panel.add_element(context.allocator, try engine.create_expander(
+        context.allocator,
         display,
         .{
             .name = "middle.expander",
@@ -116,157 +100,131 @@ pub fn init(context: *AppContext) !void {
         },
     ));
 
-    try panel.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "choose_language_heading",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "User Interface",
-                .text_size = .subheading,
-                .text_colour = .tinted,
-            } },
-        },
-    ));
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "choose_language_heading",
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "User Interface",
+            .text_size = .subheading,
+            .text_colour = .tinted,
+        } },
+    });
 
-    try panel.add_element(try engine.create_checkbox(
-        display,
-        "",
-        .{
-            .name = "pick_language",
-            .layout = .{ .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Use Koine Greek UI",
-                .text_size = .normal,
-                .text_colour = .normal,
-                .checked = ac.app_context.?.preference.use_koine,
-                .on_change = change_koine_preference,
-            } },
-        },
-    ));
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "pick_language",
+        .layout = .{ .x = .grows },
+        .type = .{ .checkbox = .{
+            .text = "Use Koine Greek UI",
+            .text_size = .normal,
+            .text_colour = .normal,
+            .checked = ac.app_context.?.preference.use_koine,
+            .on_change = change_koine_preference,
+        } },
+    });
 
-    try panel.add_element(try engine.create_checkbox(
-        display,
-        "",
-        .{
-            .name = "show_strongs",
-            .layout = .{ .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Show Strongs Numbers",
-                .text_size = .normal,
-                .text_colour = .normal,
-                .checked = ac.app_context.?.preference.show_strongs,
-                .on_change = change_strongs_preference,
-            } },
-        },
-    ));
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "show_strongs",
+        .layout = .{ .x = .grows },
+        .type = .{ .checkbox = .{
+            .text = "Show Strongs Numbers",
+            .text_size = .normal,
+            .text_colour = .normal,
+            .checked = ac.app_context.?.preference.show_strongs,
+            .on_change = change_strongs_preference,
+        } },
+    });
 
-    try panel.add_element(try engine.create_expander(
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "middle.expander",
+        .rect = .{ .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1 } },
+    });
+
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "choose_theme_heading",
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Theme",
+            .text_size = .subheading,
+            .text_colour = .tinted,
+        } },
+    });
+
+    try add_theme_pickr(context.allocator, display, panel);
+
+    _ = try panel.add_alloc(context.allocator, display, .{
+        .name = "bottom.expander",
+        .rect = .{ .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1 } },
+    });
+
+    const links = try panel.add_alloc(context.allocator, display, .{
+        .name = "link_menu",
+        .rect = .{ .width = 300, .height = 100 },
+        .minimum = .{ .height = 80, .width = 300 },
+        .pad = .{ .left = 20, .right = 20, .top = 20, .bottom = 20 },
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .type = .{ .panel = .{ .direction = .left_to_right } },
+    });
+
+    _ = try links.add_alloc(context.allocator, display, .{
+        .name = "privacy.link",
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .pad = .{ .left = 20, .right = 20 },
+        .type = .{ .label = .{
+            .text = "Privacy",
+            .text_size = .small,
+            .text_colour = .tinted,
+            .on_click = show_privacy_screen,
+        } },
+    });
+
+    _ = try links.add_alloc(context.allocator, display, .{
+        .name = "terms.link",
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .pad = .{ .left = 20, .right = 20 },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Terms",
+            .text_size = .small,
+            .text_colour = .tinted,
+            .on_click = show_terms_screen,
+        } },
+    });
+
+    _ = try links.add_alloc(context.allocator, display, .{
+        .name = "license.link",
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .pad = .{ .left = 20, .right = 20 },
+        .type = .{ .label = .{
+            .text = "Licences",
+            .text_size = .small,
+            .text_colour = .tinted,
+            .on_click = show_license_screen,
+        } },
+    });
+
+    try panel.add_element(context.allocator, try engine.create_expander(
+        context.allocator,
         display,
         .{
-            .name = "middle.expander",
+            .name = "end.expander",
             .rect = .{ .width = 100, .height = 5 },
             .minimum = .{ .width = 100, .height = 5 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{ .expander = .{ .weight = 1 } },
-        },
-    ));
-
-    try panel.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "choose_theme_heading",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "Theme",
-                .text_size = .subheading,
-                .text_colour = .tinted,
-            } },
-        },
-    ));
-
-    try add_theme_pickr(display, panel);
-
-    try panel.add_element(try engine.create_expander(
-        display,
-        .{
-            .name = "bottom.expander",
-            .rect = .{ .width = 100, .height = 5 },
-            .minimum = .{ .width = 100, .height = 5 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 1 } },
-        },
-    ));
-
-    const links = try panel.add(try engine.create_panel(
-        display,
-        "",
-        .{
-            .name = "link_menu",
-            .rect = .{ .width = 300, .height = 100 },
-            .minimum = .{ .height = 80, .width = 300 },
-            .pad = .{ .left = 20, .right = 20, .top = 20, .bottom = 20 },
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .type = .{ .panel = .{ .direction = .left_to_right } },
-        },
-    ));
-
-    try links.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "privacy.link",
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .pad = .{ .left = 20, .right = 20 },
-            .type = .{ .label = .{
-                .text = "Privacy",
-                .text_size = .small,
-                .text_colour = .tinted,
-                .on_click = show_privacy_screen,
-            } },
-        },
-    ));
-
-    try links.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "terms.link",
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .pad = .{ .left = 20, .right = 20 },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "Terms",
-                .text_size = .small,
-                .text_colour = .tinted,
-                .on_click = show_terms_screen,
-            } },
-        },
-    ));
-
-    try links.add_element(try engine.create_label(
-        display,
-        "",
-        .{
-            .name = "license.link",
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .pad = .{ .left = 20, .right = 20 },
-            .type = .{ .label = .{
-                .text = "Licences",
-                .text_size = .small,
-                .text_colour = .tinted,
-                .on_click = show_license_screen,
-            } },
         },
     ));
 
     // Don't allow expanders to push under the menu area.
-    var spacer = try context.display.add_spacer(panel, 130);
+    var spacer = try context.display.add_spacer(context.allocator, panel, 130);
     spacer.on_resized = MenuUI.update_bottom_spacing;
 }
 
@@ -274,10 +232,10 @@ pub fn deinit() void {
     // No resources to deinit
 }
 
-fn add_theme_pickr(display: *Display, parent: *Element) !void {
-    var wrapper = try parent.add(try engine.create_panel(
+fn add_theme_pickr(allocator: Allocator, display: *Display, parent: *Element) !void {
+    var wrapper = try parent.add(allocator, try engine.create_panel(
+        allocator,
         display,
-        "",
         .{
             .name = "theme.picker.align",
             .layout = .{ .x = .grows, .y = .shrinks },
@@ -291,149 +249,110 @@ fn add_theme_pickr(display: *Display, parent: *Element) !void {
         },
     ));
 
-    const picker = try wrapper.add(try engine.create_panel(
-        display,
-        "white rounded rect",
-        .{
-            .name = "theme_menu",
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 30, .right = 30, .top = 20, .bottom = 20 },
-            .minimum = .{ .width = 500, .height = 20 },
-            .maximum = .{ .width = 1000 },
-            .type = .{ .panel = .{
-                .style = .faded,
-                .direction = .left_to_right,
-                .spacing = 40,
-            } },
-        },
-    ));
+    const picker = try wrapper.add_alloc(allocator, display, .{
+        .name = "theme_menu",
+        .background_texture_name = "white rounded rect",
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .child_align = .{ .x = .centre },
+        .pad = .{ .left = 30, .right = 30, .top = 20, .bottom = 20 },
+        .minimum = .{ .width = 500, .height = 20 },
+        .maximum = .{ .width = 1000 },
+        .type = .{ .panel = .{
+            .style = .faded,
+            .direction = .left_to_right,
+            .spacing = 40,
+        } },
+    });
 
-    try picker.add_element(try engine.create_button(
-        display,
-        "theme sand",
-        "theme sand",
-        "theme sand",
-        .{
-            .name = "sand",
-            .rect = .{ .width = 80, .height = 80 },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = pick_theme,
-                .style = .custom,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    _ = try picker.add_alloc(allocator, display, .{
+        .name = "sand",
+        .rect = .{ .width = 80, .height = 80 },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .icon_default_name = "theme sand",
+            .icon_hover_name = "theme sand",
+            .icon_pressed_name = "theme sand",
+            .text = "",
+            .on_click = pick_theme,
+            .style = .custom,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 
-    try picker.add_element(try engine.create_button(
-        display,
-        "theme white",
-        "theme white",
-        "theme white",
-        .{
-            .name = "white",
-            .rect = .{ .width = 80, .height = 80 },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = pick_theme,
-                .style = .custom,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    _ = try picker.add_alloc(allocator, display, .{
+        .name = "white",
+        .rect = .{ .width = 80, .height = 80 },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .icon_default_name = "theme white",
+            .icon_pressed_name = "theme white",
+            .icon_hover_name = "theme white",
+            .text = "",
+            .on_click = pick_theme,
+            .style = .custom,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 
-    try picker.add_element(try engine.create_button(
-        display,
-        "theme default",
-        "theme default",
-        "theme default",
-        .{
-            .name = "default",
-            .rect = .{ .width = 80, .height = 80 },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = pick_theme,
-                .style = .custom,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    _ = try picker.add_alloc(allocator, display, .{
+        .name = "default",
+        .rect = .{ .width = 80, .height = 80 },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .icon_default_name = "theme default",
+            .icon_pressed_name = "theme default",
+            .icon_hover_name = "theme default",
+            .text = "",
+            .on_click = pick_theme,
+            .style = .custom,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 
-    try picker.add_element(try engine.create_button(
-        display,
-        "theme black",
-        "theme black",
-        "theme black",
-        .{
-            .name = "black",
-            .rect = .{ .width = 80, .height = 80 },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = pick_theme,
-                .style = .custom,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    _ = try picker.add_alloc(allocator, display, .{
+        .name = "black",
+        .rect = .{ .width = 80, .height = 80 },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .icon_default_name = "theme black",
+            .icon_pressed_name = "theme black",
+            .icon_hover_name = "theme black",
+            .text = "",
+            .on_click = pick_theme,
+            .style = .custom,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 
-    try picker.add_element(try engine.create_button(
-        display,
-        "theme midnight",
-        "theme midnight",
-        "theme midnight",
-        .{
-            .name = "midnight",
-            .rect = .{ .width = 80, .height = 80 },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = pick_theme,
-                .style = .custom,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    _ = try picker.add_alloc(allocator, display, .{
+        .name = "midnight",
+        .rect = .{ .width = 80, .height = 80 },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .icon_default_name = "theme midnight",
+            .icon_pressed_name = "theme midnight",
+            .icon_hover_name = "theme midnight",
+            .text = "",
+            .on_click = pick_theme,
+            .style = .custom,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 
-    try picker.add_element(try engine.create_button(
-        display,
-        "theme garden",
-        "theme garden",
-        "theme garden",
-        .{
-            .name = "garden",
-            .rect = .{ .width = 80, .height = 80 },
-            .layout = .{ .x = .fixed, .y = .fixed },
-            .type = .{ .button = .{
-                .text = "",
-                .on_click = pick_theme,
-                .style = .custom,
-                .icon_size = .{ .x = 80, .y = 80 },
-            } },
-        },
-        "",
-        "",
-        "",
-    ));
+    _ = try picker.add_alloc(allocator, display, .{
+        .name = "garden",
+        .rect = .{ .width = 80, .height = 80 },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .button = .{
+            .icon_default_name = "theme garden",
+            .icon_pressed_name = "theme garden",
+            .icon_hover_name = "theme garden",
+            .text = "",
+            .on_click = pick_theme,
+            .style = .custom,
+            .icon_size = .{ .x = 80, .y = 80 },
+        } },
+    });
 }
 
 pub fn heading_tap(_: *Display, _: *Element) std.mem.Allocator.Error!void {
@@ -453,13 +372,15 @@ pub fn pick_theme(display: *Display, element: *Element) std.mem.Allocator.Error!
 }
 
 pub fn create_picker_table(
+    allocator: Allocator,
     display: *Display,
     parent_panel: *Element,
     articles: []const []const u8,
     words: []const []const u8,
 ) !*Element {
-    var parsing_panel = try engine.create_panel(display, "white rounded rect", .{
+    var parsing_panel = try engine.create_panel(allocator, display, .{
         .name = "present",
+        .background_texture_name = "white rounded rect",
         .focus = .can_focus,
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .child_align = .{ .x = .start, .y = .start },
@@ -469,10 +390,10 @@ pub fn create_picker_table(
             .direction = .top_to_bottom,
         } },
     });
-    try parent_panel.add_element(parsing_panel);
+    try parent_panel.add_element(allocator, parsing_panel);
 
     for (articles, words) |article, word| {
-        const row = try engine.create_panel(display, "", .{
+        const row = try parsing_panel.add_alloc(allocator, display, .{
             .name = "row",
             .rect = .{ .width = 150, .height = 10 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
@@ -483,38 +404,25 @@ pub fn create_picker_table(
                 .spacing = 15,
             } },
         });
-        try parsing_panel.add_element(row);
 
-        const left = try engine.create_label(
-            display,
-            "",
-            .{
-                .name = "col.article",
-                .rect = .{ .width = 80, .height = 10 },
-                .minimum = .{ .width = 80, .height = 10 },
-                .type = .{ .label = .{ .text = article } },
-                .child_align = .{ .x = .end, .y = .start },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-            },
-        );
-        left.pad.left = 2;
-        left.pad.right = 2;
-        try row.add_element(left);
+        _ = try row.add_alloc(allocator, display, .{
+            .name = "col.article",
+            .rect = .{ .width = 80, .height = 10 },
+            .minimum = .{ .width = 80, .height = 10 },
+            .type = .{ .label = .{ .text = article } },
+            .child_align = .{ .x = .end, .y = .start },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .pad = .{ .left = 2, .right = 2 },
+        });
 
-        const form_entry = try engine.create_label(
-            display,
-            "",
-            .{
-                .name = "col.form",
-                .rect = .{ .width = 150 },
-                .minimum = .{ .width = 150 },
-                .type = .{ .label = .{ .text = word } },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-            },
-        );
-        form_entry.pad.left = 2;
-        form_entry.pad.right = 2;
-        try row.add_element(form_entry);
+        _ = try row.add_alloc(allocator, display, .{
+            .name = "col.form",
+            .rect = .{ .width = 150 },
+            .minimum = .{ .width = 150 },
+            .type = .{ .label = .{ .text = word } },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .pad = .{ .left = 2, .right = 2 },
+        });
     }
     return parsing_panel;
 }
@@ -559,13 +467,16 @@ fn update_ring(_: *Display, _: *Element) bool {
 }
 
 pub fn change_koine_preference(display: *Display, element: *Element) std.mem.Allocator.Error!void {
+    const ctx = ac.app_context.?;
+    const allocator = ctx.allocator;
+
     std.debug.assert(element.type == .checkbox);
-    ac.app_context.?.preference.use_koine = element.type.checkbox.checked;
-    ac.app_context.?.save_preferences();
-    if (ac.app_context.?.preference.use_koine) {
-        try display.set_language(Lang.greek);
+    ctx.preference.use_koine = element.type.checkbox.checked;
+    ctx.save_preferences();
+    if (ctx.preference.use_koine) {
+        try display.set_language(allocator, Lang.greek);
     } else {
-        try display.set_language(Lang.english);
+        try display.set_language(allocator, Lang.english);
     }
 }
 
@@ -577,6 +488,7 @@ pub fn change_strongs_preference(_: *Display, element: *Element) std.mem.Allocat
 
 const builtin = @import("builtin");
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 const engine = @import("engine");
 const debug = engine.debug;
 const info = engine.info;
