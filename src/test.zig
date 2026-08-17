@@ -9,7 +9,7 @@ pub const std_options = struct {
 };
 
 test {
-    const app = @import("app_context.zig");
+    const app = @import("App.zig");
     std.testing.refAllDecls(app);
 
     // Uncomment to force test everything

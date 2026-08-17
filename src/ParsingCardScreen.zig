@@ -1,15 +1,24 @@
+pub const ParsingCardScreen = @This();
+
 const PARSING_BUTTON_X_PADDING: f32 = 16.0;
 const PARSING_BUTTON_Y_PADDING: f32 = 10.0 + 4;
 
-var panel: *Element = undefined;
-var quiz_word: *Element = undefined;
-var help_line: *Element = undefined;
-var correct_panel: *Element = undefined;
-var incorrect_panel: *Element = undefined;
-var back_button: *Element = undefined;
+app: *AppContext = undefined,
+panel: *Entity = undefined,
 
-pub fn show(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const ctx = ac.app_context.?;
+var quiz_word: *Entity = undefined;
+var help_line: *Entity = undefined;
+var correct_panel: *Entity = undefined;
+var incorrect_panel: *Entity = undefined;
+var back_button: *Entity = undefined;
+
+pub fn show(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    event: *Event,
+) error{OutOfMemory}!void {
+    const ctx = self.app;
     const allocator = ctx.allocator;
 
     if (ctx.parsing_quiz.form_bank.items.len == 0) {
@@ -20,16 +29,16 @@ pub fn show(display: *Display, element: *Element) error{OutOfMemory}!void {
         ctx.parsing_quiz.form_bank.items.len,
     });
 
-    display.choose_panel("parsing.quiz");
-    if (!try show_next_quiz_card(display)) {
-        try ParsingMenuScreen.show(display, element);
+    try display.choosePanel(self.panel.name, event);
+    if (!try self.show_next_quiz_card(display)) {
+        try ctx.parsing_menu.show(display, element, event);
     }
 
-    try slide_panel_out(display);
-    MenuUI.progress_bar.type.progress_bar.progress = 0;
-    MenuUI.progress_bar.visible = .visible;
-    MenuUI.toolbar.visible = .hidden;
-    _ = MenuUI.align_progress_bar(display, MenuUI.progress_bar);
+    try self.slide_panel_out(display);
+    self.app.menu_ui.progress_bar.type.progress_bar.progress = 0;
+    try self.app.menu_ui.progress_bar.setVisibility(display, .visible);
+    try self.app.menu_ui.toolbar.setVisibility(display, .hidden);
+    _ = self.app.menu_ui.align_progress_bar(display, self.app.menu_ui.progress_bar);
 
     // Adjust order of case buttons depending on user preference
     if (ac.app_context.?.preference.uk_order) {
@@ -51,68 +60,83 @@ pub fn show(display: *Display, element: *Element) error{OutOfMemory}!void {
     }
 }
 
-pub fn deinit() void {
-    //
+pub fn deinit(self: *ParsingCardScreen) void {
+    self.* = undefined;
 }
 
-pub fn cancel_quiz(display: *Display, element: *Element) error{OutOfMemory}!void {
-    MenuUI.progress_bar.visible = .hidden;
-    MenuUI.toolbar.visible = .visible;
+pub fn cancel_quiz(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    event: *Event,
+) error{OutOfMemory}!void {
+    try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
+    try self.app.menu_ui.toolbar.setVisibility(display, .visible);
     correct_panel.visible = .hidden;
     incorrect_panel.visible = .hidden;
 
-    const pc = ac.app_context.?.parsing_quiz;
+    const pc = self.app.parsing_quiz;
     if (pc.lexeme) |lexeme| {
-        try ParsingSetupScreen.study_by_form(display, lexeme, ParsingSetupScreen.called_by);
+        try self.app.parsing_setup.study_by_form(
+            display,
+            lexeme,
+            self.app.parsing_setup.called_by,
+            event,
+        );
     } else if (pc.word_set) |list| {
-        try ParsingSetupScreen.study_by_list(display, list, ParsingSetupScreen.called_by);
+        try self.app.parsing_setup.study_by_list(
+            display,
+            list,
+            self.app.parsing_setup.called_by,
+            event,
+        );
     } else {
-        try ParsingMenuScreen.show(display, element);
+        try self.app.parsing_menu.show(display, element, event);
     }
 }
 
 var pickers = struct {
-    case: *Element = undefined,
-    gender: *Element = undefined,
-    number: *Element = undefined,
+    case: *Entity = undefined,
+    gender: *Entity = undefined,
+    number: *Entity = undefined,
 
-    tense_form: *Element = undefined,
-    voice: *Element = undefined,
-    mood: *Element = undefined,
-    person: *Element = undefined,
+    tense_form: *Entity = undefined,
+    voice: *Entity = undefined,
+    mood: *Entity = undefined,
+    person: *Entity = undefined,
 }{};
 
 var buttons = struct {
-    nominative: *Element = undefined,
-    accusative: *Element = undefined,
-    genitive: *Element = undefined,
-    dative: *Element = undefined,
-    singular: *Element = undefined,
-    plural: *Element = undefined,
-    masculine: *Element = undefined,
-    feminine: *Element = undefined,
-    neuter: *Element = undefined,
-    present: *Element = undefined,
-    future: *Element = undefined,
-    imperfect: *Element = undefined,
-    aorist: *Element = undefined,
-    perfect: *Element = undefined,
-    pluperfect: *Element = undefined,
-    active: *Element = undefined,
-    middle: *Element = undefined,
-    passive: *Element = undefined,
-    indicative: *Element = undefined,
-    participle: *Element = undefined,
-    subjunctive: *Element = undefined,
-    imperative: *Element = undefined,
-    infinitive: *Element = undefined,
-    first: *Element = undefined,
-    second: *Element = undefined,
-    third: *Element = undefined,
+    nominative: *Entity = undefined,
+    accusative: *Entity = undefined,
+    genitive: *Entity = undefined,
+    dative: *Entity = undefined,
+    singular: *Entity = undefined,
+    plural: *Entity = undefined,
+    masculine: *Entity = undefined,
+    feminine: *Entity = undefined,
+    neuter: *Entity = undefined,
+    present: *Entity = undefined,
+    future: *Entity = undefined,
+    imperfect: *Entity = undefined,
+    aorist: *Entity = undefined,
+    perfect: *Entity = undefined,
+    pluperfect: *Entity = undefined,
+    active: *Entity = undefined,
+    middle: *Entity = undefined,
+    passive: *Entity = undefined,
+    indicative: *Entity = undefined,
+    participle: *Entity = undefined,
+    subjunctive: *Entity = undefined,
+    imperative: *Entity = undefined,
+    infinitive: *Entity = undefined,
+    first: *Entity = undefined,
+    second: *Entity = undefined,
+    third: *Entity = undefined,
 
     const Self = @This();
 
-    pub fn list(b: *Self) [26]*Element {
+    pub fn list(b: *Self) [26]*Entity {
         return .{
             b.present,    b.future,     b.aorist,      b.imperfect,
             b.perfect,    b.pluperfect, b.active,      b.middle,
@@ -438,13 +462,13 @@ var buttons = struct {
             }
         }
 
-        var oo: std.ArrayListUnmanaged(u8) = .empty;
-        defer oo.deinit(gpa);
+        var oo: std.Io.Writer.Allocating = .init(gpa);
+        defer oo.deinit();
         for (valid_forms.items) |vf| {
-            vf.parsing.string(oo.writer(gpa)) catch {};
-            try oo.append(gpa, ' ');
+            vf.parsing.string(&oo.writer) catch {};
+            oo.writer.writeByte(' ') catch {};
         }
-        info("check {s} (count={d}) matched {any}", .{ oo.items, valid_forms.items.len, correct });
+        info("check {s} (count={d}) matched {any}", .{ oo.written(), valid_forms.items.len, correct });
 
         switch (form.parsing.part_of_speech) {
             .verb => {
@@ -555,20 +579,20 @@ var buttons = struct {
     }
 }{};
 
-pub fn init(context: *AppContext) (error{
+pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     OutOfMemory,
     ResourceNotFound,
     ResourceReadError,
     UnknownImageFormat,
-} || ResourcesError)!void {
-    var display = context.display;
-    const allocator = context.allocator;
+} || ResourcesError || engine.Error)!void {
+    self.app = app;
+    var display = app.display;
 
-    seed();
+    seed(app.io);
     help_line_buffer_i = 0;
 
-    panel = try display.root.add_alloc(allocator, display, .{
-        .name = "parsing.quiz",
+    self.panel = try display.addPanel(.{
+        .name = "parsing.card",
         .rect = .{ .x = 20, .y = 20 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
@@ -576,49 +600,54 @@ pub fn init(context: *AppContext) (error{
         .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
         .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
         .visible = .hidden,
-        .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
-        .on_resized = handle_resize,
+        .type = .{ .panel = .{
+            .spacing = 10,
+            .direction = .top_to_bottom,
+            .choosable = .choosable,
+        } },
+        .on_resized = .{ .func = @ptrCast(&handle_resize), .ptr = self },
     });
 
-    back_button = try display.add_back_button(allocator, panel, cancel_quiz);
+    back_button = try app.add_back_button(self.panel, .{
+        .func = @ptrCast(&cancel_quiz),
+        .ptr = self,
+    });
 
-    _ = try display.add_spacer(allocator, panel, 1);
+    _ = try display.add_spacer(self.panel, 1);
 
-    quiz_word = try panel.add_alloc(allocator, display, .{
+    quiz_word = try self.panel.add(.{
         .name = "parsing.quiz.word",
         .layout = .{ .x = .grows },
         .child_align = .{ .x = .centre },
+        .style = .tinted,
         .type = .{ .label = .{
             .text = "λυω",
             .text_size = .heading,
-            .text_colour = .tinted,
         } },
         .pad = .{ .top = 30 + 60 },
-    });
+    }, display);
 
-    help_line = try panel.add_alloc(allocator, display, .{
+    help_line = try self.panel.add(.{
         .name = "parsing.quiz.hint",
         .layout = .{ .x = .grows },
         .child_align = .{ .x = .centre },
         .type = .{ .label = .{
             .text = "Describe the grammar of this word.",
-            .text_size = .normal,
-            .text_colour = .normal,
         } },
-    });
+    }, display);
 
-    _ = try panel.add_alloc(allocator, display, .{
+    _ = try self.panel.add(.{
         .name = "top.expander",
         .rect = .{ .width = 100, .height = 20 },
         .minimum = .{ .width = 100, .height = 20 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .expander = .{ .weight = 0.7 } },
-    });
+    }, display);
 
     {
-        pickers.tense_form = try panel.add_alloc(allocator, display, .{
+        pickers.tense_form = try self.panel.add(.{
             .name = "tense_form.picker",
-            .background_texture_name = "white rounded rect",
+            .background = .{ .image_name = "white rounded rect" },
             .layout = .{
                 .x = .grows,
             },
@@ -626,9 +655,9 @@ pub fn init(context: *AppContext) (error{
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
             .minimum = .{ .width = 500, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
-        });
+        }, display);
 
-        const tense_form_row1 = try pickers.tense_form.add_alloc(allocator, display, .{
+        const tense_form_row1 = try pickers.tense_form.add(.{
             .name = "tense_form.row1",
             .rect = .{ .width = 500, .height = 30 },
             .layout = .{ .x = .grows },
@@ -636,18 +665,18 @@ pub fn init(context: *AppContext) (error{
             .pad = .{ .top = 5, .bottom = 5 },
             .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        });
+        }, display);
 
-        const tense_form_row2 = try pickers.tense_form.add_alloc(allocator, display, .{
+        const tense_form_row2 = try pickers.tense_form.add(.{
             .name = "tense_form.row1",
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
             .pad = .{ .top = 5, .bottom = 5 },
             .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        });
+        }, display);
 
-        buttons.present = try engine.create_button(allocator, display, .{
+        buttons.present = try tense_form_row1.add(.{
             .name = "present",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -659,15 +688,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Present",
                 .toggle = .off,
-                .on_click = tense_form_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try tense_form_row1.add_element(allocator, buttons.present);
+        }, display);
 
-        buttons.future = try engine.create_button(allocator, display, .{
+        buttons.future = try tense_form_row1.add(.{
             .name = "future",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -679,15 +709,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Future",
                 .toggle = .off,
-                .on_click = tense_form_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try tense_form_row1.add_element(allocator, buttons.future);
+        }, display);
 
-        buttons.perfect = try engine.create_button(allocator, display, .{
+        buttons.perfect = try tense_form_row1.add(.{
             .name = "perfect",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -699,15 +730,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Perfect",
                 .toggle = .off,
-                .on_click = tense_form_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try tense_form_row1.add_element(allocator, buttons.perfect);
+        }, display);
 
-        buttons.aorist = try engine.create_button(allocator, display, .{
+        buttons.aorist = try tense_form_row2.add(.{
             .name = "aorist",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -719,15 +751,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Aorist",
                 .toggle = .off,
-                .on_click = tense_form_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try tense_form_row2.add_element(allocator, buttons.aorist);
+        }, display);
 
-        buttons.imperfect = try engine.create_button(allocator, display, .{
+        buttons.imperfect = try tense_form_row2.add(.{
             .name = "imperfect",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -739,15 +772,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Imperfect",
                 .toggle = .off,
-                .on_click = tense_form_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try tense_form_row2.add_element(allocator, buttons.imperfect);
+        }, display);
 
-        buttons.pluperfect = try engine.create_button(allocator, display, .{
+        buttons.pluperfect = try tense_form_row2.add(.{
             .name = "pluperfect",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -759,148 +793,118 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Pluperfect",
                 .toggle = .off,
-                .on_click = tense_form_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try tense_form_row2.add_element(allocator, buttons.pluperfect);
+        }, display);
     }
 
     {
-        pickers.voice = try engine.create_panel(
-            allocator,
-            display,
-            .{
-                .name = "voice.picker",
-                .background_texture_name = "white rounded rect",
-                .layout = .{ .x = .grows },
-                .child_align = .{ .x = .centre },
-                .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 500, .height = 30 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-            },
-        );
-        try panel.add_element(allocator, pickers.voice);
+        pickers.voice = try self.panel.add(.{
+            .name = "voice.picker",
+            .background = .{ .image_name = "white rounded rect" },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+            .minimum = .{ .width = 500, .height = 30 },
+            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
+        }, display);
 
-        buttons.active = try make_parsing_button(allocator, display, "active", "Active", voice_changed);
-        try pickers.voice.add_element(allocator, buttons.active);
+        buttons.active = try pickers.voice.add(try self.make_parsing_button(
+            "active",
+            "Active",
+            @ptrCast(&voice_changed),
+        ), display);
 
-        buttons.middle = try make_parsing_button(allocator, display, "middle", "Middle", voice_changed);
-        try pickers.voice.add_element(allocator, buttons.middle);
+        buttons.middle = try pickers.voice.add(try self.make_parsing_button(
+            "middle",
+            "Middle",
+            @ptrCast(&voice_changed),
+        ), display);
 
-        buttons.passive = try make_parsing_button(allocator, display, "passive", "Passive", voice_changed);
-        try pickers.voice.add_element(allocator, buttons.passive);
+        buttons.passive = try pickers.voice.add(try self.make_parsing_button(
+            "passive",
+            "Passive",
+            @ptrCast(&voice_changed),
+        ), display);
     }
 
     {
-        pickers.mood = try engine.create_panel(
-            allocator,
-            display,
-            .{
-                .name = "mood.picker",
-                .background_texture_name = "white rounded rect",
-                .layout = .{ .x = .grows },
-                .child_align = .{ .x = .centre, .y = .start },
-                .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 500, .height = 30 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
-            },
-        );
-        try panel.add_element(allocator, pickers.mood);
+        pickers.mood = try self.panel.add(.{
+            .name = "mood.picker",
+            .background = .{ .image_name = "white rounded rect" },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+            .minimum = .{ .width = 500, .height = 30 },
+            .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
+        }, display);
 
-        const mood_row1 = try engine.create_panel(
-            allocator,
-            display,
-            .{
-                .name = "mood.row1",
-                .layout = .{ .x = .grows },
-                .child_align = .{ .x = .centre, .y = .start },
-                .pad = .{ .top = 5, .bottom = 5 },
-                .minimum = .{ .width = 300, .height = 30 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-            },
-        );
-        try pickers.mood.add_element(allocator, mood_row1);
+        const mood_row1 = try pickers.mood.add(.{
+            .name = "mood.row1",
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .pad = .{ .top = 5, .bottom = 5 },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
+        }, display);
 
-        const mood_row2 = try engine.create_panel(
-            allocator,
-            display,
-            .{
-                .name = "mood.row2",
-                .layout = .{ .x = .grows },
-                .child_align = .{ .x = .centre, .y = .start },
-                .pad = .{ .top = 5, .bottom = 5 },
-                .minimum = .{ .width = 300, .height = 30 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-            },
-        );
-        try pickers.mood.add_element(allocator, mood_row2);
+        const mood_row2 = try pickers.mood.add(.{
+            .name = "mood.row2",
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .pad = .{ .top = 5, .bottom = 5 },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
+        }, display);
 
-        buttons.indicative = try make_parsing_button(
-            allocator,
-            display,
+        buttons.indicative = try mood_row1.add(try self.make_parsing_button(
             "indicative",
             "Indicative",
-            mood_changed,
-        );
-        try mood_row1.add_element(allocator, buttons.indicative);
+            @ptrCast(&mood_changed),
+        ), display);
 
-        buttons.participle = try make_parsing_button(
-            allocator,
-            display,
+        buttons.participle = try mood_row1.add(try self.make_parsing_button(
             "participle",
             "Participle",
-            mood_changed,
-        );
-        try mood_row1.add_element(allocator, buttons.participle);
+            @ptrCast(&mood_changed),
+        ), display);
 
-        buttons.subjunctive = try make_parsing_button(
-            allocator,
-            display,
+        buttons.subjunctive = try mood_row1.add(try self.make_parsing_button(
             "subjunctive",
             "Subjunctive",
-            mood_changed,
-        );
-        try mood_row1.add_element(allocator, buttons.subjunctive);
+            @ptrCast(&mood_changed),
+        ), display);
 
-        buttons.imperative = try make_parsing_button(
-            allocator,
-            display,
+        buttons.imperative = try mood_row2.add(try self.make_parsing_button(
             "imperative",
             "Imperative",
-            mood_changed,
-        );
-        try mood_row2.add_element(allocator, buttons.imperative);
+            @ptrCast(&mood_changed),
+        ), display);
 
-        buttons.infinitive = try make_parsing_button(
-            allocator,
-            display,
+        buttons.infinitive = try mood_row2.add(try self.make_parsing_button(
             "infinitive",
             "Infinitive",
-            mood_changed,
-        );
-        try mood_row2.add_element(allocator, buttons.infinitive);
+            @ptrCast(&mood_changed),
+        ), display);
     }
 
     {
-        pickers.person = try engine.create_panel(
-            allocator,
-            display,
-            .{
-                .name = "person.picker",
-                .background_texture_name = "white rounded rect",
-                .layout = .{ .x = .grows },
-                .child_align = .{ .x = .centre },
-                .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 500, .height = 30 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-            },
-        );
-        try panel.add_element(allocator, pickers.person);
+        pickers.person = try self.panel.add(.{
+            .name = "person.picker",
+            .background = .{ .image_name = "white rounded rect" },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+            .minimum = .{ .width = 500, .height = 30 },
+            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
+        }, display);
 
-        buttons.first = try engine.create_button(allocator, display, .{
+        buttons.first = try pickers.person.add(.{
             .name = "first_person",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -912,15 +916,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "1st Person",
                 .toggle = .off,
-                .on_click = person_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&person_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try pickers.person.add_element(allocator, buttons.first);
+        }, display);
 
-        buttons.second = try engine.create_button(allocator, display, .{
+        buttons.second = try pickers.person.add(.{
             .name = "second_person",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -932,56 +937,52 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "2nd Person",
                 .toggle = .off,
-                .on_click = person_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
-            } },
-        });
-        try pickers.person.add_element(allocator, buttons.second);
-
-        buttons.third = try engine.create_button(
-            allocator,
-            display,
-            .{
-                .name = "third_person",
-                .pad = .{
-                    .left = PARSING_BUTTON_X_PADDING,
-                    .right = PARSING_BUTTON_X_PADDING,
-                    .top = PARSING_BUTTON_Y_PADDING,
-                    .bottom = PARSING_BUTTON_Y_PADDING,
+                .on_pressed = .{ .func = @ptrCast(&person_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
                 },
-                .layout = .{ .y = .shrinks, .x = .shrinks },
-                .type = .{ .button = .{
-                    .text = "3rd Person",
-                    .toggle = .off,
-                    .on_click = person_changed,
-                    .background_default_name = "white rounded rect",
-                    .background_pressed_name = "white rounded rect",
-                    .background_hover_name = "white rounded rect",
-                } },
+            } },
+        }, display);
+
+        buttons.third = try pickers.person.add(.{
+            .name = "third_person",
+            .pad = .{
+                .left = PARSING_BUTTON_X_PADDING,
+                .right = PARSING_BUTTON_X_PADDING,
+                .top = PARSING_BUTTON_Y_PADDING,
+                .bottom = PARSING_BUTTON_Y_PADDING,
             },
-        );
-        try pickers.person.add_element(allocator, buttons.third);
+            .layout = .{ .y = .shrinks, .x = .shrinks },
+            .type = .{ .button = .{
+                .text = "3rd Person",
+                .toggle = .off,
+                .on_pressed = .{ .func = @ptrCast(&person_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
+            } },
+        }, display);
     }
 
     {
-        pickers.case = try engine.create_panel(
-            allocator,
-            display,
-            .{
-                .name = "case.picker",
-                .background_texture_name = "white rounded rect",
-                .layout = .{ .x = .grows, .y = .shrinks },
-                .child_align = .{ .x = .centre },
-                .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 500, .height = 30 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-            },
-        );
-        try panel.add_element(allocator, pickers.case);
+        pickers.case = try self.panel.add(.{
+            .name = "case.picker",
+            .background = .{ .image_name = "white rounded rect" },
+            .layout = .{ .x = .grows, .y = .shrinks },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+            .minimum = .{ .width = 500, .height = 30 },
+            .type = .{ .panel = .{
+                .spacing = 10,
+                .direction = .left_to_right,
+            } },
+        }, display);
 
-        buttons.nominative = try engine.create_button(allocator, display, .{
+        buttons.nominative = try pickers.case.add(.{
             .name = "nominative",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -993,17 +994,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Nominative",
                 .toggle = .off,
-                .on_click = case_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try pickers.case.add_element(allocator, buttons.nominative);
+        }, display);
 
-        buttons.accusative = try engine.create_button(
-            allocator,
-            display,
+        buttons.accusative = try pickers.case.add(
             .{
                 .name = "accusative",
                 .pad = .{
@@ -1016,16 +1016,18 @@ pub fn init(context: *AppContext) (error{
                 .type = .{ .button = .{
                     .text = "Accusative",
                     .toggle = .off,
-                    .on_click = case_changed,
-                    .background_default_name = "white rounded rect",
-                    .background_pressed_name = "white rounded rect",
-                    .background_hover_name = "white rounded rect",
+                    .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
+                    .button = .{
+                        .default_name = "white rounded rect",
+                        .pressed_name = "white rounded rect",
+                        .hover_name = "white rounded rect",
+                    },
                 } },
             },
+            display,
         );
-        try pickers.case.add_element(allocator, buttons.accusative);
 
-        buttons.genitive = try engine.create_button(allocator, display, .{
+        buttons.genitive = try pickers.case.add(.{
             .name = "genitive",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -1037,15 +1039,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Genitive",
                 .toggle = .off,
-                .on_click = case_changed,
-                .background_default_name = "white rounded rect2",
-                .background_pressed_name = "white rounded rect2",
-                .background_hover_name = "white rounded rect2",
+                .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect2",
+                    .pressed_name = "white rounded rect2",
+                    .hover_name = "white rounded rect2",
+                },
             } },
-        });
-        try pickers.case.add_element(allocator, buttons.genitive);
+        }, display);
 
-        buttons.dative = try engine.create_button(allocator, display, .{
+        buttons.dative = try pickers.case.add(.{
             .name = "dative",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -1057,32 +1060,31 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Dative",
                 .toggle = .off,
-                .on_click = case_changed,
-                .background_default_name = "white rounded rect2",
-                .background_pressed_name = "white rounded rect2",
-                .background_hover_name = "white rounded rect2",
+                .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect2",
+                    .pressed_name = "white rounded rect2",
+                    .hover_name = "white rounded rect2",
+                },
             } },
-        });
-        try pickers.case.add_element(allocator, buttons.dative);
+        }, display);
     }
 
     {
-        pickers.number = try engine.create_panel(
-            allocator,
-            display,
-            .{
-                .name = "number.picker",
-                .background_texture_name = "white rounded rect",
-                .layout = .{ .x = .grows },
-                .child_align = .{ .x = .centre, .y = .start },
-                .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-                .minimum = .{ .width = 500, .height = 30 },
-                .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-            },
-        );
-        try panel.add_element(allocator, pickers.number);
+        pickers.number = try self.panel.add(.{
+            .name = "number.picker",
+            .background = .{ .image_name = "white rounded rect" },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+            .minimum = .{ .width = 500, .height = 30 },
+            .type = .{ .panel = .{
+                .spacing = 10,
+                .direction = .left_to_right,
+            } },
+        }, display);
 
-        buttons.singular = try engine.create_button(allocator, display, .{
+        buttons.singular = try pickers.number.add(.{
             .name = "singular",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -1094,15 +1096,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Singular",
                 .toggle = .off,
-                .on_click = number_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&number_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try pickers.number.add_element(allocator, buttons.singular);
+        }, display);
 
-        buttons.plural = try engine.create_button(allocator, display, .{
+        buttons.plural = try pickers.number.add(.{
             .name = "plural",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -1114,27 +1117,28 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Plural",
                 .toggle = .off,
-                .on_click = number_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&number_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try pickers.number.add_element(allocator, buttons.plural);
+        }, display);
     }
 
     {
-        pickers.gender = try panel.add_alloc(allocator, display, .{
+        pickers.gender = try self.panel.add(.{
             .name = "gender.picker",
-            .background_texture_name = "white rounded rect",
+            .background = .{ .image_name = "white rounded rect" },
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
             .minimum = .{ .width = 500, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        });
+        }, display);
 
-        buttons.masculine = try engine.create_button(allocator, display, .{
+        buttons.masculine = try pickers.gender.add(.{
             .name = "masculine",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -1146,15 +1150,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Masculine",
                 .toggle = .off,
-                .on_click = gender_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&gender_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try pickers.gender.add_element(allocator, buttons.masculine);
+        }, display);
 
-        buttons.feminine = try engine.create_button(allocator, display, .{
+        buttons.feminine = try pickers.gender.add(.{
             .name = "feminine",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -1166,15 +1171,16 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Feminine",
                 .toggle = .off,
-                .on_click = gender_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&gender_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try pickers.gender.add_element(allocator, buttons.feminine);
+        }, display);
 
-        buttons.neuter = try engine.create_button(allocator, display, .{
+        buttons.neuter = try pickers.gender.add(.{
             .name = "neuter",
             .pad = .{
                 .left = PARSING_BUTTON_X_PADDING,
@@ -1187,17 +1193,18 @@ pub fn init(context: *AppContext) (error{
             .type = .{ .button = .{
                 .text = "Neuter",
                 .toggle = .off,
-                .on_click = gender_changed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&gender_changed), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try pickers.gender.add_element(allocator, buttons.neuter);
+        }, display);
     }
 
     {
-        correct_panel = try panel.add_alloc(allocator, display, .{
+        correct_panel = try self.panel.add(.{
             .name = "correct.panel.align",
             .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
             .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
@@ -1210,66 +1217,58 @@ pub fn init(context: *AppContext) (error{
                     .direction = .left_to_right,
                 },
             },
-        });
+        }, display);
 
-        const alert_box = try correct_panel.add_alloc(allocator, display, .{
+        const alert_box = try correct_panel.add(.{
             .name = "correct.panel",
-            .background_texture_name = "white rounded rect",
+            .background = .{ .image_name = "white rounded rect" },
             .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .child_align = .{ .x = .centre, .y = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
             .minimum = .{ .width = 700, .height = 100 },
             .visible = .visible,
+            .style = .success,
             .type = .{ .panel = .{
                 .spacing = 10,
                 .direction = .left_to_right,
-                .style = .success,
             } },
-        });
+        }, display);
 
-        const feedback = try engine.create_label(
-            allocator,
-            display,
-            .{
-                .name = "correct.feedback",
-                .rect = .{ .width = 510, .height = 20 },
-                .minimum = .{ .width = 510 },
-                .layout = .{ .y = .shrinks, .x = .shrinks },
-                .type = .{ .label = .{
-                    .text = "Great.",
-                    .text_size = .heading,
-                    .text_colour = .success,
-                } },
-            },
-        );
-        try alert_box.add_element(allocator, feedback);
+        _ = try alert_box.add(.{
+            .name = "correct.feedback",
+            .rect = .{ .width = 510, .height = 20 },
+            .minimum = .{ .width = 510 },
+            .layout = .{ .y = .shrinks, .x = .shrinks },
+            .style = .success,
+            .type = .{ .label = .{
+                .text = "Great.",
+                .text_size = .heading,
+            } },
+        }, display);
 
-        const next1 = try engine.create_button(
-            allocator,
-            display,
-            .{
-                .name = "next",
-                .rect = .{ .width = 140, .height = 80 },
-                .minimum = .{ .width = 140, .height = 80 },
-                .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
-                .layout = .{ .y = .shrinks, .x = .shrinks },
-                .child_align = .{ .x = .centre },
-                .type = .{ .button = .{
-                    .text = "Next",
-                    .on_click = next_clicked,
-                    .style = .success,
-                    .background_default_name = "white rounded rect",
-                    .background_pressed_name = "white rounded rect",
-                    .background_hover_name = "white rounded rect",
-                } },
-            },
-        );
-        try alert_box.add_element(allocator, next1);
+        _ = try alert_box.add(.{
+            .name = "next",
+            .rect = .{ .width = 140, .height = 80 },
+            .minimum = .{ .width = 140, .height = 80 },
+            .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
+            .layout = .{ .y = .shrinks, .x = .shrinks },
+            .child_align = .{ .x = .centre },
+            .style = .success,
+            .type = .{ .button = .{
+                .text = "Next",
+                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
+            } },
+        }, display);
     }
 
     {
-        incorrect_panel = try panel.add_alloc(allocator, display, .{
+        incorrect_panel = try self.panel.add(.{
             .name = "incorrect.panel.align",
             .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
             .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
@@ -1282,78 +1281,68 @@ pub fn init(context: *AppContext) (error{
                     .direction = .left_to_right,
                 },
             },
-        });
+        }, display);
 
-        const alert_box = try incorrect_panel.add_alloc(allocator, display, .{
+        const alert_box = try incorrect_panel.add(.{
             .name = "incorrect.panel",
-            .background_texture_name = "white rounded rect",
+            .background = .{ .image_name = "white rounded rect" },
             .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre, .y = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
             .minimum = .{ .width = 700, .height = 100 },
+            .style = .failed,
             .type = .{ .panel = .{
                 .spacing = 10,
                 .direction = .left_to_right,
-                .style = .failed,
             } },
-        });
+        }, display);
 
-        _ = try alert_box.add_alloc(allocator, display, .{
+        _ = try alert_box.add(.{
             .name = "incorrect.feedback",
             .rect = .{ .width = 510, .height = 20 },
             .minimum = .{ .width = 510 },
             .layout = .{ .y = .shrinks, .x = .shrinks },
+            .style = .failed,
             .type = .{ .label = .{
                 .text = "Try again.",
                 .text_size = .heading,
-                .text_colour = .failed,
             } },
-        });
+        }, display);
 
-        const next2 = try engine.create_button(allocator, display, .{
+        _ = try alert_box.add(.{
             .name = "next",
             .rect = .{ .width = 140, .height = 80 },
             .minimum = .{ .width = 140, .height = 80 },
             .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
             .layout = .{ .y = .shrinks, .x = .shrinks },
             .child_align = .{ .x = .centre },
+            .style = .failed,
             .type = .{ .button = .{
                 .text = "Next",
-                .on_click = next_clicked,
-                .style = .failed,
-                .background_default_name = "white rounded rect",
-                .background_pressed_name = "white rounded rect",
-                .background_hover_name = "white rounded rect",
+                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
             } },
-        });
-        try alert_box.add_element(allocator, next2);
+        }, display);
     }
 
-    try panel.add_element(allocator, try engine.create_expander(
-        allocator,
-        display,
-        .{
-            .name = "bottom.expander",
-            .rect = .{ .x = 0, .y = 0, .width = 100, .height = 5 },
-            .minimum = .{ .width = 100, .height = 5 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 1.3 } },
-        },
-    ));
+    _ = try self.panel.add(.{
+        .name = "bottom.expander",
+        .rect = .{ .x = 0, .y = 0, .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1.3 } },
+    }, display);
 }
 
-pub fn handle_resize(display: *Display, _: *Element) bool {
+pub fn handle_resize(self: *ParsingCardScreen, display: *Display, _: *Entity) bool {
     var updated = false;
-    const new_width = ParsingMenuScreen.best_width(display);
-    if (panel.rect.width != new_width) {
-        panel.rect.width = new_width;
-        panel.minimum.width = new_width;
-        panel.maximum.width = new_width;
-        updated = true;
-    }
 
-    if (ac.app_context.?.preference.size == .large or ac.app_context.?.preference.size == .extra_large or display.root.rect.height < 1200) {
+    if (self.app.preference.size == .large or self.app.preference.size == .extra_large or display.root.rect.height < 1200) {
         if (help_line.visible != .hidden) {
             help_line.visible = .hidden;
             updated = true;
@@ -1368,8 +1357,13 @@ pub fn handle_resize(display: *Display, _: *Element) bool {
     return updated;
 }
 
-fn make_parsing_button(allocator: Allocator, display: *Display, name: []const u8, text: []const u8, handler: fn (*Display, *Element) std.mem.Allocator.Error!void) !*Element {
-    return try engine.create_button(allocator, display, .{
+fn make_parsing_button(
+    self: *ParsingCardScreen,
+    name: []const u8,
+    text: []const u8,
+    handler: *const fn (*anyopaque, *Display, *Entity, *const Event) Allocator.Error!void,
+) !Entity {
+    return .{
         .name = name,
         .pad = .{
             .left = PARSING_BUTTON_X_PADDING,
@@ -1381,62 +1375,71 @@ fn make_parsing_button(allocator: Allocator, display: *Display, name: []const u8
         .type = .{ .button = .{
             .text = text,
             .toggle = .off,
-            .on_click = handler,
-            .background_default_name = "white rounded rect",
-            .background_pressed_name = "white rounded rect",
-            .background_hover_name = "white rounded rect",
+            .on_pressed = .{ .func = handler, .ptr = self },
+            .button = .{
+                .default_name = "white rounded rect",
+                .pressed_name = "white rounded rect",
+                .hover_name = "white rounded rect",
+            },
         } },
-    });
+    };
 }
 
-pub fn next_clicked(display: *Display, element: *Element) error{OutOfMemory}!void {
-    try slide_panel_out(display);
-    if (ac.app_context.?.parsing_quiz.form_bank.items.len == 0) {
-        MenuUI.progress_bar.visible = .hidden;
-        MenuUI.toolbar.visible = .visible;
+pub fn next_clicked(self: *ParsingCardScreen, display: *Display, element: *Entity, event: *Event) error{OutOfMemory}!void {
+    try self.slide_panel_out(display);
+    if (self.app.parsing_quiz.form_bank.items.len == 0) {
+        try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
+        try self.app.menu_ui.toolbar.setVisibility(display, .visible);
         if (ac.app_context.?.word_lexeme) |lexeme| {
-            try ParsingSetupScreen.study_by_form(display, lexeme, ParsingSetupScreen.called_by);
+            try self.app.parsing_setup.study_by_form(display, lexeme, self.app.parsing_setup.called_by, event);
         } else {
-            try ParsingMenuScreen.show(display, element);
+            try self.app.parsing_menu.show(display, element, event);
         }
         return;
     }
-    _ = try show_next_quiz_card(display);
+    _ = try self.show_next_quiz_card(display);
 }
 
 pub fn button_bounce(
-    allocator: Allocator,
+    self: *ParsingCardScreen,
     display: *Display,
-    button: *Element,
+    button: *Entity,
 ) error{OutOfMemory}!void {
     button.layout.x = .fixed;
     button.layout.y = .fixed;
     const animation: engine.Animator = .{
         .target = button,
-        .mode = .move,
+        .mode = .{ .move = .{
+            .start = button.rect,
+            .end = .{
+                .x = button.rect.x,
+                .y = button.rect.y,
+                .width = 10,
+                .height = 2,
+            },
+        } },
         .movement = .stretch,
         .duration = 100 * 1000,
-        .start = button.rect,
-        .end = .{
-            .x = button.rect.x,
-            .y = button.rect.y,
-            .width = 10,
-            .height = 2,
-        },
-        .on_end = button_bounce_end,
+        .on_end = .{ .func = @ptrCast(&button_bounce_end), .ptr = self },
     };
-    try display.add_animator(allocator, animation);
+    try display.addAnimator(animation);
 }
 
-pub fn button_bounce_end(_: *Display, button: *Element) void {
+pub fn button_bounce_end(
+    _: *ParsingCardScreen,
+    _: *Display,
+    button: *Entity,
+) Allocator.Error!void {
     button.layout.x = .shrinks;
     button.layout.y = .shrinks;
 }
 
 const panel_slide_duration = 250 * 1000;
 
-pub fn slide_panel_in(display: *Display, slide_panel: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+pub fn slide_panel_in(
+    display: *Display,
+    slide_panel: *Entity,
+) error{OutOfMemory}!void {
     correct_panel.visible = .hidden;
     incorrect_panel.visible = .hidden;
     slide_panel.visible = .visible;
@@ -1444,63 +1447,73 @@ pub fn slide_panel_in(display: *Display, slide_panel: *Element) error{OutOfMemor
     slide_panel.rect.y = display.root.rect.height + 2;
     const animation: engine.Animator = .{
         .target = slide_panel,
-        .mode = .move,
+        .mode = .{ .move = .{
+            .start = slide_panel.rect,
+            .end = .{
+                .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
+                .y = display.root.rect.height - display.root.pad.bottom - slide_panel.rect.height - 20,
+                .width = slide_panel.rect.width,
+                .height = slide_panel.rect.height,
+            },
+        } },
         .movement = .ease,
         .duration = panel_slide_duration,
-        .start = slide_panel.rect,
-        .end = .{
-            .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
-            .y = display.root.rect.height - display.root.pad.bottom - slide_panel.rect.height - 20,
-            .width = slide_panel.rect.width,
-            .height = slide_panel.rect.height,
-        },
     };
-    try display.add_animator(allocator, animation);
+    try display.addAnimator(animation);
 }
 
-pub fn slide_panel_out(display: *Display) error{OutOfMemory}!void {
+pub fn slide_panel_out(
+    self: *ParsingCardScreen,
+    display: *Display,
+) error{OutOfMemory}!void {
     if (correct_panel.visible != .hidden) {
-        try slide_panel_down(display, correct_panel);
+        try self.slide_panel_down(display, correct_panel);
     }
     if (incorrect_panel.visible != .hidden) {
-        try slide_panel_down(display, incorrect_panel);
+        try self.slide_panel_down(display, incorrect_panel);
     }
 }
 
-pub fn slide_panel_down(display: *Display, slide_panel: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+pub fn slide_panel_down(
+    _: *ParsingCardScreen,
+    display: *Display,
+    slide_panel: *Entity,
+) error{OutOfMemory}!void {
     slide_panel.rect.x = display.root.rect.width / 2 - slide_panel.rect.width / 2;
     slide_panel.rect.y = display.root.rect.height - display.root.pad.bottom - slide_panel.rect.height - 20;
     const animation: engine.Animator = .{
         .target = slide_panel,
-        .mode = .move,
+        .mode = .{ .move = .{
+            .start = slide_panel.rect,
+            .end = .{
+                .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
+                .y = display.root.rect.height + 2,
+                .width = slide_panel.rect.width,
+                .height = slide_panel.rect.height,
+            },
+        } },
         .movement = .ease,
         .duration = panel_slide_duration,
-        .start = slide_panel.rect,
-        .end = .{
-            .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
-            .y = display.root.rect.height + 2,
-            .width = slide_panel.rect.width,
-            .height = slide_panel.rect.height,
-        },
     };
-    try display.add_animator(allocator, animation);
+    try display.addAnimator(animation);
 }
 
 var help_line_buffer: [2][500]u8 = undefined;
 var help_line_buffer_i: usize = 0;
 
-pub fn show_next_quiz_card(display: *Display) error{OutOfMemory}!bool {
-    const ctx = ac.app_context.?;
-    if (ctx.parsing_quiz.form_bank.items.len == 0) {
+pub fn show_next_quiz_card(
+    self: *ParsingCardScreen,
+    display: *Display,
+) error{OutOfMemory}!bool {
+    if (self.app.parsing_quiz.form_bank.items.len == 0) {
         warn("Not starting quiz. Form bank has no words.", .{});
         return false;
     }
 
     const form = ac.app_context.?.parsing_quiz.next_form();
-    MenuUI.progress_bar.type.progress_bar.progress = ac.app_context.?.parsing_quiz.progress();
+    self.app.menu_ui.progress_bar.type.progress_bar.progress = self.app.parsing_quiz.progress();
 
-    try quiz_word.set_text(ctx.allocator, display, form.*.word, false);
+    try quiz_word.setText(display, form.*.word);
 
     help_line_buffer_i += 1;
     if (help_line_buffer_i >= help_line_buffer.len) {
@@ -1508,7 +1521,7 @@ pub fn show_next_quiz_card(display: *Display) error{OutOfMemory}!bool {
     }
 
     const text = std.fmt.bufPrint(&help_line_buffer[help_line_buffer_i], "Describe the grammar of {s}.", .{form.*.word}) catch "Describe the grammar of this word.";
-    try help_line.set_text(ctx.allocator, display, text, false);
+    try help_line.setText(display, text);
 
     info("showing card {s} ({any})", .{ form.*.word, form.*.parsing });
 
@@ -1555,15 +1568,15 @@ pub fn show_next_quiz_card(display: *Display) error{OutOfMemory}!bool {
     return true;
 }
 
-fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
-    std.debug.assert(ac.app_context.?.parsing_quiz.form_bank.items.len > 0);
-    const current_form = ac.app_context.?.parsing_quiz.form_bank.items[0];
+fn show_answer_if_ready(self: *ParsingCardScreen, display: *Display) error{OutOfMemory}!void {
+    std.debug.assert(self.app.parsing_quiz.form_bank.items.len > 0);
+    const current_form = self.app.parsing_quiz.form_bank.items[0];
     if (buttons.options_picked(current_form)) |parsing| {
         const correct = try buttons.mark_answers(current_form, parsing, display.allocator);
         if (correct) {
             info("User chose {any} correct.", .{parsing});
             try slide_panel_in(display, correct_panel);
-            _ = ac.app_context.?.parsing_quiz.remove_current_form();
+            _ = self.app.parsing_quiz.remove_current_form();
         } else {
             info("User chose {any} incorrect. Expecting {any}", .{ parsing, current_form.parsing });
             try slide_panel_in(display, incorrect_panel);
@@ -1576,8 +1589,12 @@ fn show_answer_if_ready(display: *Display) error{OutOfMemory}!void {
     return;
 }
 
-fn case_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+fn case_changed(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
     if (element.type.button.toggle == .on) {
         clear_other_toggles(element, &.{
             buttons.nominative,
@@ -1585,38 +1602,50 @@ fn case_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
             buttons.genitive,
             buttons.dative,
         });
-        try button_bounce(allocator, display, element);
+        try self.button_bounce(display, element);
     }
-    try show_answer_if_ready(display);
+    try self.show_answer_if_ready(display);
 }
 
-fn number_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+fn number_changed(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
     if (element.type.button.toggle == .on) {
         clear_other_toggles(element, &.{
             buttons.singular,
             buttons.plural,
         });
-        try button_bounce(allocator, display, element);
+        try self.button_bounce(display, element);
     }
-    try show_answer_if_ready(display);
+    try self.show_answer_if_ready(display);
 }
 
-fn gender_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+fn gender_changed(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
     if (element.type.button.toggle == .on) {
         clear_other_toggles(element, &.{
             buttons.masculine,
             buttons.feminine,
             buttons.neuter,
         });
-        try button_bounce(allocator, display, element);
+        try self.button_bounce(display, element);
     }
-    try show_answer_if_ready(display);
+    try self.show_answer_if_ready(display);
 }
 
-fn tense_form_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+fn tense_form_changed(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
     if (element.type.button.toggle == .on) {
         clear_other_toggles(element, &.{
             buttons.present,
@@ -1626,13 +1655,17 @@ fn tense_form_changed(display: *Display, element: *Element) error{OutOfMemory}!v
             buttons.perfect,
             buttons.pluperfect,
         });
-        try button_bounce(allocator, display, element);
+        try self.button_bounce(display, element);
     }
-    try show_answer_if_ready(display);
+    try self.show_answer_if_ready(display);
 }
 
-fn mood_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+fn mood_changed(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
     if (element.type.button.toggle == .on) {
         clear_other_toggles(element, &.{
             buttons.indicative,
@@ -1641,7 +1674,7 @@ fn mood_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
             buttons.infinitive,
             buttons.imperative,
         });
-        try button_bounce(allocator, display, element);
+        try self.button_bounce(display, element);
     }
 
     if (buttons.participle.type.button.toggle == .on) {
@@ -1663,92 +1696,100 @@ fn mood_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
         pickers.gender.visible = .hidden;
         display.need_relayout = true;
     }
-    try show_answer_if_ready(display);
+    try self.show_answer_if_ready(display);
 }
 
-fn voice_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+fn voice_changed(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
     if (element.type.button.toggle == .on) {
         clear_other_toggles(element, &.{
             buttons.active,
             buttons.middle,
             buttons.passive,
         });
-        try button_bounce(allocator, display, element);
+        try self.button_bounce(display, element);
     }
-    try show_answer_if_ready(display);
+    try self.show_answer_if_ready(display);
 }
 
-fn person_changed(display: *Display, element: *Element) error{OutOfMemory}!void {
-    const allocator = ac.app_context.?.allocator;
+fn person_changed(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
     if (element.type.button.toggle == .on) {
         clear_other_toggles(element, &.{
             buttons.first,
             buttons.second,
             buttons.third,
         });
-        try button_bounce(allocator, display, element);
+        try self.button_bounce(display, element);
     }
-    try show_answer_if_ready(display);
+    try self.show_answer_if_ready(display);
 }
 
-fn clear_other_toggles(current: *Element, others: []const *Element) void {
+fn clear_other_toggles(current: *Entity, others: []const *Entity) void {
     for (others) |*other| {
         if (current != other.*)
             other.*.type.button.toggle = .off;
     }
 }
 
-fn formsHaveTenseForm(forms: []*praxis.Form, tense_form: praxis.TenseForm) bool {
+fn formsHaveTenseForm(forms: []*praxis.Form, tense_form: praxis.Parsing.TenseForm) bool {
     for (forms) |form|
         if (form.parsing.tense_form == tense_form)
             return true;
     return false;
 }
 
-fn formsHaveVoice(forms: []*praxis.Form, voice: praxis.Voice) bool {
+fn formsHaveVoice(forms: []*praxis.Form, voice: praxis.Parsing.Voice) bool {
     for (forms) |form|
         if (form.parsing.voice == voice)
             return true;
     return false;
 }
 
-fn formsHaveGender(forms: []*praxis.Form, gender: praxis.Gender) bool {
+fn formsHaveGender(forms: []*praxis.Form, gender: praxis.Parsing.Gender) bool {
     for (forms) |form|
         if (form.parsing.gender == gender)
             return true;
     return false;
 }
 
-fn formsHaveMood(forms: []*praxis.Form, mood: praxis.Mood) bool {
+fn formsHaveMood(forms: []*praxis.Form, mood: praxis.Parsing.Mood) bool {
     for (forms) |form|
         if (form.parsing.mood == mood)
             return true;
     return false;
 }
 
-fn formsHaveCase(forms: []*praxis.Form, case: praxis.Case) bool {
+fn formsHaveCase(forms: []*praxis.Form, case: praxis.Parsing.Case) bool {
     for (forms) |form|
         if (form.parsing.case == case)
             return true;
     return false;
 }
 
-fn formsHaveNumber(forms: []*praxis.Form, number: praxis.Number) bool {
+fn formsHaveNumber(forms: []*praxis.Form, number: praxis.Parsing.Number) bool {
     for (forms) |form|
         if (form.parsing.number == number)
             return true;
     return false;
 }
 
-fn formsHaveRefNumber(forms: []*praxis.Form, number: praxis.TenseForm) bool {
+fn formsHaveRefNumber(forms: []*praxis.Form, number: praxis.Parsing.TenseForm) bool {
     for (forms) |form|
         if (form.parsing.tense_form == number)
             return true;
     return false;
 }
 
-fn formsHavePerson(forms: []*praxis.Form, person: praxis.Person) bool {
+fn formsHavePerson(forms: []*praxis.Form, person: praxis.Parsing.Person) bool {
     for (forms) |form|
         if (form.parsing.person == person)
             return true;
@@ -1758,6 +1799,17 @@ fn formsHavePerson(forms: []*praxis.Form, person: praxis.Person) bool {
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const engine = @import("engine");
+const Display = engine.Display;
+const ToggleState = engine.ToggleState;
+const Entity = engine.Entity;
+const Event = engine.Event;
+const trace = engine.log.trace;
+const debug = engine.log.debug;
+const info = engine.log.info;
+const warn = engine.log.warn;
+const err = engine.log.err;
+
 const praxis = @import("praxis");
 const Lexeme = praxis.Lexeme;
 const Form = praxis.Form;
@@ -1765,21 +1817,10 @@ const Form = praxis.Form;
 const resources = @import("resources");
 const Resources = resources.Resources;
 const ResourcesError = resources.Resources.Error;
-const seed = resources.seed;
+const seed = praxis.random.seed;
 
-const engine = @import("engine");
-const Display = engine.Display;
-const ToggleState = engine.ToggleState;
-const Element = engine.Element;
-const trace = engine.trace;
-const debug = engine.debug;
-const info = engine.info;
-const warn = engine.warn;
-const err = engine.err;
-
-const ac = @import("app_context.zig");
+const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
-const MenuUI = @import("menu_ui.zig");
-const ParsingSetupScreen = @import("screen_parsing_setup.zig");
+const MenuUI = @import("MenuUI.zig");
 const ParsingMenuScreen = @import("screen_parsing_menu.zig");

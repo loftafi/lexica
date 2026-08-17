@@ -5,8 +5,8 @@
 lexeme: ?*praxis.Lexeme = null,
 word_set: ?*WordSet = null,
 
-form_bank: ArrayList(*praxis.Form) = undefined,
-all_forms: ArrayList(*praxis.Form) = undefined,
+form_bank: ArrayListUnmanaged(*praxis.Form) = undefined,
+all_forms: ArrayListUnmanaged(*praxis.Form) = undefined,
 total_cards: usize = 0,
 
 const Self = @This();
@@ -14,17 +14,17 @@ const Self = @This();
 const ignores = [_][]const u8{"δώσωσιν"};
 const non_endings = [_][]const u8{ "έω", "εω", "άω", "αω", "όω", "οω" };
 
-pub fn init(self: *Self, allocator: Allocator) !void {
-    self.form_bank = ArrayList(*praxis.Form).init(allocator);
-    self.all_forms = ArrayList(*praxis.Form).init(allocator);
+pub fn init(self: *Self, _: Allocator) !void {
+    self.form_bank = .empty;
+    self.all_forms = .empty;
 }
 
-pub fn deinit(self: *Self) void {
-    self.form_bank.deinit();
-    self.all_forms.deinit();
+pub fn deinit(self: *Self, gpa: Allocator) void {
+    self.form_bank.deinit(gpa);
+    self.all_forms.deinit(gpa);
 }
 
-pub fn clear(self: *Self) void {
+pub fn clear(self: *Self, _: Allocator) void {
     self.form_bank.clearRetainingCapacity();
     self.all_forms.clearRetainingCapacity();
     self.word_set = null;
@@ -50,10 +50,10 @@ pub fn setup_with_lexeme(self: *Self, lexeme: *praxis.Lexeme) error{OutOfMemory}
     });
     if (engine.dev_mode == true) {
         for (self.form_bank.items) |form| {
-            var ps: std.ArrayListUnmanaged(u8) = .empty;
-            form.parsing.string(ps.writer(ac.allocator)) catch {};
-            debug("  {s} {s}", .{ form.word, ps.items });
-            ps.deinit(ac.allocator);
+            var ps: std.Io.Writer.Allocating = .init(ac.allocator);
+            defer ps.deinit();
+            form.parsing.string(&ps.writer) catch {};
+            debug("  {s} {s}", .{ form.word, ps.written() });
         }
     }
 
@@ -83,10 +83,10 @@ pub fn setup_with_word_set(self: *Self, word_set: *WordSet) error{OutOfMemory}!v
     });
     if (engine.dev_mode == true) {
         for (self.form_bank.items) |form| {
-            var ps: std.ArrayListUnmanaged(u8) = .empty;
-            form.parsing.string(ps.writer(ac.allocator)) catch {};
-            debug("  {s} {s}", .{ form.word, ps.items });
-            ps.deinit(ac.allocator);
+            var ps: std.Io.Writer.Allocating = .init(ac.allocator);
+            defer ps.deinit();
+            form.parsing.string(&ps.writer) catch {};
+            debug("  {s} {s}", .{ form.word, ps.written() });
         }
     }
 
@@ -117,7 +117,7 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
             warn("Verb has non valid mood", .{});
             return;
         }
-        try self.all_forms.append(form);
+        try self.all_forms.append(ac.allocator, form);
         if (!ac.preference.present_future) {
             if (form.parsing.tense_form == .future or form.parsing.tense_form == .present) {
                 return;
@@ -176,7 +176,7 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
         if (form.parsing.case == .vocative) {
             return;
         }
-        try self.all_forms.append(form);
+        try self.all_forms.append(ac.allocator, form);
         if (!ac.preference.nominative_accusative) {
             if (form.parsing.case == .nominative or form.parsing.case == .accusative) {
                 //debug("skipping nominative/accusative {any} {s}", .{ ac.preference.nominative_accusative, @tagName(form.parsing.case) });
@@ -189,13 +189,17 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
             }
         }
     } else {
-        var ps: std.ArrayListUnmanaged(u8) = .empty;
-        form.parsing.string(ps.writer(self.form_bank.allocator)) catch {};
-        warn("Skip unsupported form {s} for wordbank. {s} {s}", .{ @tagName(form.parsing.part_of_speech), form.word, ps.items });
-        ps.deinit(self.form_bank.allocator);
+        var ps: std.Io.Writer.Allocating = .init(ac.allocator);
+        defer ps.deinit();
+        form.parsing.string(&ps.writer) catch {};
+        warn("Skip unsupported form {s} for wordbank. {s} {s}", .{
+            @tagName(form.parsing.part_of_speech),
+            form.word,
+            ps.written(),
+        });
         return;
     }
-    try self.form_bank.append(form);
+    try self.form_bank.append(ac.allocator, form);
 }
 
 pub fn progress(self: *Self) f32 {
@@ -207,7 +211,7 @@ pub fn progress(self: *Self) f32 {
 
 pub fn next_form(self: *Self) *praxis.Form {
     const cards = &self.form_bank.items;
-    const choose = random(cards.len);
+    const choose = random.random(cards.len);
     const form = cards.*[choose];
     cards.*[choose] = cards.*[0];
     cards.*[0] = form;
@@ -231,15 +235,18 @@ pub fn remove_current_form(self: *Self) usize {
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
+const ArrayListUnmanaged = std.ArrayListUnmanaged;
+
+const engine = @import("engine");
+const err = engine.log.err;
+const warn = engine.log.warn;
+const info = engine.log.info;
+const debug = engine.log.debug;
+
+const resources = @import("resources");
+const random = praxis.random;
+const praxis = @import("praxis");
+
+const app = @import("App.zig");
 const Lists = @import("lists.zig");
 const WordSet = @import("lists.zig").WordSet;
-const resources = @import("resources");
-const random = resources.random;
-const praxis = @import("praxis");
-const engine = @import("engine");
-const app = @import("app_context.zig");
-const err = engine.err;
-const warn = engine.warn;
-const info = engine.info;
-const debug = engine.debug;

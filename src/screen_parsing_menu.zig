@@ -4,157 +4,146 @@
 //! `init` builds up the entire screen, without any word sets
 //! that may exist. `update_sets` is then used to add/update
 //! the list ofavailable word sets.
+pub const ParsingMenuScreen = @This();
 
-var panel: *Element = undefined;
-var scroller: *Element = undefined;
-var info2: *Element = undefined;
-var new_button: *Element = undefined;
-var bottom_spacer: *Element = undefined;
+app: *AppContext = undefined,
+panel: *Entity = undefined,
+scroller: *Entity = undefined,
+info2: *Entity = undefined,
+new_button: *Entity = undefined,
+bottom_spacer: *Entity = undefined,
 
-const ICON_PAD = 30;
+const ICON_PAD = 15;
 
-pub fn show(display: *Display, _: *Element) error{OutOfMemory}!void {
-    display.choose_panel("parsing.menu");
+pub fn show(
+    _: *ParsingMenuScreen,
+    display: *Display,
+    _: *Entity,
+    event: *const Event,
+) error{OutOfMemory}!void {
+    try display.choosePanel("parsing.menu", event);
 }
 
-pub fn deinit() void {
-    //
+pub fn deinit(self: *ParsingMenuScreen) void {
+    self.* = undefined;
 }
 
-pub fn init(context: *AppContext) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || ResourcesError)!void {
+pub fn init(
+    self: *ParsingMenuScreen,
+    context: *AppContext,
+) (engine.Error || error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || ResourcesError)!void {
     var display = context.display;
-    const allocator = context.allocator;
+    self.app = context;
 
-    panel = try display.root.add_alloc(allocator, display, .{
+    self.panel = try display.addPanel(.{
         .name = "parsing.menu",
         .visible = .hidden,
         .rect = .{ .x = 0, .y = 0 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
         .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
         .type = .{ .panel = .{
             .direction = .top_to_bottom,
             .spacing = 5,
+            .choosable = .choosable,
         } },
     });
 
-    const title = try engine.create_label(
-        allocator,
-        display,
-        .{
-            .name = "parsing.heading",
-            .minimum = .{ .width = 500, .height = 10 },
-            .child_align = .{ .x = .centre },
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .label = .{
-                .text = "Parsing Quiz",
-                .text_size = .heading,
-                .text_colour = .tinted,
-            } },
-        },
-    );
-    title.pad.top = 30;
-    title.pad.bottom = 30;
-    try panel.add_element(allocator, title);
+    _ = try self.panel.add(.{
+        .name = "parsing.heading",
+        .minimum = .{ .height = 10 },
+        .child_align = .{ .x = .centre },
+        .layout = .{ .y = .shrinks, .x = .grows },
+        .pad = .{ .top = 30, .bottom = 30 },
+        .style = .tinted,
+        .type = .{ .label = .{
+            .text = "Parsing Quiz",
+            .text_size = .heading,
+        } },
+    }, display);
 
-    scroller = try engine.create_panel(
-        allocator,
-        context.display,
-        .{
-            .name = "scroll.panel",
-            .rect = .{ .x = 0, .y = 0 },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .minimum = .{ .width = 400, .height = 600 },
-            .type = .{
-                .panel = .{
-                    .scrollable = .{
-                        .scroll = .{ .x = false, .y = true },
-                        .size = .{ .width = 600, .height = 600 },
-                    },
-                    .direction = .top_to_bottom,
-                    .spacing = 10,
+    self.scroller = try self.panel.add(.{
+        .name = "scroll.panel",
+        .rect = .{ .x = 0, .y = 0 },
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .child_align = .{ .x = .centre },
+        .minimum = .{ .height = 600 },
+        .type = .{
+            .panel = .{
+                .scrollable = .{
+                    .scroll = .{ .x = false, .y = true },
+                    .size = .{ .width = 600, .height = 600 },
                 },
+                .direction = .top_to_bottom,
+                .spacing = 10,
             },
-            .on_resized = vertical_scroller_resize,
         },
-    );
-    try panel.add_element(allocator, scroller);
+        .on_resized = .{ .func = @ptrCast(&vertical_scroller_resize), .ptr = self },
+    }, display);
 
-    try scroller.add_element(allocator, try engine.create_expander(
-        allocator,
-        display,
-        .{
-            .name = "top.expander",
-            .rect = .{ .width = 100, .height = 20 },
-            .minimum = .{ .width = 100, .height = 0 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .expander = .{ .weight = 1 } },
-        },
-    ));
+    _ = try self.scroller.add(.{
+        .name = "top.expander",
+        .rect = .{ .width = 100, .height = 20 },
+        .minimum = .{ .width = 100, .height = 0 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1 } },
+    }, display);
 
-    try scroller.add_element(allocator, try engine.create_label(
-        allocator,
-        display,
-        .{
-            .name = "parsing instructions",
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .minimum = .{ .width = 500, .height = 10 },
-            .child_align = .{ .x = .centre },
-            .type = .{ .label = .{
-                .text = "Practice parsing one of the following words.",
-                .text_size = .normal,
-                .text_colour = .normal,
-            } },
-        },
-    ));
+    _ = try self.scroller.add(.{
+        .name = "parsing instructions",
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .minimum = .{ .height = 10 },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Practice parsing one of the following words.",
+        } },
+    }, display);
 
-    try make_button_bar(display, scroller, "verb.buttons", &[_][]const u8{ "λύω", "βλέπω", "περιπατέω" });
-    try make_button_bar(display, scroller, "contract.buttons", &[_][]const u8{ "ἀγαπάω", "ποιέω", "πληρόω" });
-    try make_button_bar(display, scroller, "other.buttons", &[_][]const u8{ "ῥύομαι", "δίδωμι", "ἐγώ", "εἰμί" });
+    try self.make_button_bar(display, self.scroller, "verb.buttons", &[_][]const u8{ "λύω", "βλέπω", "περιπατέω" });
+    try self.make_button_bar(display, self.scroller, "contract.buttons", &[_][]const u8{ "ἀγαπάω", "ποιέω", "πληρόω" });
+    try self.make_button_bar(display, self.scroller, "other.buttons", &[_][]const u8{ "ῥύομαι", "δίδωμι", "ἐγώ", "εἰμί" });
 
-    _ = try display.add_spacer(allocator, scroller, 20);
+    _ = try display.add_spacer(self.scroller, 20);
 
-    try make_button_bar(display, scroller, "masculine.buttons", &[_][]const u8{ "ἄνθρωπος", "λόγος", "θεός" });
-    try make_button_bar(display, scroller, "feminine.buttons", &[_][]const u8{ "γραφή", "ἠμέρα", "δόξα" });
-    try make_button_bar(display, scroller, "neuter.buttons", &[_][]const u8{ "βιβλίον", "ἔργον", "τέκνον" });
+    try self.make_button_bar(display, self.scroller, "masculine.buttons", &[_][]const u8{ "ἄνθρωπος", "λόγος", "θεός" });
+    try self.make_button_bar(display, self.scroller, "feminine.buttons", &[_][]const u8{ "γραφή", "ἠμέρα", "δόξα" });
+    try self.make_button_bar(display, self.scroller, "neuter.buttons", &[_][]const u8{ "βιβλίον", "ἔργον", "τέκνον" });
 
-    _ = try display.add_spacer(allocator, scroller, 20);
+    _ = try display.add_spacer(self.scroller, 20);
 
-    try make_button_bar(display, scroller, "parsing.other", &[_][]const u8{ "βασιλεύς", "πόλις", "σάρξ", "πᾶς" });
+    try self.make_button_bar(display, self.scroller, "parsing.other", &[_][]const u8{ "βασιλεύς", "πόλις", "σάρξ", "πᾶς" });
 
-    _ = try scroller.add_alloc(allocator, display, .{
+    _ = try self.scroller.add(.{
         .name = "bottom.expander",
         .rect = .{ .width = 100, .height = 20 },
         .minimum = .{ .width = 100, .height = 20 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .expander = .{ .weight = 1.2 } },
-    });
+    }, display);
 
-    _ = try scroller.add_alloc(allocator, display, .{
+    _ = try self.scroller.add(.{
         .name = "bottom.pad",
         .rect = .{ .width = 70, .height = 120 },
         .minimum = .{ .width = 70, .height = 20 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .expander = .{ .weight = 0 } },
-    });
+    }, display);
 
-    info2 = try scroller.add_alloc(allocator, display, .{
+    self.info2 = try self.scroller.add(.{
         .name = "list.instructions",
         .layout = .{ .x = .grows, .y = .shrinks },
-        .minimum = .{ .width = 500, .height = 10 },
+        .minimum = .{ .height = 10 },
         .child_align = .{ .x = .centre },
+        .style = .tinted,
         .type = .{ .label = .{
             .text = "Parsing Sets",
-            .text_size = .normal,
-            .text_colour = .tinted,
         } },
         .pad = .{ .top = 0, .left = 0.001 },
-    });
+    }, display);
 
-    const list_menu = try scroller.add_alloc(allocator, display, .{
+    const list_menu = try self.scroller.add(.{
         .name = "list_menu",
         .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
@@ -164,39 +153,42 @@ pub fn init(context: *AppContext) (error{ OutOfMemory, UnknownImageFormat, Resou
             .direction = .left_to_right,
             .spacing = 22,
         } },
-    });
+    }, display);
 
-    new_button = try list_menu.add_alloc(allocator, display, .{
+    self.new_button = try list_menu.add(.{
         .name = "new.word.list",
         .minimum = .{ .width = 10, .height = 15 },
         .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .button = .{
             .text = "New Word Set",
-            .icon_default_name = "new list button",
-            .icon_hover_name = "new list button",
-            .icon_pressed_name = "new list button",
-            .background_default_name = "white rounded rect2",
-            .background_pressed_name = "white rounded rect2",
-            .background_hover_name = "white rounded rect2",
-            .on_click = show_new_word_list,
-            .spacing = 15,
-            .icon_size = .{ .x = 40, .y = 40 },
+            .icon = .{
+                .default_name = "new list button",
+                .hover_name = "new list button",
+                .pressed_name = "new list button",
+                .size = .{ .width = 20, .height = 20 },
+            },
+            .button = .{
+                .default_name = "white rounded rect2",
+                .pressed_name = "white rounded rect2",
+                .hover_name = "white rounded rect2",
+            },
+            .on_pressed = .{ .func = @ptrCast(&show_new_word_list), .ptr = self },
+            .spacing = 8,
         } },
-    });
+    }, display);
 
-    bottom_spacer = try context.display.add_spacer(allocator, panel, 80);
-    bottom_spacer.on_resized = MenuUI.update_bottom_spacing;
+    self.bottom_spacer = try context.display.add_spacer(self.panel, 80);
+    self.bottom_spacer.on_resized = .{ .func = @ptrCast(&MenuUI.update_bottom_spacing), .ptr = self };
 }
 
-pub fn update_sets() (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || ResourcesError)!void {
+pub fn update_sets(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || engine.Error || ResourcesError)!void {
     const ctx = ac.app_context.?;
     const display = ctx.display;
-    const allocator = ctx.allocator;
 
     // Remove existing list items
     var list_pos: usize = 0;
-    for (scroller.type.panel.children.items, 0..) |child, i| {
+    for (self.scroller.type.panel.children.items, 0..) |child, i| {
         if (std.mem.eql(u8, child.name, "list.instructions")) {
             list_pos = i + 1;
             break;
@@ -204,109 +196,102 @@ pub fn update_sets() (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, 
     }
 
     while (true) {
-        if (list_pos >= scroller.type.panel.children.items.len) {
+        if (list_pos >= self.scroller.type.panel.children.items.len) {
             break;
         }
-        const item = scroller.type.panel.children.items[list_pos];
+        const item = self.scroller.type.panel.children.items[list_pos];
         if (!std.mem.eql(u8, item.name, "list.item")) {
             break;
         }
-        const found = scroller.remove_element_at(list_pos);
-        found.destroy(display, display.allocator);
+        const found = self.scroller.removeEntityAt(display, list_pos);
+        found.destroy(display);
     }
 
     for (ac.app_context.?.lists.sets.items) |list| {
         // Add refreshed list items
-        const item = try engine.create_label(
-            allocator,
-            display,
-            .{
-                .name = "list.item",
-                .layout = .{ .x = .grows, .y = .shrinks },
-                .minimum = .{ .width = 500, .height = 10 },
-                .child_align = .{ .x = .centre },
-                .type = .{ .label = .{
-                    .text = list.name.items,
-                    .text_size = .normal,
-                    .text_colour = .normal,
-                    .on_click = list_tapped,
-                } },
-            },
-        );
-        try scroller.insert_element(allocator, list_pos, item);
+        _ = try self.scroller.insert(list_pos, .{
+            .name = "list.item",
+            .layout = .{ .x = .grows, .y = .shrinks },
+            .minimum = .{ .height = 10 },
+            .child_align = .{ .x = .centre },
+            .type = .{ .label = .{
+                .text = list.name.items,
+                .on_pressed = .{ .func = @ptrCast(&list_tapped), .ptr = self },
+            } },
+        }, display);
     }
     display.relayout();
 }
 
 fn make_button_bar(
+    self: *ParsingMenuScreen,
     display: *Display,
-    parent: *Element,
+    parent: *Entity,
     row_name: []const u8,
     words: []const []const u8,
 ) !void {
-    const allocator = ac.app_context.?.allocator;
-    var button_bar = try engine.create_panel(
-        allocator,
-        display,
-        .{
-            .name = row_name,
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 30, .right = 30, .top = 8, .bottom = 8 },
-            .minimum = .{ .width = 200, .height = 20 },
-            .type = .{ .panel = .{
-                .direction = .left_to_right,
-                .spacing = 22,
-            } },
-        },
-    );
-    try parent.add_element(allocator, button_bar);
+    var button_bar = try parent.add(.{
+        .name = row_name,
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .child_align = .{ .x = .centre },
+        .pad = .{ .top = 2, .bottom = 2 },
+        .minimum = .{ .width = 200, .height = 20 },
+        .type = .{ .panel = .{
+            .direction = .left_to_right,
+            .spacing = 12,
+        } },
+    }, display);
 
     for (words) |word| {
-        const button = try engine.create_button(
-            allocator,
-            display,
-            .{
-                .name = word,
-                .minimum = .{ .width = 10, .height = 15 },
-                .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
-                .layout = .{ .x = .shrinks, .y = .shrinks },
-                .type = .{ .button = .{
-                    .text = word,
-                    .on_click = show_parsing_setup,
-                    .background_default_name = "white rounded rect2",
-                    .background_pressed_name = "white rounded rect2",
-                    .background_hover_name = "white rounded rect2",
-                } },
+        _ = try button_bar.add(.{
+            .name = word,
+            .minimum = .{ .width = 10, .height = 15 },
+            .pad = .{ .left = 15, .right = 15, .top = 12, .bottom = 12 },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .background = .{
+                .corner_radius = 14,
+                .image_corner_radius = 14,
             },
-        );
-        try button_bar.add_element(allocator, button);
+            .type = .{ .button = .{
+                .text = word,
+                .on_pressed = .{ .func = @ptrCast(&show_parsing_setup), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
+            } },
+        }, display);
     }
 }
 
-pub inline fn best_width(display: *Display) f32 {
-    if (display.root.rect.width > 1020) {
-        return 1000;
-    } else if (display.root.rect.width < 600) {
-        return 600;
-    } else {
-        return display.root.rect.width - 20;
-    }
-}
-
-pub fn list_tapped(display: *Display, element: *Element) error{OutOfMemory}!void {
+pub fn list_tapped(
+    _: *ParsingMenuScreen,
+    display: *Display,
+    element: *Entity,
+    event: *Event,
+) error{OutOfMemory}!void {
     if (ac.app_context.?.lists.lookup(element.type.label.text)) |list| {
-        try ParsingSetupScreen.study_by_list(display, list, ac.Screen.parsing_menu);
+        try ac.app_context.?.parsing_setup.study_by_list(display, list, ac.Screen.parsing_menu, event);
         info("Picked list to study {s}", .{list.name.items});
         return;
     }
     err("Unknown list picked {s}", .{element.name});
 }
 
-pub fn show_parsing_setup(display: *Display, element: *Element) error{OutOfMemory}!void {
+pub fn show_parsing_setup(
+    self: *ParsingMenuScreen,
+    display: *Display,
+    element: *Entity,
+    event: *Event,
+) error{OutOfMemory}!void {
     var found: ?*praxis.Lexeme = null;
 
-    if (ac.app_context.?.dictionary.by_form.lookup(element.type.button.text)) |result| {
+    const i = ac.app_context.?.dictionary.by_form.lookup(element.type.button.text) catch {
+        notice("practice word parsing for {s} not found.", .{element.type.button.text});
+        return;
+    };
+    if (i) |result| {
         if (result.exact_accented.items.len > 0) {
             if (result.exact_accented.items[0].lexeme) |lexeme| {
                 found = lexeme;
@@ -319,64 +304,64 @@ pub fn show_parsing_setup(display: *Display, element: *Element) error{OutOfMemor
         }
     }
     if (found) |lexeme| {
-        try ParsingSetupScreen.study_by_form(display, lexeme, ac.Screen.parsing_menu);
+        try self.app.parsing_setup.study_by_form(display, lexeme, ac.Screen.parsing_menu, event);
         return;
     }
 
     warn("practice word parsing for {s} not in dictionary.", .{element.type.button.text});
 }
 
-pub fn show_new_word_list(display: *Display, _: *Element) error{OutOfMemory}!void {
-    try ListNewScreen.show(display);
+pub fn show_new_word_list(
+    self: *ParsingMenuScreen,
+    display: *Display,
+    entity: *Entity,
+    event: *Event,
+) error{OutOfMemory}!void {
+    try self.app.list_new.show(display, entity, event);
 }
 
-pub fn _handle_resize(display: *Display, _: *Element) bool {
+pub fn vertical_scroller_resize(
+    _: *ParsingMenuScreen,
+    display: *Display,
+    scroll: *Entity,
+) bool {
     var updated = false;
-    const new_width = best_width(display);
-    if (panel.rect.width != new_width) {
-        panel.rect.width = new_width;
-        panel.minimum.width = new_width;
-        panel.maximum.width = new_width;
+    const menu_area = MenuUI.menubar_height();
+    debug("handle resize. menu_height={d} root.height={d} scroller.top={d}, safe.top={d}, safe.bottom={d}", .{
+        menu_area,
+        display.root.rect.height,
+        scroll.rect.y,
+        display.safe_area.top,
+        display.safe_area.bottom,
+    });
+    const want_scroller_height = display.root.rect.height - scroll.rect.y - menu_area - display.safe_area.bottom - display.safe_area.top;
+    if (scroll.rect.height != want_scroller_height) {
+        scroll.rect.height = want_scroller_height;
+        scroll.minimum.height = scroll.rect.height;
+        scroll.maximum.height = scroll.rect.height;
         updated = true;
     }
-
-    if (scroller.rect.height != display.root.rect.height - 340) {
-        scroller.rect.height = display.root.rect.height - 340;
-        scroller.minimum.height = scroller.rect.height;
-        scroller.maximum.height = scroller.rect.height;
-        updated = true;
-    }
-
-    const size = display.text_height * display.scale * engine.TextSize.normal.height();
-    const height = size + (ICON_PAD * 2);
-    if (new_button.minimum.height != height) {
-        new_button.minimum.height = height;
-        new_button.type.button.icon_size.x = size;
-        new_button.type.button.icon_size.y = size;
-        new_button.minimum.width = height;
-        new_button.rect.height = height;
-        new_button.minimum.height = height;
-        updated = true;
-    }
-
     return updated;
 }
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const ac = @import("app_context.zig");
-const ParsingSetupScreen = @import("screen_parsing_setup.zig");
-const ListNewScreen = @import("screen_list_new.zig");
-const MenuUI = @import("menu_ui.zig");
-const AppContext = ac.AppContext;
+
 const engine = @import("engine");
-const err = engine.err;
-const warn = engine.warn;
-const info = engine.info;
-const Lists = @import("lists.zig");
 const Display = engine.Display;
-const Element = engine.Element;
+const Entity = engine.Entity;
+const Event = engine.Event;
+const err = engine.log.err;
+const warn = engine.log.warn;
+const info = engine.log.info;
+const notice = engine.log.notice;
+const debug = engine.log.debug;
+
 const praxis = @import("praxis");
 const Lang = praxis.Lang;
-const vertical_scroller_resize = @import("screen_search.zig").vertical_scroller_resize;
+
+const ac = @import("App.zig");
+const AppContext = ac.AppContext;
+const MenuUI = @import("MenuUI.zig");
 const ResourcesError = @import("resources").Resources.Error;
+const Lists = @import("lists.zig");

@@ -4,47 +4,47 @@
 pub const MAX_FORMS_IN_SET: usize = 100;
 pub const MAX_SET_NAME: usize = 40;
 
-pub const Self = @This();
+pub const Lists = @This();
 
-sets: ArrayList(*WordSet),
+sets: ArrayListUnmanaged(*WordSet),
 dictionary: *Dictionary,
 
 const FILENAME = "sets.txt";
 
-pub fn create(allocator: Allocator, dictionary: *Dictionary) error{OutOfMemory}!*Self {
-    var sets = try allocator.create(Self);
-    sets.dictionary = dictionary;
-    sets.sets = ArrayList(*WordSet).init(allocator);
-    return sets;
+pub fn create(gpa: Allocator, dictionary: *Dictionary) error{OutOfMemory}!*Lists {
+    const self = try gpa.create(Lists);
+    self.* = .{
+        .dictionary = dictionary,
+        .sets = .empty,
+    };
+    return self;
 }
 
-pub fn destroy(self: *Self) void {
-    const allocator = self.sets.allocator;
-    for (self.sets.items) |*list| {
-        list.*.destroy();
-        allocator.destroy(list);
+pub fn destroy(self: *Lists, gpa: Allocator) void {
+    for (self.sets.items) |*set| {
+        set.*.destroy(gpa);
     }
-    self.sets.deinit();
-    allocator.destroy(self);
+    self.sets.deinit(gpa);
+    gpa.destroy(self);
+    self.* = undefined;
 }
 
-pub fn init(allocator: Allocator, dictionary: *Dictionary) Self {
-    return Self{
-        .sets = ArrayList(*WordSet).init(allocator),
+pub fn init(dictionary: *Dictionary) Lists {
+    return Lists{
+        .sets = .empty,
         .dictionary = dictionary,
     };
 }
 
-pub fn deinit(self: *Self) void {
-    //const allocator = self.sets.allocator;
+pub fn deinit(self: *Lists, gpa: Allocator) void {
     for (self.sets.items) |list| {
-        list.destroy();
+        list.destroy(gpa);
     }
-    self.sets.deinit();
+    self.sets.deinit(gpa);
 }
 
 /// Find the list matching the specified name.
-pub fn lookup(self: *Self, name: []const u8) ?*WordSet {
+pub fn lookup(self: *Lists, name: []const u8) ?*WordSet {
     for (self.sets.items) |list| {
         if (std.mem.eql(u8, name, list.name.items)) {
             return list;
@@ -55,8 +55,8 @@ pub fn lookup(self: *Self, name: []const u8) ?*WordSet {
 
 /// If no list data file exists at all, create a placeholder list
 /// file with some example word sets.
-pub fn prefill(self: *Self) error{OutOfMemory}!void {
-    var l = try WordSet.create(self.sets.allocator);
+pub fn prefill(self: *Lists, gpa: Allocator) error{OutOfMemory}!void {
+    var l = try WordSet.create(gpa);
     try l.name.appendSlice("People");
     try self.sets.append(l);
     var f = ac.app_context.?.dictionary.by_form.lookup("Ἄννα");
@@ -96,32 +96,23 @@ pub fn prefill(self: *Self) error{OutOfMemory}!void {
 
 /// Load word list data. What is the correct behaviour for when the
 /// word list file cannot be read?
-pub fn load(self: *Self) error{ OutOfMemory, InvalidListFile }!void {
-    // TODO: Need improved file open and file content fail handling
-    const path = sdl.SDL_GetPrefPath(ac.app_org_z(), ac.app_name_z());
-    const zpath = std.mem.sliceTo(path, 0);
-    var folder = std.fs.openDirAbsolute(zpath, .{}) catch |e| {
-        warn("Open preferences path failed. {s} {any}", .{ path, e });
-        return;
-    };
-    info("Preferences path: {s}", .{zpath});
-    var file = folder.openFile(FILENAME, .{}) catch |e| {
-        if (e == error.FileNotFound) {
-            info("sets file file not yet created.", .{});
-            try self.prefill();
+pub fn load(self: *Lists, gpa: Allocator, config: *engine.Config) error{ OutOfMemory, InvalidListFile }!void {
+    const data = engine.loadPreferenceData(gpa, config, FILENAME) catch |f| switch (f) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => |e| {
+            err("load() failed. file={q} error={t}", .{
+                FILENAME,
+                e,
+            });
             return;
-        }
-        warn("Open sets file failed. {s} {any}", .{ path, e });
+        },
+    } orelse {
+        notice("No list data file exists yet", .{});
         return;
     };
-    defer file.close();
-    debug("start reading sets file {s}", .{FILENAME});
-    const data = file.readToEndAlloc(self.sets.allocator, 1024 * 1024 * 20) catch |e| {
-        warn("Read preferences file failed. {s} {any}", .{ path, e });
-        return;
-    };
+    defer gpa.free(data);
+
     debug("{s} size = {d}", .{ FILENAME, data.len });
-    defer self.sets.allocator.free(data);
     var iter = std.mem.tokenizeAny(u8, data, "\n\r\t= ");
 
     while (true) {
@@ -136,8 +127,8 @@ pub fn load(self: *Self) error{ OutOfMemory, InvalidListFile }!void {
             break;
         }
 
-        var list = try WordSet.create(self.sets.allocator);
-        try self.sets.append(list);
+        var list = try WordSet.create(gpa);
+        try self.sets.append(gpa, list);
 
         // Read the title
         while (iter.next()) |title| {
@@ -145,9 +136,9 @@ pub fn load(self: *Self) error{ OutOfMemory, InvalidListFile }!void {
                 break;
             }
             if (list.name.items.len > 0) {
-                try list.name.append(' ');
+                try list.name.append(gpa, ' ');
             }
-            try list.name.appendSlice(title);
+            try list.name.appendSlice(gpa, title);
         }
         if (list.name.items.len == 0) {
             warn("List name is empty", .{});
@@ -179,12 +170,16 @@ pub fn load(self: *Self) error{ OutOfMemory, InvalidListFile }!void {
                 const id = std.fmt.parseInt(u24, uid, 10) catch {
                     return error.InvalidListFile;
                 };
-                if (self.dictionary.by_form.lookup(word)) |sr| {
+                const result = self.dictionary.by_form.lookup(word) catch |e| {
+                    err("word list {s} item lookup failed. {t}", .{ word, e });
+                    continue;
+                };
+                if (result) |sr| {
                     trace("list \"{s}\" add word {s}={s}", .{ list.name.items, word, uid });
                     var i = sr.iterator();
                     while (i.next()) |form| {
                         if (form.uid == id) {
-                            try list.forms.append(form);
+                            try list.forms.append(gpa, form);
                             break;
                         }
                     }
@@ -197,12 +192,16 @@ pub fn load(self: *Self) error{ OutOfMemory, InvalidListFile }!void {
 }
 
 /// Delete a word list and save the change to the data store.
-pub fn remove_list(self: *Self, list: *WordSet) error{OutOfMemory}!void {
+pub fn remove_list(
+    self: *Lists,
+    display: *Display,
+    list: *WordSet,
+) error{OutOfMemory}!void {
     for (self.sets.items, 0..) |item, i| {
         if (item == list) {
             const found = self.sets.orderedRemove(i);
-            found.destroy();
-            try self.save();
+            found.destroy(display.allocator);
+            try self.save(display.allocator, display.io, &display.config);
             return;
         }
     }
@@ -210,62 +209,60 @@ pub fn remove_list(self: *Self, list: *WordSet) error{OutOfMemory}!void {
 }
 
 /// Save the complete set of word sets to the data store.
-pub fn save(self: *Self) error{OutOfMemory}!void {
-    // TODO: Return file save error.
-    // TODO: Write to temp file before saving.
-
-    var data = try std.ArrayList(u8).initCapacity(self.sets.allocator, 5000);
-    defer data.deinit();
-
-    for (self.sets.items) |list| {
-        data.appendSliceAssumeCapacity("list_name ");
-        data.appendSliceAssumeCapacity(list.name.items);
-        data.appendSliceAssumeCapacity(" end\nlist_entries ");
-        for (list.forms.items) |form| {
-            data.appendSliceAssumeCapacity(form.word);
-            data.appendAssumeCapacity(' ');
-            try data.writer().print("{d} ", .{form.uid});
-        }
-        data.appendSliceAssumeCapacity("end\n");
-    }
-
-    const path = sdl.SDL_GetPrefPath(ac.app_org_z(), ac.app_name_z());
-    const zpath = std.mem.sliceTo(path, 0);
-    var folder = std.fs.openDirAbsolute(zpath, .{}) catch |e| {
-        warn("Open preferences path failed. {s} {any}", .{ path, e });
+pub fn save(self: *Lists, gpa: Allocator, io: std.Io, config: *engine.Config) error{OutOfMemory}!void {
+    const data = writeListData(gpa, self.sets.items) catch |e| {
+        err("generate list file data failed. {t}", .{e});
         return;
     };
-    var file = folder.createFile(FILENAME, .{}) catch |e| {
-        warn("Open word list file failed. {s} {any}", .{ path, e });
-        return;
-    };
-    defer file.close();
-    file.writeAll(data.items) catch |e| {
-        warn("Write word list file failed. {s} {any}", .{ path, e });
-        return;
+    defer gpa.free(data);
+
+    engine.savePreferenceData(gpa, io, config, FILENAME, data) catch |e| {
+        err("save list file data to '{s}' failed. {t}", .{ FILENAME, e });
     };
 }
 
-pub const WordSet = struct {
-    name: ArrayList(u8),
-    forms: ArrayList(*Form),
+fn writeListData(
+    gpa: Allocator,
+    sets: []*WordSet,
+) error{ OutOfMemory, WriteFailed }![]const u8 {
+    var data = std.Io.Writer.Allocating.init(gpa);
+    errdefer data.deinit();
 
-    study_items: ArrayList(*Form),
+    for (sets) |list| {
+        try data.writer.writeAll("list_name ");
+        try data.writer.writeAll(list.name.items);
+        try data.writer.writeAll(" end\nlist_entries ");
+        for (list.forms.items) |form| {
+            try data.writer.writeAll(form.word);
+            try data.writer.writeByte(' ');
+            try data.writer.print("{d} ", .{form.uid});
+        }
+        try data.writer.writeAll("end\n");
+    }
+
+    return data.toOwnedSlice();
+}
+
+pub const WordSet = struct {
+    name: ArrayListUnmanaged(u8),
+    forms: ArrayListUnmanaged(*Form),
+
+    study_items: ArrayListUnmanaged(*Form),
 
     pub fn create(allocator: Allocator) error{OutOfMemory}!*WordSet {
         var list = try allocator.create(WordSet);
-        list.name = ArrayList(u8).init(allocator);
-        list.forms = ArrayList(*praxis.Form).init(allocator);
-        list.study_items = ArrayList(*praxis.Form).init(allocator);
+        list.name = .empty;
+        list.forms = .empty;
+        list.study_items = .empty;
         return list;
     }
 
-    pub fn destroy(self: *WordSet) void {
-        const allocator = self.forms.allocator;
-        self.name.deinit();
-        self.forms.deinit();
-        self.study_items.deinit();
-        allocator.destroy(self);
+    pub fn destroy(self: *WordSet, gpa: Allocator) void {
+        self.name.deinit(gpa);
+        self.forms.deinit(gpa);
+        self.study_items.deinit(gpa);
+        gpa.destroy(self);
+        self.* = undefined;
     }
 
     pub fn has_noun_or_adjective(self: *WordSet) bool {
@@ -287,7 +284,7 @@ pub const WordSet = struct {
         return false;
     }
 
-    pub fn add(self: *WordSet, item: *Form) !bool {
+    pub fn add(self: *WordSet, gpa: Allocator, item: *Form) !bool {
         var insert_at: ?usize = null;
 
         for (self.forms.items, 0..) |form, i| {
@@ -306,9 +303,9 @@ pub const WordSet = struct {
         }
 
         if (insert_at) |i| {
-            try self.forms.insert(i, item);
+            try self.forms.insert(gpa, i, item);
         } else {
-            try self.forms.append(item);
+            try self.forms.append(gpa, item);
         }
 
         return false;
@@ -325,17 +322,17 @@ pub const WordSet = struct {
     }
 
     /// List all forms belonging to all lexemes in this word set.
-    pub fn study_forms(self: *WordSet) error{OutOfMemory}![]*praxis.Form {
+    pub fn study_forms(self: *WordSet, gpa: Allocator) error{OutOfMemory}![]*praxis.Form {
         self.study_items.clearRetainingCapacity();
         for (self.forms.items) |form| {
             if (form.lexeme) |lexeme| {
                 for (lexeme.forms.items) |candidate| {
                     if (candidate.parsing.part_of_speech == .noun) {
-                        try self.study_items.append(candidate);
+                        try self.study_items.append(gpa, candidate);
                     } else if (candidate.parsing.part_of_speech == .adjective) {
-                        try self.study_items.append(candidate);
+                        try self.study_items.append(gpa, candidate);
                     } else if (candidate.parsing.part_of_speech == .verb) {
-                        try self.study_items.append(candidate);
+                        try self.study_items.append(gpa, candidate);
                     }
                 }
             }
@@ -345,16 +342,21 @@ pub const WordSet = struct {
 };
 
 const std = @import("std");
-const ArrayList = std.ArrayList;
+const ArrayListUnmanaged = std.ArrayListUnmanaged;
 const Allocator = std.mem.Allocator;
+
 const engine = @import("engine");
-const err = engine.err;
-const warn = engine.warn;
-const info = engine.info;
-const trace = engine.trace;
-const debug = engine.debug;
-const sdl = @import("dep_sdl_module");
-const ac = @import("app_context.zig");
+const Display = engine.Display;
+const err = engine.log.err;
+const warn = engine.log.warn;
+const notice = engine.log.notice;
+const info = engine.log.info;
+const trace = engine.log.trace;
+const debug = engine.log.debug;
+const sdl = engine.sdl;
+
+const ac = @import("App.zig");
+
 const praxis = @import("praxis");
 const Form = praxis.Form;
 const Dictionary = praxis.Dictionary;
@@ -362,8 +364,8 @@ const Dictionary = praxis.Dictionary;
 test "list file" {
     const dict = try praxis.test_dictionary(std.testing.allocator);
     defer dict.destroy(std.testing.allocator);
-    const list = try Self.create(std.testing.allocator, dict);
-    defer list.*.destroy();
-    //var sets = Self.create(std.testing.allocator, dictionary);
+    const list = try Lists.create(std.testing.allocator, dict);
+    defer list.*.destroy(std.testing.allocator);
+    //var sets = Lists.create(std.testing.allocator, dictionary);
     //defer sets.destroy();
 }
