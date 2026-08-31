@@ -246,7 +246,7 @@ pub const AppContext = struct {
         errdefer ac.list_new.deinit();
 
         try ac.list_delete.init(ac);
-        errdefer ac.list_edit.deinit(ac.display.allocator);
+        errdefer ac.list_delete.deinit();
 
         try ac.list_edit.init(ac);
         errdefer ac.list_edit.deinit(ac.display.allocator);
@@ -285,7 +285,6 @@ pub const AppContext = struct {
 
         debug("Loaded word lists.", .{});
         try ac.search_screen.show_search_history(ac.display);
-        try ac.parsing_menu.update_sets();
 
         debug("Adding keybindings.", .{});
         try ac.display.setKeybinding(.space, .{ .func = @ptrCast(&pick_search_screen), .ptr = ac });
@@ -725,7 +724,7 @@ const Scale = engine.Scale;
 const loadResourceSdl = engine.loadResourceSdl;
 const sdl = engine.sdl;
 
-const Lists = @import("lists.zig");
+const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;
 const ParsingQuiz = @import("ParsingQuiz.zig");
 

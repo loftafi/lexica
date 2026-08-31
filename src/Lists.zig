@@ -11,24 +11,6 @@ dictionary: *Dictionary,
 
 const FILENAME = "sets.txt";
 
-pub fn create(gpa: Allocator, dictionary: *Dictionary) error{OutOfMemory}!*Lists {
-    const self = try gpa.create(Lists);
-    self.* = .{
-        .dictionary = dictionary,
-        .sets = .empty,
-    };
-    return self;
-}
-
-pub fn destroy(self: *Lists, gpa: Allocator) void {
-    for (self.sets.items) |*set| {
-        set.*.destroy(gpa);
-    }
-    self.sets.deinit(gpa);
-    gpa.destroy(self);
-    self.* = undefined;
-}
-
 pub fn init(dictionary: *Dictionary) Lists {
     return Lists{
         .sets = .empty,
@@ -41,6 +23,7 @@ pub fn deinit(self: *Lists, gpa: Allocator) void {
         list.destroy(gpa);
     }
     self.sets.deinit(gpa);
+    self.* = undefined;
 }
 
 /// Find the list matching the specified name.
@@ -261,8 +244,8 @@ pub const WordSet = struct {
         self.name.deinit(gpa);
         self.forms.deinit(gpa);
         self.study_items.deinit(gpa);
-        gpa.destroy(self);
         self.* = undefined;
+        gpa.destroy(self);
     }
 
     pub fn hasNounOrAdjective(self: *WordSet) bool {

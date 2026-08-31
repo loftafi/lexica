@@ -61,7 +61,7 @@ pub fn init(self: *SearchScreen, app: *AppContext) !void {
         .rect = .{ .width = 500, .height = 20 },
         .layout = .{ .x = .grows },
         .minimum = .{ .height = 20 },
-        .pad = .{ .top = 4, .bottom = 4 },
+        .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
         .type = .{ .text_input = .{
             .max_length = @min(30, praxis.max_word_size),
             .on_change = .{ .func = @ptrCast(&search_query_changed), .ptr = self },

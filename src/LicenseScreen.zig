@@ -10,7 +10,7 @@ pub fn show(self: *LicenseScreen, display: *Display, _: *Entity, event: *Event) 
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .hidden;
     }
-    _ = self.vertical_scroller_resize(display, self.scroller);
+    _ = self.resizeScroller(display, self.scroller);
     display.relayout();
 }
 
@@ -69,7 +69,7 @@ pub fn init(self: *LicenseScreen, app: *AppContext) !void {
             },
         },
         .on_resized = .{
-            .func = @ptrCast(&vertical_scroller_resize),
+            .func = @ptrCast(&resizeScroller),
             .ptr = self,
         },
     }, display);
@@ -126,14 +126,20 @@ pub fn deinit(self: *LicenseScreen) void {
     self.* = undefined;
 }
 
-pub fn tapBack(_: *LicenseScreen, display: *Display, _: *Entity, event: *Event) Allocator.Error!void {
+pub fn tapBack(
+    self: *LicenseScreen,
+    display: *Display,
+    _: *Entity,
+    event: *Event,
+) Allocator.Error!void {
     if (display.root.getChildByName("menu")) |child| {
-        child.visible = .visible;
+        //child.visible = .visible;
+        _ = child;
     }
-    try display.choosePanel("preferences.screen", event);
+    try display.choosePanel(self.app.preferences.panel.name, event);
 }
 
-pub fn vertical_scroller_resize(
+pub fn resizeScroller(
     _: *LicenseScreen,
     display: *Display,
     scroll: *Entity,
@@ -170,7 +176,6 @@ const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
 const MenuUI = @import("MenuUI.zig");
-const best_width = @import("ParsingMenuScreen.zig").best_width;
 const ByzScreen = @import("ByzScreen.zig");
 const NotoScreen = @import("NotoScreen.zig");
 const SDLScreen = @import("SDLScreen.zig");

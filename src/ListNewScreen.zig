@@ -3,9 +3,8 @@ pub const ListNewScreen = @This();
 
 app: *AppContext = undefined,
 panel: *Entity = undefined,
-
-var new_button: *Entity = undefined;
-var text_input: *Entity = undefined;
+new_button: *Entity = undefined,
+text_input: *Entity = undefined,
 
 const ICON_PAD = 15;
 
@@ -13,9 +12,9 @@ pub fn show(
     self: *ListNewScreen,
     display: *Display,
     _: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
-    try text_input.setText(display, "");
+    try self.text_input.setText(display, "");
     try display.choosePanel(self.panel.name, event);
 }
 
@@ -61,20 +60,21 @@ pub fn init(
         .pad = .{ .top = 15 },
     }, display);
 
-    text_input = try self.panel.add(.{
+    self.text_input = try self.panel.add(.{
         .name = "new_list_name",
         .background = .{
             .image_name = "white rounded rect",
             .image_corner_radius = 50,
             .corner_radius = 14,
         },
+        .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
         .rect = .{ .width = 250, .height = 10 },
         .layout = .{ .x = .grows, .y = .shrinks },
-        .minimum = .{ .height = 10, .width = 290 },
+        .minimum = .{ .height = 20, .width = 290 },
         .type = .{
             .text_input = .{
                 .max_length = Lists.MAX_SET_NAME,
-                .on_submit = .{ .func = @ptrCast(&addList), .ptr = self },
+                .on_submit = .{ .func = @ptrCast(&tapAddList), .ptr = self },
                 .placeholder_text = "Textbook Chapter 3",
             },
         },
@@ -89,7 +89,7 @@ pub fn init(
         .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 11 } },
     }, display);
 
-    new_button = try button_bar.add(.{
+    self.new_button = try button_bar.add(.{
         .name = "create.word.list",
         .background = .{ .image_corner_radius = 50, .corner_radius = 14 },
         .minimum = .{ .width = 5, .height = 7 },
@@ -105,9 +105,9 @@ pub fn init(
             .button = .{
                 .default_name = "default button",
                 .hover_name = "hover default",
-                .pressed_name = "pressed default",
+                .pressed_name = "pressed button",
             },
-            .on_pressed = .{ .func = @ptrCast(&addList), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapAddList), .ptr = self },
             .spacing = 10,
         } },
     }, display);
@@ -121,36 +121,32 @@ fn tapBack(
     self: *ListNewScreen,
     display: *Display,
     element: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     try self.app.parsing_menu.show(display, element, event);
 }
 
-fn addList(
+fn tapAddList(
     self: *ListNewScreen,
     display: *Display,
     element: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
-    if (text_input.type.text_input.text.items.len == 0) {
+    if (self.text_input.type.text_input.text.items.len == 0) {
         info("No list name entered.", .{});
         return;
     }
-    info("Creating list named {s}.", .{text_input.type.text_input.text.items});
+    info("Creating list named {s}.", .{self.text_input.type.text_input.text.items});
     const a = try Lists.WordSet.create(display.allocator);
-    try a.name.appendSlice(display.allocator, text_input.type.text_input.text.items);
+    try a.name.appendSlice(display.allocator, self.text_input.type.text_input.text.items);
     try self.app.lists.sets.append(display.allocator, a);
-    self.app.parsing_menu.update_sets() catch |e| {
-        if (e == error.OutOfMemory) return error.OutOfMemory;
-        err("update_lists failed: {any}", .{e});
-    };
     self.app.list_edit.list = a;
     try self.app.list_edit.show(display, element, event);
-    try text_input.setText(display, "");
+    try self.text_input.setText(display, "");
 }
 
 pub fn resizeList(
-    _: *ListNewScreen,
+    self: *ListNewScreen,
     _: *Display,
     _: *Entity,
 ) bool {
@@ -158,13 +154,13 @@ pub fn resizeList(
 
     const size = engine.TextSize.normal.size();
     const height = size + (ICON_PAD * 2);
-    if (new_button.minimum.height != height) {
-        new_button.minimum.height = height;
-        new_button.type.button.icon.size.width = size;
-        new_button.type.button.icon.size.height = size;
-        new_button.minimum.width = height;
-        new_button.rect.height = height;
-        new_button.minimum.height = height;
+    if (self.new_button.minimum.height != height) {
+        self.new_button.minimum.height = height;
+        self.new_button.type.button.icon.size.width = size;
+        self.new_button.type.button.icon.size.height = size;
+        self.new_button.minimum.width = height;
+        self.new_button.rect.height = height;
+        self.new_button.minimum.height = height;
         updated = true;
     }
 
@@ -186,6 +182,6 @@ const ResourcesError = Resources.Error;
 const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
-const Lists = @import("lists.zig");
+const Lists = @import("Lists.zig");
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const ListEditScreen = @import("ListEditScreen.zig");

@@ -1,6 +1,7 @@
 //! Display the terms and conditions as at the date this version was released.
 pub const TermsScreen = @This();
 
+app: *AppContext = undefined,
 panel: *Entity = undefined,
 back_button: *Entity = undefined,
 scroller: *Entity = undefined,
@@ -11,19 +12,19 @@ pub fn show(
     _: *Entity,
     event: *Event,
 ) std.mem.Allocator.Error!void {
-    try display.choosePanel("terms.screen", event);
+    try display.choosePanel(self.panel.name, event);
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .hidden;
     }
-    _ = self.vertical_scroller_resize(display, self.scroller);
+    _ = self.resizeScroller(display, self.scroller);
     display.need_relayout = true;
 }
 
 pub fn init(self: *TermsScreen, app: *AppContext) !void {
+    self.app = app;
     var display = app.display;
     self.panel = try display.addPanel(.{
         .name = "terms.screen",
-        .rect = .{ .x = 0, .y = 0 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
@@ -71,7 +72,7 @@ pub fn init(self: *TermsScreen, app: *AppContext) !void {
                 .spacing = 2,
             },
         },
-        .on_resized = .{ .func = @ptrCast(&vertical_scroller_resize), .ptr = self },
+        .on_resized = .{ .func = @ptrCast(&resizeScroller), .ptr = self },
     }, display);
 
     const app_name = app.display.config.app_name orelse "This app";
@@ -91,7 +92,7 @@ pub fn deinit(self: *TermsScreen) void {
 }
 
 pub fn tapBack(
-    _: *TermsScreen,
+    self: *TermsScreen,
     display: *Display,
     _: *Entity,
     event: *Event,
@@ -99,10 +100,10 @@ pub fn tapBack(
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .visible;
     }
-    try display.choosePanel("preferences.screen", event);
+    try display.choosePanel(self.app.preferences.panel.name, event);
 }
 
-pub fn vertical_scroller_resize(
+pub fn resizeScroller(
     _: *TermsScreen,
     display: *Display,
     scroll: *Entity,

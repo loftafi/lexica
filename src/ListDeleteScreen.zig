@@ -13,10 +13,14 @@ pub fn show(
     self: *ListDeleteScreen,
     display: *Display,
     _: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
-    try self.heading.setText(display, self.app.parsing_setup.list.?.name.items);
-    try display.choosePanel(self.panel.name, event);
+    if (self.app.parsing_setup.list) |list| {
+        try self.heading.setText(display, list.name.items);
+        try display.choosePanel(self.panel.name, event);
+    } else {
+        err("ListDelete not shown. parsing_setup does not have list", .{});
+    }
 }
 
 pub fn deinit(self: *ListDeleteScreen) void {
@@ -89,11 +93,15 @@ pub fn init(
     self.delete_button = try button_bar.add(.{
         .name = "delete.word.set.button",
         .minimum = .{ .width = 5, .height = 7 },
+        .background = .{
+            .corner_radius = 14,
+            .image_corner_radius = 50,
+        },
         .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .button = .{
             .text = "Delete Word Set",
-            .on_pressed = .{ .func = @ptrCast(&delete_list), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapDeleteList), .ptr = self },
             .spacing = 10,
             .icon = .{
                 .default_name = "edit list button",
@@ -118,7 +126,7 @@ fn tapBack(
     try ac.app_context.?.parsing_menu.show(display, element, event);
 }
 
-fn delete_list(
+fn tapDeleteList(
     self: *ListDeleteScreen,
     display: *Display,
     element: *Entity,
@@ -133,10 +141,6 @@ fn delete_list(
         err("delete list failed: {any}", .{e});
         try self.app.parsing_menu.show(display, element, event);
         return;
-    };
-    self.app.parsing_menu.update_sets() catch |e| {
-        if (e == error.OutOfMemory) return error.OutOfMemory;
-        err("update_lists failed: {any}", .{e});
     };
     try self.app.parsing_menu.show(display, element, event);
 }
@@ -176,4 +180,4 @@ const info = engine.log.info;
 const ac = @import("App.zig");
 const ResourceErrors = @import("resources").Resources.Error;
 
-const Lists = @import("lists.zig");
+const Lists = @import("Lists.zig");

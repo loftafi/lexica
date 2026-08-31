@@ -16,8 +16,7 @@ pub fn show(
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .hidden;
     }
-    _ = self.vertical_scroller_resize(display, self.scroller);
-    display.relayout();
+    _ = self.resizeScroller(display, self.scroller);
 }
 
 pub fn init(self: *PrivacyScreen, context: *AppContext) !void {
@@ -77,7 +76,7 @@ pub fn init(self: *PrivacyScreen, context: *AppContext) !void {
                 .spacing = 2,
             },
         },
-        .on_resized = .{ .func = @ptrCast(&vertical_scroller_resize), .ptr = self },
+        .on_resized = .{ .func = @ptrCast(&resizeScroller), .ptr = self },
     }, display);
 
     try display.add_paragraph(self.scroller, .normal, "p1", "By using this app, you consent to this privacy policy and the terms of service.");
@@ -93,7 +92,7 @@ pub fn deinit(self: *PrivacyScreen) void {
 }
 
 pub fn tapBack(
-    _: *PrivacyScreen,
+    self: *PrivacyScreen,
     display: *Display,
     _: *Entity,
     event: *Event,
@@ -101,10 +100,10 @@ pub fn tapBack(
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .visible;
     }
-    try display.choosePanel("preferences.screen", event);
+    try display.choosePanel(self.app.preferences.panel.name, event);
 }
 
-pub fn vertical_scroller_resize(
+pub fn resizeScroller(
     _: *PrivacyScreen,
     display: *Display,
     scroll: *Entity,

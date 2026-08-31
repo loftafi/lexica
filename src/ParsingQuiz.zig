@@ -248,5 +248,5 @@ const random = praxis.random;
 const praxis = @import("praxis");
 
 const app = @import("App.zig");
-const Lists = @import("lists.zig");
-const WordSet = @import("lists.zig").WordSet;
+const Lists = @import("Lists.zig");
+const WordSet = Lists.WordSet;

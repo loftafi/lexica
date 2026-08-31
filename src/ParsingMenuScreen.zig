@@ -2,7 +2,7 @@
 //! for parsing, and any special user created parsing sets.
 //!
 //! `init` builds up the entire screen, without any word sets
-//! that may exist. `update_sets` is then used to add/update
+//! that may exist. `setupLists` is then used to add/update
 //! the list ofavailable word sets.
 pub const ParsingMenuScreen = @This();
 
@@ -10,17 +10,22 @@ app: *AppContext = undefined,
 panel: *Entity = undefined,
 scroller: *Entity = undefined,
 info2: *Entity = undefined,
-new_button: *Entity = undefined,
+new_list_button: *Entity = undefined,
 bottom_spacer: *Entity = undefined,
 
 const ICON_PAD = 15;
 
 pub fn show(
-    _: *ParsingMenuScreen,
+    self: *ParsingMenuScreen,
     display: *Display,
     _: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
+    self.setupLists() catch |e| {
+        if (e == error.OutOfMemory) return error.OutOfMemory;
+        err("update_lists failed: {any}", .{e});
+    };
+
     try display.choosePanel("parsing.menu", event);
 }
 
@@ -56,7 +61,7 @@ pub fn init(
         .minimum = .{ .height = 10 },
         .child_align = .{ .x = .centre },
         .layout = .{ .y = .shrinks, .x = .grows },
-        .pad = .{ .top = 30, .bottom = 30 },
+        .pad = .{ .top = 10, .bottom = 10 },
         .style = .tinted,
         .type = .{ .label = .{
             .text = "Parsing Quiz",
@@ -80,7 +85,7 @@ pub fn init(
                 .spacing = 10,
             },
         },
-        .on_resized = .{ .func = @ptrCast(&vertical_scroller_resize), .ptr = self },
+        .on_resized = .{ .func = @ptrCast(&resizeVerticalScroller), .ptr = self },
     }, display);
 
     _ = try self.scroller.add(.{
@@ -140,7 +145,7 @@ pub fn init(
         .type = .{ .label = .{
             .text = "Parsing Sets",
         } },
-        .pad = .{ .top = 0, .left = 0.001 },
+        .pad = .{ .top = 5, .left = 0 },
     }, display);
 
     const list_menu = try self.scroller.add(.{
@@ -155,7 +160,7 @@ pub fn init(
         } },
     }, display);
 
-    self.new_button = try list_menu.add(.{
+    self.new_list_button = try list_menu.add(.{
         .name = "new.word.list",
         .minimum = .{ .width = 10, .height = 15 },
         .background = .{
@@ -178,7 +183,7 @@ pub fn init(
                 .pressed_name = "pressed button",
                 .hover_name = "hover button",
             },
-            .on_pressed = .{ .func = @ptrCast(&show_new_word_list), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapNewWordList), .ptr = self },
             .spacing = 8,
         } },
     }, display);
@@ -187,7 +192,7 @@ pub fn init(
     self.bottom_spacer.on_resized = .{ .func = @ptrCast(&MenuUI.update_bottom_spacing), .ptr = self };
 }
 
-pub fn update_sets(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || engine.Error || ResourcesError)!void {
+pub fn setupLists(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || engine.Error || ResourcesError)!void {
     const ctx = ac.app_context.?;
     const display = ctx.display;
 
@@ -221,7 +226,7 @@ pub fn update_sets(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFo
             .child_align = .{ .x = .centre },
             .type = .{ .label = .{
                 .text = list.name.items,
-                .on_pressed = .{ .func = @ptrCast(&list_tapped), .ptr = self },
+                .on_pressed = .{ .func = @ptrCast(&tapPracticeList), .ptr = self },
             } },
         }, display);
     }
@@ -259,18 +264,18 @@ fn make_button_bar(
             },
             .type = .{ .button = .{
                 .text = word,
-                .on_pressed = .{ .func = @ptrCast(&show_parsing_setup), .ptr = self },
+                .on_pressed = .{ .func = @ptrCast(&tapPracticeWord), .ptr = self },
                 .button = .{
                     .default_name = "default button",
                     .pressed_name = "pressed button",
-                    .hover_name = "hovered button",
+                    .hover_name = "hover button",
                 },
             } },
         }, display);
     }
 }
 
-pub fn list_tapped(
+pub fn tapPracticeList(
     _: *ParsingMenuScreen,
     display: *Display,
     element: *Entity,
@@ -284,7 +289,7 @@ pub fn list_tapped(
     err("Unknown list picked {s}", .{element.name});
 }
 
-pub fn show_parsing_setup(
+pub fn tapPracticeWord(
     self: *ParsingMenuScreen,
     display: *Display,
     element: *Entity,
@@ -316,16 +321,16 @@ pub fn show_parsing_setup(
     warn("practice word parsing for {s} not in dictionary.", .{element.type.button.text});
 }
 
-pub fn show_new_word_list(
+pub fn tapNewWordList(
     self: *ParsingMenuScreen,
     display: *Display,
     entity: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     try self.app.list_new.show(display, entity, event);
 }
 
-pub fn vertical_scroller_resize(
+pub fn resizeVerticalScroller(
     _: *ParsingMenuScreen,
     display: *Display,
     scroll: *Entity,
@@ -369,4 +374,4 @@ const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 const MenuUI = @import("MenuUI.zig");
 const ResourcesError = @import("resources").Resources.Error;
-const Lists = @import("lists.zig");
+const Lists = @import("Lists.zig");

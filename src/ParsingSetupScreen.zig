@@ -195,7 +195,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
         \\label:heading name "heading" text_size heading style tinted
         \\  align centre start
         \\  layout grows shrinks
-        \\  pad top=1.5em bottom=1em
+        \\  pad top=0.5em bottom=0.5em
         \\panel:scroller name "scroll.panel"
         \\  layout grows shrinks
         \\  align centre centre
@@ -434,18 +434,6 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
         _ = try display.add_spacer(self.scroller, 20);
     }
 
-    self.counter = try self.scroller.add(.{
-        .name = "filter.count",
-        .minimum = .{ .height = 50 },
-        .layout = .{ .y = .shrinks, .x = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .top = 30, .bottom = 30 },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "0 forms",
-        } },
-    }, display);
-
     {
         var wrapper = try self.scroller.add(.{
             .name = "start.parsing.panel",
@@ -467,7 +455,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
             },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = 20, .bottom = 20 },
+            .pad = .{ .top = 6, .bottom = 6, .right = 6 },
             .minimum = .{ .height = 20 },
             .maximum = .{ .width = 1000 },
             .style = .faded,
@@ -501,7 +489,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
                         .func = @ptrCast(&ListEditScreen.show),
                         .ptr = &self.app.list_edit,
                     },
-                    .spacing = 15,
+                    .spacing = 6,
                 },
             },
         }, display);
@@ -526,17 +514,17 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
                     },
                     .text = "Delete",
                     .on_pressed = .{
-                        .func = @ptrCast(&ListDeleteScreen.show),
+                        .func = @ptrCast(&tapListDelete),
                         .ptr = self,
                     },
-                    .spacing = 15,
+                    .spacing = 4,
                 },
             },
         }, display);
 
         self.button_bar_spacer = try self.button_bar.add(.{
             .name = "button.spacer",
-            .minimum = .{ .width = 30, .height = 20 },
+            .minimum = .{ .width = 10, .height = 10 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{ .panel = .{} },
         }, display);
@@ -572,11 +560,23 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
                         .func = @ptrCast(&tapPractice),
                         .ptr = self,
                     },
-                    .spacing = 15,
+                    .spacing = 7,
                 },
             },
         }, display);
     }
+
+    self.counter = try self.scroller.add(.{
+        .name = "filter.count",
+        .minimum = .{ .height = 50 },
+        .layout = .{ .y = .shrinks, .x = .grows },
+        .child_align = .{ .x = .centre, .y = .start },
+        .pad = .{ .top = 5 },
+        .style = .tinted,
+        .type = .{ .label = .{
+            .text = "0 forms",
+        } },
+    }, display);
 
     _ = try self.scroller.add(.{
         .name = "bottom.expander",
@@ -584,6 +584,15 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .expander = .{ .weight = 0.7 } },
     }, display);
+}
+
+pub fn tapListDelete(
+    self: *ParsingSetupScreen,
+    display: *Display,
+    entity: *Entity,
+    event: *const Event,
+) Allocator.Error!void {
+    try self.app.list_delete.show(display, entity, event);
 }
 
 pub fn tapPractice(
@@ -603,13 +612,15 @@ pub fn tapBack(
 ) Allocator.Error!void {
 
     // Go back to word info screen if thats where we were
-    if (self.called_by == .word_info and self.lexeme != null) {
-        info("ParsingSetupScreen({s} {s}) back", .{
-            @tagName(self.called_by),
-            self.lexeme.?.word,
-        });
-        try self.app.word_info.show(display, self.lexeme.?, event);
-        return;
+    if (self.called_by == .word_info) {
+        if (self.lexeme) |lexeme| {
+            info("ParsingSetupScreen({s} {s}) back", .{
+                @tagName(self.called_by),
+                lexeme.word,
+            });
+            try self.app.word_info.show(display, lexeme, event);
+            return;
+        }
     }
 
     // Otherwise we came from the parsing menu screen.
@@ -666,8 +677,8 @@ pub fn resizeScroller(
     //    updated = true;
     //}
 
-    if (self.scroller.rect.height != display.root.rect.height - 340) {
-        self.scroller.rect.height = display.root.rect.height - 340;
+    if (self.scroller.rect.height != display.root.rect.height - 160) {
+        self.scroller.rect.height = display.root.rect.height - 160;
         self.scroller.minimum.height = self.scroller.rect.height;
         self.scroller.maximum.height = self.scroller.rect.height;
         updated = true;
@@ -976,5 +987,5 @@ const ParsingCardScreen = @import("ParsingCardScreen.zig");
 const ListEditScreen = @import("ListEditScreen.zig");
 const ListDeleteScreen = @import("ListDeleteScreen.zig");
 const best_width = @import("SearchScreen.zig").best_width;
-const Lists = @import("lists.zig");
+const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;

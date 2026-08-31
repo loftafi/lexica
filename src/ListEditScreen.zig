@@ -10,17 +10,16 @@ pub const ListEditScreen = @This();
 
 pub const MAX_SEARCH_RESULTS: usize = 30;
 pub const MAX_LIST_ENTRIES: usize = Lists.MAX_FORMS_IN_SET;
-pub var icon_size: f32 = 54;
-pub var icon_pad: f32 = 8;
+pub var icon_size: f32 = 18;
+pub var icon_pad: f32 = 10;
 
 app: *AppContext = undefined,
 panel: *Entity = undefined,
 list: ?*WordSet = null,
-
-var heading: *Entity = undefined;
-pub var scroller: *Entity = undefined;
-var text_input: *Entity = undefined;
-var help_line: *Entity = undefined;
+heading: *Entity = undefined,
+scroller: *Entity = undefined,
+text_input: *Entity = undefined,
+help_line: *Entity = undefined,
 
 // Save and display search results when searching for new words to add.
 var seen_result: std.AutoHashMap(u24, *Form) = undefined;
@@ -46,10 +45,14 @@ pub fn show(
         err("ListEditScreen.show() expects list was set.", .{});
         return;
     }
-    try heading.setText(display, "");
-    try heading.setText(display, self.list.?.name.items);
-    try self.show_list_entries(display, element, event);
-    try display.choosePanel(self.panel.name, event);
+    if (self.list) |list| {
+        err("Show ListEditScreen: {s}", .{list.name.items});
+        try self.heading.setText(display, list.name.items);
+        try self.show_list_entries(display, element, event);
+        try display.choosePanel(self.panel.name, event);
+    } else {
+        err("Show ListEditScreen called without a list", .{});
+    }
 }
 
 pub fn deinit(self: *ListEditScreen, _: Allocator) void {
@@ -60,16 +63,10 @@ pub fn deinit(self: *ListEditScreen, _: Allocator) void {
     self.* = undefined;
 }
 
-pub fn infer_icon_size() void {
-    icon_size = engine.TextSize.subheading.size();
-    icon_size += 8;
-    icon_pad = icon_size * 0.25;
-}
-
 pub fn init(
     self: *ListEditScreen,
     app: *AppContext,
-) !void {
+) (error{OutOfMemory} || engine.Error || Resources.Error)!void {
     const display = app.display;
 
     seen_result = std.AutoHashMap(u24, *Form).init(display.allocator);
@@ -80,7 +77,6 @@ pub fn init(
 
     self.panel = try display.addPanel(.{
         .name = "list.edit.screen",
-        .rect = .{ .x = 0, .y = 0 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
@@ -99,7 +95,7 @@ pub fn init(
         .ptr = self,
     });
 
-    _ = try self.panel.add(.{
+    self.heading = try self.panel.add(.{
         .name = "parsing.heading",
         .child_align = .{ .x = .centre },
         .layout = .{ .y = .shrinks, .x = .grows },
@@ -120,19 +116,23 @@ pub fn init(
         .minimum = .{ .width = 250, .height = 15 },
         .maximum = .{ .width = 500 },
         .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 3 } },
-        .on_resized = .{ .func = @ptrCast(&resizeList), .ptr = self },
+        //.on_resized = .{ .func = @ptrCast(&resizeList), .ptr = self },
     }, display);
 
-    text_input = try input_line.add(.{
+    self.text_input = try input_line.add(.{
         .name = "search_query",
-        .background = .{ .image_name = "white rounded rect" },
+        .background = .{
+            .image_name = "white rounded rect",
+            .corner_radius = 14,
+            .image_corner_radius = 50,
+        },
         .layout = .{ .x = .grows, .y = .shrinks },
-        .pad = .{ .left = 10, .right = 10 },
+        .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
         .minimum = .{ .height = 10 },
         .type = .{ .text_input = .{
             .max_length = @min(30, praxis.max_word_size),
-            .on_change = .{ .func = @ptrCast(&search_update), .ptr = self },
-            .on_submit = .{ .func = @ptrCast(&search_update), .ptr = self },
+            .on_change = .{ .func = @ptrCast(&changedTextInput), .ptr = self },
+            .on_submit = .{ .func = @ptrCast(&changedTextInput), .ptr = self },
             .placeholder_text = "αγαπη, agape, love",
             .icon_texture_name = "icon search",
         } },
@@ -140,7 +140,7 @@ pub fn init(
 
     _ = try display.add_spacer(self.panel, 20);
 
-    scroller = try self.panel.add(.{
+    self.scroller = try self.panel.add(.{
         .name = "scroll.panel",
         .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
@@ -158,7 +158,7 @@ pub fn init(
         },
     }, display);
 
-    help_line = try scroller.add(.{
+    self.help_line = try self.scroller.add(.{
         .name = "help.line",
         .layout = .{ .x = .grows },
         .child_align = .{ .x = .centre },
@@ -170,7 +170,7 @@ pub fn init(
     // Build the search result elements
     var x: usize = 0;
     for (0..MAX_SEARCH_RESULTS) |i| {
-        const element = try self.create_search_result_panel(display, scroller);
+        const element = try self.initSearchResultRow(display, self.scroller);
         search_results[i] = element;
         search_result_form[i] = null;
         if (i < ac.app_context.?.view_history.items.len) {
@@ -182,13 +182,13 @@ pub fn init(
     // Build the list entry elements
     x = 0;
     for (0..MAX_LIST_ENTRIES) |i| {
-        list_entries[i] = try self.initListEntryPanel(display, scroller);
+        list_entries[i] = try self.initListEntryPanel(display, self.scroller);
     }
 
-    _ = try display.add_spacer(scroller, 80);
+    _ = try display.add_spacer(self.scroller, 80);
 }
 
-pub fn search_result_tap(display: *Display, element: *Entity) error{OutOfMemory}!void {
+pub fn tapSearchResult(display: *Display, element: *Entity) error{OutOfMemory}!void {
     for (search_results, 0..) |i, x| {
         if (i == element) {
             if (search_result_form[x]) |form| {
@@ -223,7 +223,12 @@ pub fn tapBack(
     try display.choosePanel("parsing.setup", event);
 }
 
-pub fn show_list_entries(self: *ListEditScreen, display: *Display, _: *Entity, event: *const Event) error{OutOfMemory}!void {
+pub fn show_list_entries(
+    self: *ListEditScreen,
+    display: *Display,
+    _: *Entity,
+    _: *const Event,
+) error{OutOfMemory}!void {
 
     // Clear any visible search results to make way for list entries
     var i: usize = 0;
@@ -261,7 +266,7 @@ pub fn show_list_entries(self: *ListEditScreen, display: *Display, _: *Entity, e
         try result[0].setText(display, form.word);
         try result[1].setText(display, string_buffers[string_buffer_index].written());
         list_entries[i].visible = .visible;
-        _ = self.resizeGlossList(display, list_entries[i], event);
+        //_ = self.resizeListEntry(display, list_entries[i], event);
 
         i += 1;
     }
@@ -274,18 +279,18 @@ pub fn show_list_entries(self: *ListEditScreen, display: *Display, _: *Entity, e
     }
 
     if (result_count == 0) {
-        help_line.visible = .visible;
+        self.help_line.visible = .visible;
     } else {
-        help_line.visible = .hidden;
+        self.help_line.visible = .hidden;
     }
 
     if (self.list.?.forms.items.len >= Lists.MAX_FORMS_IN_SET) {
-        text_input.visible = .hidden;
+        self.text_input.visible = .hidden;
     } else {
-        text_input.visible = .visible;
+        self.text_input.visible = .visible;
     }
 
-    scroller.offset = .{ .x = 0, .y = 0 };
+    self.scroller.offset = .{ .x = 0, .y = 0 };
     display.relayout();
     display.need_relayout = true;
 }
@@ -295,7 +300,7 @@ pub fn show_list_entries(self: *ListEditScreen, display: *Display, _: *Entity, e
 /// If input box has a search query, show search results.
 /// If input box is blank, show list contents or help line.
 ///
-pub fn search_update(
+pub fn changedTextInput(
     self: *ListEditScreen,
     display: *Display,
     element: *Entity,
@@ -376,12 +381,12 @@ pub fn search_update(
     }
 
     if (result_count == 0) {
-        help_line.visible = .visible;
+        self.help_line.visible = .visible;
     } else {
-        help_line.visible = .hidden;
+        self.help_line.visible = .hidden;
     }
 
-    scroller.offset = .{ .x = 0, .y = 0 };
+    self.scroller.offset = .{ .x = 0, .y = 0 };
 
     display.need_relayout = true;
 }
@@ -428,7 +433,7 @@ pub fn tapAddWord(
         info("Adding word {s} to list {s}", .{ form.word, self.list.?.name.items });
         _ = try self.list.?.add(display.allocator, form);
         try ac.app_context.?.lists.save(display.allocator, display.io, &display.config);
-        try text_input.setText(display, "");
+        try self.text_input.setText(display, "");
         try self.show_list_entries(display, element, event);
     }
 }
@@ -450,82 +455,60 @@ pub fn get_form_from_scroll_list(_: *ListEditScreen, element: *Entity) ?*Form {
     return null;
 }
 
-pub fn resizeGlossList(
-    _: *ListEditScreen,
-    _: *Display,
-    element: *Entity,
+pub fn resizeList(
+    self: *ListEditScreen,
+    display: *Display,
+    _: *Entity,
     _: *const Event,
 ) bool {
     var updated = false;
+    if (self.scroller.rect.height != display.root.rect.height - 170) {
+        self.scroller.rect.height = display.root.rect.height - 170;
+        self.scroller.minimum.height = self.scroller.rect.height;
+        self.scroller.maximum.height = self.scroller.rect.height;
+        updated = true;
+    }
+    for (search_results) |result| {
+        if (result.visible == .visible)
+            self.resizeSearchResult(display, result, self.scroller.rect.width);
+    }
+    for (list_entries) |entry| {
+        if (entry.visible == .visible)
+            self.resizeListEntry(display, entry, self.scroller.rect.width);
+    }
+    return updated;
+}
+
+pub fn resizeListEntry(
+    _: *ListEditScreen,
+    _: *Display,
+    element: *Entity,
+    available_width: f32,
+) void {
     const word = element.type.panel.children.items[0];
     const gloss = element.type.panel.children.items[1];
     const delete = element.type.panel.children.items[2];
-    const gloss_width = element.rect.width - word.rect.width - delete.rect.width - 13;
-    if (gloss.rect.width != gloss_width) {
-        gloss.rect.width = gloss_width;
-        gloss.minimum.width = gloss_width;
-        gloss.maximum.width = gloss_width + 3;
-        updated = true;
-    }
-    return updated;
+    const gloss_width = available_width - word.rect.width - delete.rect.width - 13;
+
+    gloss.rect.width = gloss_width;
+    gloss.minimum.width = gloss_width;
+    gloss.maximum.width = gloss_width;
 }
 
-pub fn resizeClossResult(
+pub fn resizeSearchResult(
     _: *ListEditScreen,
     _: *Display,
     element: *Entity,
-    _: *const Event,
-) bool {
-    var updated = false;
+    available_width: f32,
+) void {
     const add = element.type.panel.children.items[0];
     const word = element.type.panel.children.items[1];
     const gloss = element.type.panel.children.items[2];
-    const gloss_width = element.rect.width - word.rect.width - add.rect.width - 13;
-    if (gloss.rect.width != gloss_width) {
-        gloss.rect.width = gloss_width;
-        gloss.minimum.width = gloss_width;
-        gloss.maximum.width = gloss_width + 3;
-        updated = true;
-    }
-    return updated;
-}
+    const gloss_width = available_width - word.rect.width - add.rect.width - 13;
 
-pub fn resizeList(_: *ListEditScreen, display: *Display, _: *Entity) bool {
-    var updated = false;
-    if (scroller.rect.height != display.root.rect.height - 170) {
-        scroller.rect.height = display.root.rect.height - 170;
-        scroller.minimum.height = scroller.rect.height;
-        scroller.maximum.height = scroller.rect.height;
-        updated = true;
-    }
-    updated = update_button_sizes() or updated;
-    return updated;
-}
-
-fn update_button_sizes() bool {
-    var updated = false;
-    infer_icon_size();
-    for (list_entries) |row| {
-        updated = fix_button_size(row.type.panel.children.items[2]) or updated;
-    }
-    for (search_results) |row| {
-        updated = fix_button_size(row.type.panel.children.items[0]) or updated;
-    }
-    return updated;
-}
-
-fn fix_button_size(button: *Entity) bool {
-    if (button.minimum.width == icon_size) {
-        return false;
-    }
-    button.minimum.width = icon_size;
-    button.minimum.height = icon_size;
-    button.maximum.width = icon_size;
-    button.maximum.height = icon_size;
-    button.pad = .{ .left = icon_pad, .right = icon_pad, .top = icon_pad, .bottom = icon_pad };
-    button.type.button.icon.size.width = icon_size - (icon_pad * 2);
-    button.type.button.icon.size.height = icon_size - (icon_pad * 2);
-    return true;
+    gloss.rect.width = gloss_width;
+    gloss.minimum.width = gloss_width;
+    gloss.maximum.width = gloss_width;
 }
 
 inline fn update_search_result_panel(
@@ -563,30 +546,28 @@ inline fn update_search_result_panel(
     i.* += 1;
 }
 
-pub fn create_search_result_panel(
+pub fn initSearchResultRow(
     self: *ListEditScreen,
     display: *Display,
     parent: *Entity,
-) !*Entity {
+) (error{OutOfMemory} || engine.Error || Resources.Error)!*Entity {
     var result = try parent.add(.{
         .name = "search.result",
         .visible = .hidden,
         .pad = .{ .left = 15 },
-        .layout = .{ .x = .grows },
+        .layout = .{ .x = .grows, .y = .shrinks },
         .type = .{
             .panel = .{
                 .direction = .left_to_right,
                 .spacing = 5,
             },
         },
-        .on_resized = .{ .func = @ptrCast(&resizeClossResult), .ptr = self },
+        //.on_resized = .{ .func = @ptrCast(&resizeSearchResult), .ptr = self },
     }, display);
 
     _ = try result.add(.{
         .name = "add.word.button",
-        .rect = .{ .width = icon_size, .height = icon_size },
-        .minimum = .{ .width = icon_size, .height = icon_size },
-        .maximum = .{ .width = icon_size, .height = icon_size },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
         .pad = .{
             .left = icon_pad,
             .right = icon_pad,
@@ -594,7 +575,6 @@ pub fn create_search_result_panel(
             .bottom = icon_pad,
         },
         .child_align = .{ .x = .start, .y = .start },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{
             .button = .{
                 .on_pressed = .{ .func = @ptrCast(&tapAddWord), .ptr = self },
@@ -602,10 +582,7 @@ pub fn create_search_result_panel(
                     .default_name = "add button",
                     .hover_name = "add button",
                     .pressed_name = "add button",
-                    .size = .{
-                        .width = icon_size - (icon_pad * 2),
-                        .height = icon_size - (icon_pad * 2),
-                    },
+                    .size = .{ .width = icon_size, .height = icon_size },
                 },
                 .button = .{
                     .default_name = "default button",
@@ -618,9 +595,7 @@ pub fn create_search_result_panel(
 
     _ = try result.add(.{
         .name = "word",
-        .rect = .{ .height = 25 },
         .minimum = .{ .width = 25, .height = 25 },
-        .maximum = .{ .height = 25 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .child_align = .{ .x = .start },
         .style = .tinted,
@@ -654,7 +629,7 @@ pub fn initListEntryPanel(self: *ListEditScreen, display: *Display, parent: *Ent
                 .spacing = 5,
             },
         },
-        .on_resized = .{ .func = @ptrCast(&resizeGlossList), .ptr = self },
+        //.on_resized = .{ .func = @ptrCast(&resizeListEntry), .ptr = self },
     }, display);
 
     _ = try result.add(.{
@@ -682,9 +657,7 @@ pub fn initListEntryPanel(self: *ListEditScreen, display: *Display, parent: *Ent
 
     _ = try result.add(.{
         .name = "delete.word",
-        .rect = .{ .width = icon_size, .height = icon_size },
-        .minimum = .{ .width = icon_size, .height = icon_size },
-        .maximum = .{ .width = icon_size, .height = icon_size },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
         .pad = .{
             .left = icon_pad,
             .right = icon_pad,
@@ -692,14 +665,10 @@ pub fn initListEntryPanel(self: *ListEditScreen, display: *Display, parent: *Ent
             .bottom = icon_pad,
         },
         .child_align = .{ .x = .start, .y = .start },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{
             .button = .{
                 .icon = .{
-                    .size = .{
-                        .width = icon_size - (icon_pad * 2),
-                        .height = icon_size - (icon_pad * 2),
-                    },
+                    .size = .{ .width = icon_size, .height = icon_size },
                     .default_name = "trash button",
                     .pressed_name = "trash button",
                     .hover_name = "trash button",
@@ -728,6 +697,7 @@ const engine = @import("engine");
 const Display = engine.Display;
 const Entity = engine.Entity;
 const Event = engine.Event;
+const Resources = @import("resources").Resources;
 
 const err = engine.log.err;
 const warn = engine.log.warn;
@@ -738,7 +708,7 @@ const trace = engine.log.trace;
 const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
-const Lists = @import("lists.zig");
+const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;
 const show_word_panel = @import("WordInfoScreen.zig").show;
 const can_practice_form = @import("filter_stats.zig").can_practice_form;

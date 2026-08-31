@@ -1,9 +1,12 @@
 pub const PreferencesScreen = @This();
 
 panel: *Entity = undefined,
-ring_panel: *Entity = undefined,
+picker_panel: *Entity = undefined,
+preferences_heading: *Entity = undefined,
 uk_panel: *Entity = undefined,
+uk_panel_ring: *Entity = undefined,
 us_panel: *Entity = undefined,
+us_panel_ring: *Entity = undefined,
 
 /// Tap the heading 10 times to enable debug mode
 tap_counter: usize = 0,
@@ -15,9 +18,9 @@ pub fn show(
     event: *Event,
 ) Allocator.Error!void {
     try display.choosePanel("preferences.screen", event);
-    display.relayout();
-    _ = self.updateRing(display, self.panel);
     display.need_relayout = true;
+    display.relayout();
+    self.updateRing();
     self.tap_counter = 0;
 }
 
@@ -30,96 +33,58 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
         \\  minimum width=280 height=360
         \\  maximum width=360
         \\  pad left=1em right=1em bottom=0.5em
-        \\  on_resized updateRing
+        \\  spacing 8
+        \\{
+        \\  label:preferences_heading never_focus style tinted
+        \\    layout grows shrinks align centre start
+        \\    text_size heading text "Preferences"
+        \\    on_pressed tapHeading pad top=15
         \\
+        \\  label name "case_order_info"
+        \\    layout grows shrinks align centre start
+        \\    text "Which noun order you prefer?"
+        \\
+        \\  panel:picker_panel name "preferences.screen" horizontal
+        \\    layout grows shrinks align centre start
+        \\    pad left=0.5em right=0.5em top=0.5em bottom=0.5em
+        \\    spacing=10 
+        \\
+        \\  expander weight=1
+        \\
+        \\  label name "choose_language_heading" text "User Interface"
+        \\    layout grows shrinks align centre start style tinted
+        \\    text_size subheading
+        \\
+        \\}
     , PreferencesScreen, self);
 
-    self.ring_panel = try self.panel.add(.{
-        .name = "ring",
-        .background = .{
-            .image_name = "white rounded rect",
-            .corner_radius = 18,
-            .image_corner_radius = 14,
-        },
-        .rect = .{ .width = 10, .height = 10 },
-        .layout = .{ .position = .float, .x = .fixed, .y = .fixed },
-        .style = .emphasised,
-        .type = .{ .panel = .{} },
-    }, display);
-
-    _ = try self.panel.add(.{
-        .name = "preferences_heading",
-        .focus = .never_focus,
-        .layout = .{ .x = .grows },
-        .child_align = .{ .x = .centre },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Preferences",
-            .text_size = .heading,
-            .on_pressed = .{ .func = @ptrCast(&heading_tap), .ptr = self },
-        } },
-        .pad = .{ .top = 15 },
-    }, display);
-
-    _ = try self.panel.add(.{
-        .name = "case_order_info",
-        .layout = .{ .y = .shrinks, .x = .grows },
-        .child_align = .{ .x = .centre },
-        .type = .{ .label = .{
-            .text = "Which noun order you prefer?",
-        } },
-    }, display);
-
-    const picker_panel = try self.panel.add(.{
-        .name = "preferences.screen",
-        .layout = .{ .x = .grows, .y = .shrinks },
-        .child_align = .{ .x = .centre },
-        .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
-        .minimum = .{ .width = 100, .height = 100 },
-        .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-    }, display);
-
-    self.us_panel = try initPickerTable(
+    try initPickerTable(
         context.allocator,
         display,
-        picker_panel,
+        self.picker_panel,
         &[4][]const u8{ "ὁ", "τοῦ", "τῷ", "τόν" },
         &[4][]const u8{ "Θεός", "Θεοῦ", "Θεῷ", "Θεόν" },
+        &self.us_panel,
+        &self.us_panel_ring,
     );
     self.us_panel.type.panel.on_pressed = .{
         .func = @ptrCast(&chooseUSOrder),
         .ptr = self,
     };
 
-    self.uk_panel = try initPickerTable(
+    try initPickerTable(
         context.allocator,
         display,
-        picker_panel,
+        self.picker_panel,
         &[4][]const u8{ "ὁ", "τόν", "τοῦ", "τῷ" },
         &[4][]const u8{ "Θεός", "Θεόν", "Θεοῦ", "Θεῷ" },
+        &self.uk_panel,
+        &self.uk_panel_ring,
     );
     self.uk_panel.type.panel.on_pressed = .{
         .func = @ptrCast(&chooseUKOrder),
         .ptr = self,
     };
-
-    _ = try self.panel.add(.{
-        .name = "middle.expander",
-        .minimum = .{ .width = 50, .height = 2 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 1 } },
-    }, display);
-
-    _ = try self.panel.add(.{
-        .name = "choose_language_heading",
-        .layout = .{ .x = .grows },
-        .child_align = .{ .x = .centre },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "User Interface",
-            .text_size = .subheading,
-        } },
-    }, display);
 
     _ = try self.panel.add(.{
         .name = "pick_language",
@@ -166,7 +131,7 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
         } },
     }, display);
 
-    try self.add_theme_pickr(display, self.panel);
+    try self.initThemeButton(display, self.panel);
 
     _ = try self.panel.add(.{
         .name = "bottom.expander",
@@ -239,7 +204,7 @@ pub fn deinit(self: *PreferencesScreen) void {
     self.* = undefined;
 }
 
-fn add_theme_pickr(self: *PreferencesScreen, display: *Display, parent: *Entity) !void {
+fn initThemeButton(self: *PreferencesScreen, display: *Display, parent: *Entity) !void {
     var wrapper = try parent.add(.{
         .name = "theme.picker.align",
         .layout = .{ .x = .grows, .y = .shrinks },
@@ -279,7 +244,7 @@ fn add_theme_pickr(self: *PreferencesScreen, display: *Display, parent: *Entity)
                 .pressed_name = "theme sand",
                 .size = .{ .width = 40, .height = 40 },
             },
-            .on_pressed = .{ .func = @ptrCast(&pick_theme), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapThemeButton), .ptr = self },
         } },
     }, display);
 
@@ -295,7 +260,7 @@ fn add_theme_pickr(self: *PreferencesScreen, display: *Display, parent: *Entity)
                 .hover_name = "theme white",
                 .size = .{ .width = 40, .height = 40 },
             },
-            .on_pressed = .{ .func = @ptrCast(&pick_theme), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapThemeButton), .ptr = self },
         } },
     }, display);
 
@@ -311,7 +276,7 @@ fn add_theme_pickr(self: *PreferencesScreen, display: *Display, parent: *Entity)
                 .hover_name = "theme default",
                 .size = .{ .width = 40, .height = 40 },
             },
-            .on_pressed = .{ .func = @ptrCast(&pick_theme), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapThemeButton), .ptr = self },
         } },
     }, display);
 
@@ -327,7 +292,7 @@ fn add_theme_pickr(self: *PreferencesScreen, display: *Display, parent: *Entity)
                 .hover_name = "theme black",
                 .size = .{ .width = 40, .height = 40 },
             },
-            .on_pressed = .{ .func = @ptrCast(&pick_theme), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapThemeButton), .ptr = self },
         } },
     }, display);
 
@@ -343,7 +308,7 @@ fn add_theme_pickr(self: *PreferencesScreen, display: *Display, parent: *Entity)
                 .hover_name = "theme midnight",
                 .size = .{ .width = 40, .height = 40 },
             },
-            .on_pressed = .{ .func = @ptrCast(&pick_theme), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapThemeButton), .ptr = self },
         } },
     }, display);
 
@@ -359,12 +324,12 @@ fn add_theme_pickr(self: *PreferencesScreen, display: *Display, parent: *Entity)
                 .hover_name = "theme garden",
                 .size = .{ .width = 40, .height = 40 },
             },
-            .on_pressed = .{ .func = @ptrCast(&pick_theme), .ptr = self },
+            .on_pressed = .{ .func = @ptrCast(&tapThemeButton), .ptr = self },
         } },
     }, display);
 }
 
-pub fn heading_tap(
+pub fn tapHeading(
     self: *PreferencesScreen,
     _: *Display,
     _: *Entity,
@@ -378,13 +343,13 @@ pub fn heading_tap(
     }
 }
 
-pub fn pick_theme(
+pub fn tapThemeButton(
     _: *PreferencesScreen,
     display: *Display,
-    element: *Entity,
+    event: *Entity,
     _: *Event,
 ) std.mem.Allocator.Error!void {
-    const theme = display.validate_theme(element.name);
+    const theme = display.validate_theme(event.name);
     _ = try display.setTheme(theme);
     ac.app_context.?.preference.theme = theme;
     ac.app_context.?.save_preferences();
@@ -393,11 +358,27 @@ pub fn pick_theme(
 pub fn initPickerTable(
     _: Allocator,
     display: *Display,
-    parent_panel: *Entity,
+    parent: *Entity,
     articles: []const []const u8,
     words: []const []const u8,
-) !*Entity {
-    var parsing_panel = try parent_panel.add(.{
+    panel: **Entity,
+    panel_ring: **Entity,
+) (engine.Error || Allocator.Error || Resources.Error)!void {
+    panel_ring.* = try parent.add(.{
+        .name = "ring",
+        .background = .{
+            .image_name = "white rounded rect",
+            .corner_radius = 18,
+            .image_corner_radius = 14,
+            .colour = .transparent,
+        },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .pad = .{ .left = 2, .right = 2, .top = 2, .bottom = 2 },
+        .style = .custom,
+        .type = .{ .panel = .{} },
+    }, display);
+
+    panel.* = try panel_ring.*.add(.{
         .name = "present",
         .background = .{
             .image_name = "white rounded rect",
@@ -415,7 +396,7 @@ pub fn initPickerTable(
     }, display);
 
     for (articles, words) |article, word| {
-        const row = try parsing_panel.add(.{
+        const row = try panel.*.add(.{
             .name = "row",
             .rect = .{ .width = 75, .height = 5 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
@@ -446,69 +427,56 @@ pub fn initPickerTable(
             .pad = .{ .left = 1, .right = 1 },
         }, display);
     }
-    return parsing_panel;
 }
 
 pub fn chooseUKOrder(
     self: *PreferencesScreen,
-    display: *Display,
-    element: *Entity,
+    _: *Display,
+    entity: *Entity,
+    _: *const Event,
 ) std.mem.Allocator.Error!void {
     debug("Choose UK order.", .{});
-    std.debug.assert(element.type == .panel);
+    std.debug.assert(entity.type == .panel);
     ac.app_context.?.preference.uk_order = true;
-    display.need_relayout = self.updateRing(display, element);
+    self.updateRing();
     ac.app_context.?.save_preferences();
 }
 
 pub fn chooseUSOrder(
     self: *PreferencesScreen,
-    display: *Display,
-    element: *Entity,
+    _: *Display,
+    entity: *Entity,
+    _: *const Event,
 ) std.mem.Allocator.Error!void {
     debug("Choose US order.", .{});
-    std.debug.assert(element.type == .panel);
+    std.debug.assert(entity.type == .panel);
     ac.app_context.?.preference.uk_order = false;
-    display.need_relayout = self.updateRing(display, element);
+    self.updateRing();
     ac.app_context.?.save_preferences();
 }
 
-pub fn updateRing(self: *PreferencesScreen, _: *Display, _: *Entity) bool {
-    var updated = false;
-    const ring_border: f32 = 2.5;
-    const ring_panel = self.ring_panel;
-    const uk_panel = self.uk_panel;
-    const us_panel = self.us_panel;
+pub fn updateRing(self: *PreferencesScreen) void {
+    self.us_panel_ring.background.colour = .transparent;
+    self.uk_panel_ring.background.colour = .transparent;
+    self.uk_panel_ring.style = .custom;
+    self.us_panel_ring.style = .custom;
     if (ac.app_context.?.preference.uk_order) {
-        if (ring_panel.rect.x != uk_panel.rect.x - ring_border or ring_panel.rect.y != uk_panel.rect.y - ring_border) {
-            ring_panel.rect.x = uk_panel.rect.x - ring_border;
-            ring_panel.rect.y = uk_panel.rect.y - ring_border;
-            ring_panel.rect.width = uk_panel.rect.width + (ring_border * 2);
-            ring_panel.rect.height = uk_panel.rect.height + (ring_border * 2);
-            updated = true;
-        }
+        self.uk_panel_ring.style = .emphasised;
     } else {
-        if (ring_panel.rect.x != us_panel.rect.x - ring_border or ring_panel.rect.y != us_panel.rect.y - ring_border) {
-            ring_panel.rect.x = us_panel.rect.x - ring_border;
-            ring_panel.rect.y = us_panel.rect.y - ring_border;
-            ring_panel.rect.width = us_panel.rect.width + (ring_border * 2);
-            ring_panel.rect.height = us_panel.rect.height + (ring_border * 2);
-            updated = true;
-        }
+        self.us_panel_ring.style = .emphasised;
     }
-    return updated;
 }
 
 pub fn changeKoinePreference(
     _: *PreferencesScreen,
     display: *Display,
-    element: *Entity,
+    entity: *Entity,
     _: *const Event,
 ) std.mem.Allocator.Error!void {
     const ctx = ac.app_context.?;
 
-    std.debug.assert(element.type == .checkbox);
-    ctx.preference.use_koine = element.type.checkbox.checked;
+    std.debug.assert(entity.type == .checkbox);
+    ctx.preference.use_koine = entity.type.checkbox.checked;
     ctx.save_preferences();
     if (ctx.preference.use_koine) {
         try display.setLanguage(Lang.greek);
@@ -520,11 +488,11 @@ pub fn changeKoinePreference(
 pub fn changeStrongsPreference(
     _: *PreferencesScreen,
     _: *Display,
-    element: *Entity,
+    entity: *Entity,
     _: *const Event,
 ) std.mem.Allocator.Error!void {
-    std.debug.assert(element.type == .checkbox);
-    ac.app_context.?.preference.show_strongs = element.type.checkbox.checked;
+    std.debug.assert(entity.type == .checkbox);
+    ac.app_context.?.preference.show_strongs = entity.type.checkbox.checked;
     ac.app_context.?.save_preferences();
 }
 
@@ -539,6 +507,7 @@ const err = engine.log.err;
 const Display = engine.Display;
 const Entity = engine.Entity;
 const Event = engine.Event;
+const Resources = @import("resources").Resources;
 
 const praxis = @import("praxis");
 const Lang = praxis.Lang;
