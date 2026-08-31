@@ -1,7 +1,7 @@
 //! This panel allows deleting a word set.
 pub const ListDeleteScreen = @This();
 
-const ICON_PAD = 30;
+const ICON_PAD = 15;
 
 app: *AppContext = undefined,
 panel: *Entity = undefined,
@@ -68,7 +68,7 @@ pub fn init(
         .name = "list_name",
         .layout = .{ .x = .grows },
         .child_align = .{ .x = .centre },
-        .minimum = .{ .height = 20 },
+        .minimum = .{ .height = 10 },
         .type = .{
             .label = .{ .text = "Confirm you wish to delete this set." },
         },
@@ -78,32 +78,32 @@ pub fn init(
         .name = "delete_list_row",
         .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
-        .pad = .{ .left = 30, .right = 30, .top = 8, .bottom = 8 },
-        .minimum = .{ .width = 200, .height = 20 },
+        .pad = .{ .left = 15, .right = 15, .top = 4, .bottom = 4 },
+        .minimum = .{ .width = 100, .height = 10 },
         .type = .{ .panel = .{
             .direction = .left_to_right,
-            .spacing = 22,
+            .spacing = 11,
         } },
     }, display);
 
     self.delete_button = try button_bar.add(.{
         .name = "delete.word.set.button",
-        .minimum = .{ .width = 10, .height = 15 },
+        .minimum = .{ .width = 5, .height = 7 },
         .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .button = .{
             .text = "Delete Word Set",
             .on_pressed = .{ .func = @ptrCast(&delete_list), .ptr = self },
-            .spacing = 20,
+            .spacing = 10,
             .icon = .{
                 .default_name = "edit list button",
                 .pressed_name = "edit list button",
                 .hover_name = "edit list button",
             },
             .button = .{
-                .default_name = "white rounded rect2",
-                .pressed_name = "white rounded rect2",
-                .hover_name = "white rounded rect2",
+                .default_name = "default button",
+                .pressed_name = "pressed button",
+                .hover_name = "hover button",
             },
         } },
     }, display);

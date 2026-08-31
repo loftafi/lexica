@@ -328,7 +328,7 @@ inline fn update_search_result_row(
         try seen.put(lexeme.uid, form);
     }
     self.string_buffers[self.string_buffer_index].clearRetainingCapacity();
-    if (form.glosses_by_lang(Lang.english)) |value| {
+    if (form.glossesByLang(Lang.english)) |value| {
         value.string(&self.string_buffers[self.string_buffer_index].writer) catch return;
     } else {
         return;

@@ -1,7 +1,7 @@
 //! Study a single word, or a list of words
 pub const ParsingSetupScreen = @This();
 
-const ICON_PAD = 30;
+const ICON_PAD = 15;
 
 app: *AppContext = undefined,
 
@@ -51,7 +51,10 @@ pub fn study_by_form(
     self.button_bar.style = .background;
     self.scroller.offset = .{ .x = 0, .y = 0 };
 
-    info("ParsingSetupScreen({s} {s})", .{ @tagName(self.called_by), self.lexeme.?.word });
+    info("ParsingSetupScreen({s} {s})", .{
+        @tagName(self.called_by),
+        self.lexeme.?.word,
+    });
 
     // Checkboxes should contain the default values
     self.checkboxes.load_preferences();
@@ -65,7 +68,10 @@ pub fn study_by_form(
     try self.heading.setText(display, called_lexeme.word);
     try self.help_line.setText(display, "");
 
-    try self.help_line.setText(display, display.bucket.addFmt("Choose which forms of {s} to study.", .{called_lexeme.word}) catch "");
+    try self.help_line.setText(
+        display,
+        display.bucket.addFmt("Choose which forms of {s} to study.", .{called_lexeme.word}) catch "",
+    );
     try self.help_line.setVisibility(display, .hidden);
 
     try self.refresh_menu(display);
@@ -91,7 +97,10 @@ pub fn study_by_list(
     self.app.list_edit.list = self.list;
     self.scroller.offset = .{ .x = 0, .y = 0 };
 
-    info("ParsingSetupScreen({s} {s})", .{ @tagName(self.called_by), study_list.name.items });
+    info("ParsingSetupScreen({s} {s})", .{
+        @tagName(self.called_by),
+        study_list.name.items,
+    });
 
     // Checkboxes should contain the default values
     self.checkboxes.load_preferences();
@@ -146,19 +155,19 @@ pub const Checkboxes = struct {
     pub fn update_statistics(self: *Checkboxes, forms: []*praxis.Form) void {
         var stats = @import("filter_stats.zig").Stats{};
         stats.count(forms);
-        self.nominative_accusative.visible = is_visible(stats.nominative_accusative.match > 0);
-        self.genitive_dative.visible = is_visible(stats.genitive_dative.match > 0);
-        self.third_declension.visible = is_visible(stats.third_declension.match > 0);
-        self.present_future.visible = is_visible(stats.present_future.match > 0);
-        self.aorist.visible = is_visible(stats.aorist.match > 0);
-        self.perfect_pluperfect.visible = is_visible(stats.perfect_pluperfect.match > 0);
-        self.indicative.visible = is_visible(stats.indicative.match > 0);
-        self.imperfect.visible = is_visible(stats.imperfect.match > 0);
-        self.imperative.visible = is_visible(stats.imperative.match > 0);
-        self.infinitive.visible = is_visible(stats.infinitive.match > 0);
-        self.subjunctive.visible = is_visible(stats.subjunctive.match > 0);
-        self.middle_passive.visible = is_visible(stats.middle_passive.match > 0);
-        self.participles.visible = is_visible(stats.participle.match > 0);
+        self.nominative_accusative.visible = isVisible(stats.nominative_accusative.match > 0);
+        self.genitive_dative.visible = isVisible(stats.genitive_dative.match > 0);
+        self.third_declension.visible = isVisible(stats.third_declension.match > 0);
+        self.present_future.visible = isVisible(stats.present_future.match > 0);
+        self.aorist.visible = isVisible(stats.aorist.match > 0);
+        self.perfect_pluperfect.visible = isVisible(stats.perfect_pluperfect.match > 0);
+        self.indicative.visible = isVisible(stats.indicative.match > 0);
+        self.imperfect.visible = isVisible(stats.imperfect.match > 0);
+        self.imperative.visible = isVisible(stats.imperative.match > 0);
+        self.infinitive.visible = isVisible(stats.infinitive.match > 0);
+        self.subjunctive.visible = isVisible(stats.subjunctive.match > 0);
+        self.middle_passive.visible = isVisible(stats.middle_passive.match > 0);
+        self.participles.visible = isVisible(stats.participle.match > 0);
     }
 };
 
@@ -171,110 +180,75 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
     var display = context.display;
 
-    self.panel = try display.addPanel(.{
-        .name = "parsing.setup",
-        .rect = .{ .x = 0, .y = 0 },
-        .layout = .{ .x = .grows, .y = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .visible = .hidden,
-        .type = .{ .panel = .{
-            .spacing = 10,
-            .direction = .top_to_bottom,
-            .choosable = .choosable,
-        } },
-    });
+    _ = try display.appendPanel(
+        \\panel:panel name "parsing.setup" choosable vertical avoid_safe_area
+        \\  align centre start layout grows grows maximum width=1000
+        \\  hidden pad left=1em right=1em spacing=10 
+    , ParsingSetupScreen, self);
 
     self.back_button = try self.app.add_back_button(self.panel, .{
-        .func = @ptrCast(&go_back),
+        .func = @ptrCast(&tapBack),
         .ptr = self,
     });
 
-    self.heading = try self.panel.add(.{
-        .name = "parsing.setup.word",
-        .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
-        .layout = .{ .x = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "",
-            .text_size = .heading,
-        } },
-    }, display);
-    self.heading.pad.top = 30;
-
-    self.scroller = try self.panel.add(.{
-        .name = "scroll.panel",
-        .layout = .{ .x = .grows, .y = .shrinks },
-        .child_align = .{ .x = .centre },
-        .minimum = .{ .width = 400, .height = 600 },
-        .type = .{
-            .panel = .{
-                .scrollable = .{
-                    .scroll = .{ .x = false, .y = true },
-                    .size = .{ .width = 600, .height = 600 },
-                },
-                .direction = .top_to_bottom,
-                .spacing = 10,
-            },
-        },
-        .on_resized = .{
-            .func = @ptrCast(&handle_resize),
-            .ptr = self,
-        },
-    }, display);
-
-    self.help_line = try self.scroller.add(.{
-        .name = "parsing.setup.heading",
-        .rect = .{ .width = 500, .height = 20 },
-        .layout = .{ .y = .shrinks, .x = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .type = .{ .label = .{
-            .text = "Choose which forms to study.",
-        } },
-    }, display);
-
-    _ = try self.scroller.add(.{
-        .name = "top.expander",
-        .rect = .{ .width = 100, .height = 5 },
-        .minimum = .{ .width = 100, .height = 5 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 0.7 } },
-    }, display);
+    try self.panel.appendMultiple(
+        \\label:heading name "heading" text_size heading style tinted
+        \\  align centre start
+        \\  layout grows shrinks
+        \\  pad top=1.5em bottom=1em
+        \\panel:scroller name "scroll.panel"
+        \\  layout grows shrinks
+        \\  align centre centre
+        \\  minimum height=600 spacing=10
+        \\  vertical scroll vertical
+        \\  on_resized resizeScroller
+        \\{
+        \\  label:help_line name "parsing.setup.heading"
+        \\    layout grows shrinks align centre start
+        \\    text "Choose which forms to study."
+        \\  expander name "top.expander" weight 0.7
+        \\    minimum height=5
+        \\}
+    , ParsingSetupScreen, self, display);
 
     {
         self.noun_panel = try self.scroller.add(.{
             .name = "noun.config.panel",
-            .background = .{ .image_name = "white rounded rect" },
-            .rect = .{ .width = 500, .height = 30 },
+            .background = .{
+                .image_name = "white rounded rect",
+                .corner_radius = 14,
+                .image_corner_radius = 14,
+            },
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = 20, .bottom = 20 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .pad = .{ .top = 15, .bottom = 15, .left = 15, .right = 15 },
+            .minimum = .{ .height = 30 },
             .maximum = .{ .width = 1000 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
         }, display);
 
         self.checkboxes.nominative_accusative = try self.noun_panel.add(.{
             .name = "include.na",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "Nominative and Accusative",
-                .on_change = .{ .func = @ptrCast(&change_nominative_accusative_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_nominative_accusative_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
         self.checkboxes.genitive_dative = try self.noun_panel.add(.{
             .name = "include.gd",
-            .rect = .{ .width = 600, .height = 20 },
-            .minimum = .{ .width = 200, .height = 200 },
+            .minimum = .{ .height = 200 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "Genitive and Dative",
-                .on_change = .{ .func = @ptrCast(&change_genitive_dative_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_genitive_dative_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
@@ -284,14 +258,16 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
             .visible = .hidden,
             .type = .{ .checkbox = .{
                 .text = "Third Declension",
-                .on_change = .{ .func = @ptrCast(&change_third_declension_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_third_declension_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
     }
 
     self.noun_verb_spacer = try self.scroller.add(.{
         .name = "noun_verb_spacer",
-        .rect = .{ .width = 20, .height = 20 },
         .minimum = .{ .width = 20, .height = 20 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .panel = .{} },
@@ -300,22 +276,28 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
     {
         self.verb_panel = try self.scroller.add(.{
             .name = "verb.config.panel",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .corner_radius = 14,
+                .image_corner_radius = 14,
+            },
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = 20, .bottom = 20 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .pad = .{ .top = 15, .bottom = 15, .left = 15, .right = 15 },
+            .minimum = .{ .height = 30 },
             .maximum = .{ .width = 1000 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
         }, display);
 
         self.checkboxes.present_future = try self.verb_panel.add(.{
             .name = "include.pf",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "Present and Future",
-                .on_change = .{ .func = @ptrCast(&change_present_future_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_present_future_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
@@ -324,33 +306,39 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "Imperfect",
-                .on_change = .{ .func = @ptrCast(&change_imperfect_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_imperfect_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
         self.checkboxes.aorist = try self.verb_panel.add(.{
             .name = "include.aor",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "Aorist",
-                .on_change = .{ .func = @ptrCast(&change_aorist_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_aorist_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
         self.checkboxes.perfect_pluperfect = try self.verb_panel.add(.{
             .name = "include.pfplpf",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "Perfect and Pluperfect",
-                .on_change = .{ .func = @ptrCast(&change_perfect_pluperfect_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_perfect_pluperfect_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
         self.checkboxes.middle_passive_spacer = try self.verb_panel.add(.{
-            .name = "spacer",
-            .rect = .{ .width = 20, .height = 20 },
+            .name = "mp_spacer",
             .minimum = .{ .width = 20, .height = 20 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{ .panel = .{} },
@@ -358,17 +346,18 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
         self.checkboxes.middle_passive = try self.verb_panel.add(.{
             .name = "include.midpsv",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "Middle and Passive",
-                .on_change = .{ .func = @ptrCast(&change_middle_passive_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_middle_passive_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
         _ = try self.scroller.add(.{
             .name = "middle.expander",
-            .rect = .{ .width = 100, .height = 20 },
             .minimum = .{ .width = 100, .height = 20 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{ .expander = .{ .weight = 0.4 } },
@@ -376,54 +365,69 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
         self.checkboxes.indicative = try self.scroller.add(.{
             .name = "include.indicative",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
+            .pad = .{ .left = 14, .right = 14 },
             .type = .{ .checkbox = .{
                 .text = "Indicative",
-                .on_change = .{ .func = @ptrCast(&change_indicative_preference), .ptr = self },
-            } },
-        }, display);
-
-        self.checkboxes.participles = try self.scroller.add(.{
-            .name = "include.ptcp",
-            .rect = .{ .width = 600, .height = 20 },
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Participles",
-                .on_change = .{ .func = @ptrCast(&change_participles_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&change_indicative_preference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
         self.checkboxes.subjunctive = try self.scroller.add(
             .{
                 .name = "include.sbj",
-                .rect = .{ .width = 600, .height = 20 },
                 .layout = .{ .y = .shrinks, .x = .grows },
+                .pad = .{ .left = 14, .right = 14 },
                 .type = .{ .checkbox = .{
                     .text = "Subjunctive",
-                    .on_change = .{ .func = @ptrCast(&change_subjunctive_preference), .ptr = self },
+                    .on_change = .{
+                        .func = @ptrCast(&changeSubjunctivePreference),
+                        .ptr = self,
+                    },
                 } },
             },
             display,
         );
 
+        self.checkboxes.participles = try self.scroller.add(.{
+            .name = "include.ptcp",
+            .layout = .{ .y = .shrinks, .x = .grows },
+            .pad = .{ .left = 14, .right = 14 },
+            .type = .{ .checkbox = .{
+                .text = "Participles",
+                .on_change = .{
+                    .func = @ptrCast(&change_participles_preference),
+                    .ptr = self,
+                },
+            } },
+        }, display);
+
         self.checkboxes.infinitive = try self.scroller.add(.{
             .name = "include.inf",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
+            .pad = .{ .left = 14, .right = 14 },
             .type = .{ .checkbox = .{
                 .text = "Infinitive",
-                .on_change = .{ .func = @ptrCast(&change_infinitive_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&changeInfinitivePreference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
         self.checkboxes.imperative = try self.scroller.add(.{
             .name = "include.impv",
-            .rect = .{ .width = 600, .height = 20 },
             .layout = .{ .y = .shrinks, .x = .grows },
+            .pad = .{ .left = 14, .right = 14 },
             .type = .{ .checkbox = .{
                 .text = "Imperative",
-                .on_change = .{ .func = @ptrCast(&change_imperative_preference), .ptr = self },
+                .on_change = .{
+                    .func = @ptrCast(&changeImperativePreference),
+                    .ptr = self,
+                },
             } },
         }, display);
 
@@ -432,11 +436,10 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
     self.counter = try self.scroller.add(.{
         .name = "filter.count",
-        .rect = .{ .width = 500, .height = 50 },
-        .minimum = .{ .width = 420, .height = 50 },
+        .minimum = .{ .height = 50 },
         .layout = .{ .y = .shrinks, .x = .grows },
         .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = 25, .right = 25, .top = 60, .bottom = 60 },
+        .pad = .{ .top = 30, .bottom = 30 },
         .style = .tinted,
         .type = .{ .label = .{
             .text = "0 forms",
@@ -448,8 +451,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
             .name = "start.parsing.panel",
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
-            .pad = .{ .left = 20, .right = 20 },
-            .minimum = .{ .width = 500, .height = 20 },
+            .minimum = .{ .height = 20 },
             .maximum = .{ .width = 1000 },
             .type = .{ .panel = .{
                 .direction = .left_to_right,
@@ -458,11 +460,15 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
         self.button_bar = try wrapper.add(.{
             .name = "start.parsing.panel",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .corner_radius = 14,
+                .image_corner_radius = 14,
+            },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .child_align = .{ .x = .centre },
-            .pad = .{ .left = 10, .right = 30, .top = 20, .bottom = 20 },
-            .minimum = .{ .width = 500, .height = 20 },
+            .pad = .{ .top = 20, .bottom = 20 },
+            .minimum = .{ .height = 20 },
             .maximum = .{ .width = 1000 },
             .style = .faded,
             .type = .{ .panel = .{
@@ -474,7 +480,12 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
         self.edit_button = try self.button_bar.add(.{
             .name = "list.edit.button",
             .minimum = .{ .width = 10, .height = 15 },
-            .pad = .{ .left = ICON_PAD, .right = ICON_PAD / 2, .top = ICON_PAD, .bottom = ICON_PAD },
+            .pad = .{
+                .left = ICON_PAD,
+                .right = ICON_PAD,
+                .top = ICON_PAD,
+                .bottom = ICON_PAD,
+            },
             .child_align = .{ .x = .start, .y = .start },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{
@@ -483,7 +494,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
                         .default_name = "edit-list-button",
                         .hover_name = "edit-list-button",
                         .pressed_name = "edit-list-button",
-                        .size = .{ .width = 80, .height = 80 },
+                        .size = .{ .width = 40, .height = 40 },
                     },
                     .text = "Edit",
                     .on_pressed = .{
@@ -498,7 +509,12 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
         self.delete_button = try self.button_bar.add(.{
             .name = "delete.button",
             .minimum = .{ .width = 10, .height = 15 },
-            .pad = .{ .left = ICON_PAD / 2, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
+            .pad = .{
+                .left = ICON_PAD,
+                .right = ICON_PAD,
+                .top = ICON_PAD,
+                .bottom = ICON_PAD,
+            },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{
                 .button = .{
@@ -506,10 +522,13 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
                         .default_name = "delete list button",
                         .hover_name = "delete list button",
                         .pressed_name = "delete list button",
-                        .size = .{ .width = 80, .height = 80 },
+                        .size = .{ .width = 40, .height = 40 },
                     },
                     .text = "Delete",
-                    .on_pressed = .{ .func = @ptrCast(&ListDeleteScreen.show), .ptr = self },
+                    .on_pressed = .{
+                        .func = @ptrCast(&ListDeleteScreen.show),
+                        .ptr = self,
+                    },
                     .spacing = 15,
                 },
             },
@@ -517,7 +536,6 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
         self.button_bar_spacer = try self.button_bar.add(.{
             .name = "button.spacer",
-            .rect = .{ .width = 30, .height = 20 },
             .minimum = .{ .width = 30, .height = 20 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{ .panel = .{} },
@@ -525,27 +543,36 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
         self.start_button = try self.button_bar.add(.{
             .name = "start.button",
-            .rect = .{ .x = 0, .y = 0, .width = 10, .height = 15 },
             .minimum = .{ .width = 10, .height = 15 },
-            .pad = .{ .left = 30, .right = 30, .top = 30, .bottom = 30 },
+            .pad = .{
+                .left = ICON_PAD,
+                .right = ICON_PAD,
+                .top = ICON_PAD,
+                .bottom = ICON_PAD,
+            },
             .child_align = .{ .x = .start, .y = .start },
             .layout = .{ .x = .shrinks, .y = .shrinks },
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{ .corner_radius = 14, .image_corner_radius = 50 },
+            .style = .faded,
             .type = .{
                 .button = .{
                     .icon = .{
                         .default_name = "parsing button",
                         .pressed_name = "parsing button",
                         .hover_name = "parsing button",
-                        .size = .{ .width = 80, .height = 80 },
+                        .size = .{ .width = 40, .height = 40 },
                     },
                     .button = .{
-                        .hover_name = "white rounded rect",
-                        .pressed_name = "white rounded rect",
+                        .default_name = "default button",
+                        .hover_name = "hover button",
+                        .pressed_name = "pressed button",
                     },
                     .text = "Practice",
-                    .on_pressed = .{ .func = @ptrCast(&show_parsing_card), .ptr = self },
-                    .spacing = 20,
+                    .on_pressed = .{
+                        .func = @ptrCast(&tapPractice),
+                        .ptr = self,
+                    },
+                    .spacing = 15,
                 },
             },
         }, display);
@@ -553,25 +580,34 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
 
     _ = try self.scroller.add(.{
         .name = "bottom.expander",
-        .rect = .{ .width = 100, .height = 5 },
         .minimum = .{ .width = 100, .height = 5 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .expander = .{ .weight = 0.7 } },
     }, display);
-
-    _ = try display.add_spacer(self.scroller, 70);
 }
 
-pub fn go_back(
+pub fn tapPractice(
+    self: *ParsingSetupScreen,
+    display: *Display,
+    _: *Entity,
+    event: *const Event,
+) Allocator.Error!void {
+    try display.choosePanel(self.app.parsing_card.panel.name, event);
+}
+
+pub fn tapBack(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
-    event: *Event,
+    event: *const Event,
 ) Allocator.Error!void {
 
     // Go back to word info screen if thats where we were
     if (self.called_by == .word_info and self.lexeme != null) {
-        info("ParsingSetupScreen({s} {s}) back", .{ @tagName(self.called_by), self.lexeme.?.word });
+        info("ParsingSetupScreen({s} {s}) back", .{
+            @tagName(self.called_by),
+            self.lexeme.?.word,
+        });
         try self.app.word_info.show(display, self.lexeme.?, event);
         return;
     }
@@ -581,7 +617,11 @@ pub fn go_back(
     try self.app.parsing_menu.show(display, element, event);
 }
 
-pub fn handle_resize(self: *ParsingSetupScreen, display: *Display, _: *Entity) bool {
+pub fn resizeScroller(
+    self: *ParsingSetupScreen,
+    display: *Display,
+    _: *Entity,
+) bool {
     var updated = false;
 
     if (ac.app_context.?.preference.size == .large or ac.app_context.?.preference.size == .extra_large) {
@@ -617,14 +657,14 @@ pub fn handle_resize(self: *ParsingSetupScreen, display: *Display, _: *Entity) b
         updated = true;
     }
 
-    const new_width = best_width(display);
-    debug("parent_width={d} width={d}", .{ display.root.rect.width, new_width });
-    if (self.panel.rect.width != new_width) {
-        self.panel.rect.width = new_width;
-        self.panel.minimum.width = new_width;
-        self.panel.maximum.width = new_width;
-        updated = true;
-    }
+    //const new_width = best_width(display);
+    //debug("parent_width={d} width={d}", .{ display.root.rect.width, new_width });
+    //if (self.panel.rect.width != new_width) {
+    //    self.panel.rect.width = new_width;
+    //    self.panel.minimum.width = new_width;
+    //    self.panel.maximum.width = new_width;
+    //    updated = true;
+    //}
 
     if (self.scroller.rect.height != display.root.rect.height - 340) {
         self.scroller.rect.height = display.root.rect.height - 340;
@@ -636,44 +676,56 @@ pub fn handle_resize(self: *ParsingSetupScreen, display: *Display, _: *Entity) b
     return updated;
 }
 
-fn is_visible(visible: bool) engine.Entity.Visibility {
-    if (visible) {
+fn isVisible(visible: bool) engine.Entity.Visibility {
+    if (visible)
         return .visible;
-    }
     return .hidden;
 }
 
-pub fn update_counter_text(self: *ParsingSetupScreen, display: *Display) error{OutOfMemory}!void {
+pub fn updateCounterText(
+    self: *ParsingSetupScreen,
+    display: *Display,
+) error{OutOfMemory}!void {
     switch (ac.app_context.?.parsing_quiz.total_cards) {
         0 => try self.counter.setText(display, "No word forms."),
         1 => try self.counter.setText(display, "1 word form."),
-        else => |count| try self.counter.setText(display, display.bucket.addFmt("{d} forms", .{count}) catch ""),
+        else => |count| try self.counter.setText(
+            display,
+            display.bucket.addFmt("{d} forms", .{count}) catch "",
+        ),
     }
 }
 
-pub fn update_option_panels(self: *ParsingSetupScreen) void {
+pub fn updateOptionPanels(self: *ParsingSetupScreen) void {
     if (self.lexeme) |word| {
         if (word.pos.part_of_speech == .verb) {
             self.noun_panel.visible = .hidden;
             self.verb_panel.visible = .visible;
+            if (word.hasMiddlePassiveForm() and word.hasActiveForm())
+                self.checkboxes.middle_passive_spacer.visible = .visible
+            else
+                self.checkboxes.middle_passive_spacer.visible = .hidden;
         } else {
             self.noun_panel.visible = .visible;
             self.verb_panel.visible = .hidden;
         }
-        return;
-    }
-    if (self.list) |current_list| {
-        if (current_list.has_noun_or_adjective()) {
+    } else if (self.list) |current_list| {
+        if (current_list.hasNounOrAdjective()) {
             self.noun_panel.visible = .visible;
         } else {
             self.noun_panel.visible = .hidden;
         }
-        if (current_list.has_verb()) {
+        if (current_list.hasVerb()) {
             self.verb_panel.visible = .visible;
+            if (current_list.hasActive() and current_list.hasMiddlePassive())
+                self.checkboxes.middle_passive_spacer.visible = .visible
+            else
+                self.checkboxes.middle_passive_spacer.visible = .hidden;
         } else {
             self.verb_panel.visible = .hidden;
         }
     }
+
     if (self.verb_panel.visible == .visible and self.noun_panel.visible == .visible) {
         self.noun_verb_spacer.visible = .visible;
     } else {
@@ -713,8 +765,8 @@ fn refresh_menu(self: *ParsingSetupScreen, display: *Display) !void {
     } else {
         err("Cant refresh menus without lexeme specified.", .{});
     }
-    self.update_option_panels();
-    try self.update_counter_text(display);
+    self.updateOptionPanels();
+    try self.updateCounterText(display);
 }
 
 pub fn change_nominative_accusative_preference(
@@ -853,7 +905,7 @@ pub fn change_participles_preference(
     try self.refresh_menu(display);
 }
 
-pub fn change_infinitive_preference(
+pub fn changeInfinitivePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -865,7 +917,7 @@ pub fn change_infinitive_preference(
     try self.refresh_menu(display);
 }
 
-pub fn change_subjunctive_preference(
+pub fn changeSubjunctivePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -877,7 +929,7 @@ pub fn change_subjunctive_preference(
     try self.refresh_menu(display);
 }
 
-pub fn change_imperative_preference(
+pub fn changeImperativePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -889,12 +941,16 @@ pub fn change_imperative_preference(
     try self.refresh_menu(display);
 }
 
-pub fn filter_forms(forms: []*praxis.Form, set: *ArrayList(*praxis.Form)) error{OutOfMemory}!void {
+pub fn filter_forms(
+    forms: []*praxis.Form,
+    set: *ArrayList(*praxis.Form),
+    gpa: Allocator,
+) error{OutOfMemory}!void {
     for (forms) |form| {
         const pos = form.parsing.part_of_speech;
         if (pos == .noun or pos == .verb or pos == .adjective or
             (pos == .proper_noun and form.lexeme.?.pos.indeclinable == false))
-            try set.append(form);
+            try set.append(gpa, form);
     }
 }
 
@@ -915,13 +971,10 @@ const Lexeme = praxis.Lexeme;
 
 const ac = @import("App.zig");
 const AppContext = ac.AppContext;
-const ParsingMenuScreen = @import("screen_parsing_menu.zig");
+const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const ParsingCardScreen = @import("ParsingCardScreen.zig");
-const ListEditScreen = @import("screen_list_edit.zig");
-const ListDeleteScreen = @import("screen_list_delete.zig");
-const show_parsing_menu = ParsingMenuScreen.show;
-const show_parsing_card = ParsingCardScreen.show;
-const show_list_editor = ListEditScreen.show;
+const ListEditScreen = @import("ListEditScreen.zig");
+const ListDeleteScreen = @import("ListDeleteScreen.zig");
 const best_width = @import("SearchScreen.zig").best_width;
 const Lists = @import("lists.zig");
 const WordSet = Lists.WordSet;

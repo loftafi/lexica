@@ -35,7 +35,7 @@ pub fn init(self: *LicenseScreen, app: *AppContext) !void {
     });
 
     self.back_button = try ac.app_context.?.add_back_button(self.panel, .{
-        .func = @ptrCast(&close_me),
+        .func = @ptrCast(&tapBack),
         .ptr = self,
     });
 
@@ -126,7 +126,7 @@ pub fn deinit(self: *LicenseScreen) void {
     self.* = undefined;
 }
 
-pub fn close_me(_: *LicenseScreen, display: *Display, _: *Entity, event: *Event) Allocator.Error!void {
+pub fn tapBack(_: *LicenseScreen, display: *Display, _: *Entity, event: *Event) Allocator.Error!void {
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .visible;
     }
@@ -170,7 +170,7 @@ const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
 const MenuUI = @import("MenuUI.zig");
-const best_width = @import("screen_parsing_menu.zig").best_width;
+const best_width = @import("ParsingMenuScreen.zig").best_width;
 const ByzScreen = @import("ByzScreen.zig");
 const NotoScreen = @import("NotoScreen.zig");
 const SDLScreen = @import("SDLScreen.zig");

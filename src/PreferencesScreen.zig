@@ -79,7 +79,7 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
         .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
     }, display);
 
-    self.us_panel = try create_picker_table(
+    self.us_panel = try initPickerTable(
         context.allocator,
         display,
         picker_panel,
@@ -87,11 +87,11 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
         &[4][]const u8{ "Θεός", "Θεοῦ", "Θεῷ", "Θεόν" },
     );
     self.us_panel.type.panel.on_pressed = .{
-        .func = @ptrCast(&choose_us_order),
+        .func = @ptrCast(&chooseUSOrder),
         .ptr = self,
     };
 
-    self.uk_panel = try create_picker_table(
+    self.uk_panel = try initPickerTable(
         context.allocator,
         display,
         picker_panel,
@@ -99,7 +99,7 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
         &[4][]const u8{ "Θεός", "Θεόν", "Θεοῦ", "Θεῷ" },
     );
     self.uk_panel.type.panel.on_pressed = .{
-        .func = @ptrCast(&choose_uk_order),
+        .func = @ptrCast(&chooseUKOrder),
         .ptr = self,
     };
 
@@ -385,12 +385,12 @@ pub fn pick_theme(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     const theme = display.validate_theme(element.name);
-    _ = display.setTheme(theme);
+    _ = try display.setTheme(theme);
     ac.app_context.?.preference.theme = theme;
     ac.app_context.?.save_preferences();
 }
 
-pub fn create_picker_table(
+pub fn initPickerTable(
     _: Allocator,
     display: *Display,
     parent_panel: *Entity,
@@ -449,7 +449,11 @@ pub fn create_picker_table(
     return parsing_panel;
 }
 
-pub fn choose_uk_order(self: *PreferencesScreen, display: *Display, element: *Entity) std.mem.Allocator.Error!void {
+pub fn chooseUKOrder(
+    self: *PreferencesScreen,
+    display: *Display,
+    element: *Entity,
+) std.mem.Allocator.Error!void {
     debug("Choose UK order.", .{});
     std.debug.assert(element.type == .panel);
     ac.app_context.?.preference.uk_order = true;
@@ -457,7 +461,11 @@ pub fn choose_uk_order(self: *PreferencesScreen, display: *Display, element: *En
     ac.app_context.?.save_preferences();
 }
 
-pub fn choose_us_order(self: *PreferencesScreen, display: *Display, element: *Entity) std.mem.Allocator.Error!void {
+pub fn chooseUSOrder(
+    self: *PreferencesScreen,
+    display: *Display,
+    element: *Entity,
+) std.mem.Allocator.Error!void {
     debug("Choose US order.", .{});
     std.debug.assert(element.type == .panel);
     ac.app_context.?.preference.uk_order = false;
@@ -539,7 +547,7 @@ const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
 const MenuUI = @import("MenuUI.zig");
-const best_width = @import("screen_parsing_menu.zig").best_width;
+const best_width = @import("ParsingMenuScreen.zig").best_width;
 const PrivacyScreen = @import("PrivacyScreen.zig");
 const TermsScreen = @import("TermsScreen.zig");
 const show_terms_screen = @import("TermsScreen.zig").show;

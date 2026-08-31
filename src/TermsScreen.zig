@@ -38,7 +38,7 @@ pub fn init(self: *TermsScreen, app: *AppContext) !void {
     });
 
     self.back_button = try ac.app_context.?.add_back_button(self.panel, .{
-        .func = @ptrCast(&close_me),
+        .func = @ptrCast(&tapBack),
         .ptr = self,
     });
 
@@ -90,7 +90,7 @@ pub fn deinit(self: *TermsScreen) void {
     self.* = undefined;
 }
 
-pub fn close_me(
+pub fn tapBack(
     _: *TermsScreen,
     display: *Display,
     _: *Entity,

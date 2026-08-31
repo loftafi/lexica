@@ -1,7 +1,7 @@
 pub const ParsingCardScreen = @This();
 
-const PARSING_BUTTON_X_PADDING: f32 = 16.0;
-const PARSING_BUTTON_Y_PADDING: f32 = 10.0 + 4;
+const PARSING_BUTTON_X_PADDING: f32 = 6.0;
+const PARSING_BUTTON_Y_PADDING: f32 = 8;
 
 app: *AppContext = undefined,
 panel: *Entity = undefined,
@@ -10,7 +10,6 @@ var quiz_word: *Entity = undefined;
 var help_line: *Entity = undefined;
 var correct_panel: *Entity = undefined;
 var incorrect_panel: *Entity = undefined;
-var back_button: *Entity = undefined;
 
 pub fn show(
     self: *ParsingCardScreen,
@@ -64,7 +63,7 @@ pub fn deinit(self: *ParsingCardScreen) void {
     self.* = undefined;
 }
 
-pub fn cancel_quiz(
+pub fn tapBack(
     self: *ParsingCardScreen,
     display: *Display,
     element: *Entity,
@@ -593,7 +592,6 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
 
     self.panel = try display.addPanel(.{
         .name = "parsing.card",
-        .rect = .{ .x = 20, .y = 20 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
@@ -608,8 +606,8 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
         .on_resized = .{ .func = @ptrCast(&handle_resize), .ptr = self },
     });
 
-    back_button = try app.add_back_button(self.panel, .{
-        .func = @ptrCast(&cancel_quiz),
+    _ = try app.add_back_button(self.panel, .{
+        .func = @ptrCast(&tapBack),
         .ptr = self,
     });
 
@@ -647,13 +645,17 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     {
         pickers.tense_form = try self.panel.add(.{
             .name = "tense_form.picker",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 50,
+                .corner_radius = 14,
+            },
             .layout = .{
                 .x = .grows,
             },
             .child_align = .{ .x = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
         }, display);
 
@@ -806,11 +808,15 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     {
         pickers.voice = try self.panel.add(.{
             .name = "voice.picker",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 50,
+                .corner_radius = 14,
+            },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
         }, display);
 
@@ -836,11 +842,15 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     {
         pickers.mood = try self.panel.add(.{
             .name = "mood.picker",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 50,
+                .corner_radius = 14,
+            },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre, .y = .start },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
         }, display);
 
@@ -896,11 +906,15 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     {
         pickers.person = try self.panel.add(.{
             .name = "person.picker",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 50,
+                .corner_radius = 14,
+            },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
         }, display);
 
@@ -971,11 +985,16 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     {
         pickers.case = try self.panel.add(.{
             .name = "case.picker",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 50,
+                .corner_radius = 14,
+            },
+
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{
                 .spacing = 10,
                 .direction = .left_to_right,
@@ -1073,11 +1092,15 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     {
         pickers.number = try self.panel.add(.{
             .name = "number.picker",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 50,
+                .corner_radius = 14,
+            },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre, .y = .start },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{
                 .spacing = 10,
                 .direction = .left_to_right,
@@ -1130,11 +1153,15 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     {
         pickers.gender = try self.panel.add(.{
             .name = "gender.picker",
-            .background = .{ .image_name = "white rounded rect" },
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 50,
+                .corner_radius = 14,
+            },
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 500, .height = 30 },
+            .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
         }, display);
 
@@ -1209,7 +1236,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
             .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
             .child_align = .{ .x = .centre, .y = .centre },
-            .minimum = .{ .width = 700, .height = 120 },
+            .minimum = .{ .width = 300, .height = 120 },
             .visible = .hidden,
             .type = .{
                 .panel = .{
@@ -1226,7 +1253,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .child_align = .{ .x = .centre, .y = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 700, .height = 100 },
+            .minimum = .{ .width = 300, .height = 100 },
             .visible = .visible,
             .style = .success,
             .type = .{ .panel = .{
@@ -1238,7 +1265,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
         _ = try alert_box.add(.{
             .name = "correct.feedback",
             .rect = .{ .width = 510, .height = 20 },
-            .minimum = .{ .width = 510 },
+            .minimum = .{ .width = 310 },
             .layout = .{ .y = .shrinks, .x = .shrinks },
             .style = .success,
             .type = .{ .label = .{
@@ -1273,7 +1300,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
             .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
             .child_align = .{ .x = .centre, .y = .centre },
-            .minimum = .{ .width = 700, .height = 100 },
+            .minimum = .{ .width = 300, .height = 100 },
             .visible = .hidden,
             .type = .{
                 .panel = .{
@@ -1290,7 +1317,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre, .y = .centre },
             .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 700, .height = 100 },
+            .minimum = .{ .width = 300, .height = 100 },
             .style = .failed,
             .type = .{ .panel = .{
                 .spacing = 10,
@@ -1300,8 +1327,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
 
         _ = try alert_box.add(.{
             .name = "incorrect.feedback",
-            .rect = .{ .width = 510, .height = 20 },
-            .minimum = .{ .width = 510 },
+            .minimum = .{ .width = 310 },
             .layout = .{ .y = .shrinks, .x = .shrinks },
             .style = .failed,
             .type = .{ .label = .{
@@ -1312,7 +1338,6 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
 
         _ = try alert_box.add(.{
             .name = "next",
-            .rect = .{ .width = 140, .height = 80 },
             .minimum = .{ .width = 140, .height = 80 },
             .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
             .layout = .{ .y = .shrinks, .x = .shrinks },
@@ -1823,4 +1848,4 @@ const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
 const MenuUI = @import("MenuUI.zig");
-const ParsingMenuScreen = @import("screen_parsing_menu.zig");
+const ParsingMenuScreen = @import("ParsingMenuScreen.zig");

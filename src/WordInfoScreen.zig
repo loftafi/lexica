@@ -300,7 +300,9 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
     self.practice_button = try button_align.add(.{
         .name = "start.button",
         .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+        .background = .{ .corner_radius = 14, .image_corner_radius = 50 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
+        .style = .faded,
         .type = .{
             .button = .{
                 .icon = .{
@@ -309,9 +311,9 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
                     .pressed_name = "parsing button",
                 },
                 .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
+                    .default_name = "button default",
+                    .pressed_name = "button pressed",
+                    .hover_name = "button hover",
                 },
                 .text = "Practice",
                 .on_pressed = .{ .func = @ptrCast(&show_parsing_setup), .ptr = self },
@@ -475,7 +477,7 @@ pub fn show(
     self: *WordInfoScreen,
     display: *Display,
     lexeme: *praxis.Lexeme,
-    event: *Event,
+    event: *const Event,
 ) Allocator.Error!void {
     ac.app_context.?.word_lexeme = lexeme;
     try self.word_title.setText(display, lexeme.word);
@@ -486,7 +488,7 @@ pub fn show(
 
     self.gloss_buffer.clearRetainingCapacity();
     try self.word_glosses.setText(display, "");
-    if (lexeme.glosses_by_lang(Lang.english)) |value| {
+    if (lexeme.glossesByLang(Lang.english)) |value| {
         value.string(&self.gloss_buffer.writer) catch {};
     }
     try self.word_glosses.setText(display, self.gloss_buffer.written());

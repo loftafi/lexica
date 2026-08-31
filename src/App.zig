@@ -128,7 +128,7 @@ pub const AppContext = struct {
             try ac.display.setLanguage(Lang.english);
         }
         ac.display.setUserScale(ac.preference.size);
-        _ = ac.display.setTheme(ac.preference.theme);
+        _ = try ac.display.setTheme(ac.preference.theme);
         debug("Loaded preferences. Scale={d}/{s}", .{ ac.display.user_scale, @tagName(ac.preference.size) });
 
         app_context = ac;
@@ -138,7 +138,7 @@ pub const AppContext = struct {
         ac.dictionary_arena = std.heap.ArenaAllocator.init(gpa);
         errdefer ac.dictionary_arena.deinit();
         ac.dictionary = try Dictionary.create(ac.dictionary_arena.allocator());
-        errdefer ac.dictionary.destroy(ac.dictionary_arena.allocator());
+        errdefer ac.dictionary.destroy();
         ac.lists = Lists.init(ac.dictionary);
 
         debug("Setup resource loading thread", .{});
@@ -180,7 +180,7 @@ pub const AppContext = struct {
         ac.sdl.deinit();
         ac.lists.deinit(ac.allocator);
 
-        ac.dictionary.destroy(ac.dictionary_arena.allocator());
+        ac.dictionary.destroy();
         ac.dictionary_arena.deinit();
 
         const allocator = ac.allocator;
@@ -679,7 +679,7 @@ pub fn loadDictionary(
     info("Dictionary: Beginning load. '{s}' data.len={d}", .{ dict_name, data.len });
 
     const start = std.Io.Timestamp.now(io, .real).toMilliseconds();
-    app.dictionary.loadBinaryData(app.dictionary_arena.allocator(), data) catch |e| {
+    app.dictionary.loadBinaryData(data) catch |e| {
         err("Dictionary: Error reading data: {t}", .{e});
         return false;
     };
@@ -727,18 +727,18 @@ const sdl = engine.sdl;
 
 const Lists = @import("lists.zig");
 const WordSet = Lists.WordSet;
-const ParsingQuiz = @import("parsing_quiz.zig");
+const ParsingQuiz = @import("ParsingQuiz.zig");
 
 const ByzScreen = @import("ByzScreen.zig");
 const LicenseScren = @import("LicenseScreen.zig");
-const ListNewScreen = @import("screen_list_new.zig");
-const ListEditScreen = @import("screen_list_edit.zig");
-const ListDeleteScreen = @import("screen_list_delete.zig");
+const ListNewScreen = @import("ListNewScreen.zig");
+const ListEditScreen = @import("ListEditScreen.zig");
+const ListDeleteScreen = @import("ListDeleteScreen.zig");
 const MenuUI = @import("MenuUI.zig");
 const NotoScreen = @import("NotoScreen.zig");
 const PrivacyScreen = @import("PrivacyScreen.zig");
 const PreferencesScreen = @import("PreferencesScreen.zig");
-const ParsingMenuScreen = @import("screen_parsing_menu.zig");
+const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const ParsingSetupScreen = @import("ParsingSetupScreen.zig");
 const ParsingCardScreen = @import("ParsingCardScreen.zig");
 const SearchScreen = @import("SearchScreen.zig");

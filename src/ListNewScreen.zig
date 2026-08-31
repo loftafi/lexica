@@ -7,7 +7,7 @@ panel: *Entity = undefined,
 var new_button: *Entity = undefined;
 var text_input: *Entity = undefined;
 
-const ICON_PAD = 30;
+const ICON_PAD = 15;
 
 pub fn show(
     self: *ListNewScreen,
@@ -33,11 +33,11 @@ pub fn init(
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .centre },
         .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
         .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
         .type = .{ .panel = .{
             .direction = .top_to_bottom,
-            .spacing = 35,
+            .spacing = 17,
             .choosable = .choosable,
         } },
         .visible = .hidden,
@@ -51,7 +51,6 @@ pub fn init(
 
     _ = try self.panel.add(.{
         .name = "new.list.heading",
-        .minimum = .{ .width = 580 },
         .layout = .{ .y = .shrinks, .x = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .style = .tinted,
@@ -59,15 +58,19 @@ pub fn init(
             .text = "New Word Set",
             .text_size = .heading,
         } },
-        .pad = .{ .top = 30 },
+        .pad = .{ .top = 15 },
     }, display);
 
     text_input = try self.panel.add(.{
         .name = "new_list_name",
-        .background = .{ .image_name = "white rounded rect" },
-        .rect = .{ .width = 500, .height = 20 },
+        .background = .{
+            .image_name = "white rounded rect",
+            .image_corner_radius = 50,
+            .corner_radius = 14,
+        },
+        .rect = .{ .width = 250, .height = 10 },
         .layout = .{ .x = .grows, .y = .shrinks },
-        .minimum = .{ .height = 20, .width = 580 },
+        .minimum = .{ .height = 10, .width = 290 },
         .type = .{
             .text_input = .{
                 .max_length = Lists.MAX_SET_NAME,
@@ -81,14 +84,15 @@ pub fn init(
         .name = "new_list_row",
         .layout = .{ .x = .grows },
         .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = 30, .right = 30, .top = 8, .bottom = 8 },
-        .minimum = .{ .width = 200, .height = 20 },
-        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 22 } },
+        .pad = .{ .left = 15, .right = 15, .top = 4, .bottom = 4 },
+        .minimum = .{ .width = 100, .height = 10 },
+        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 11 } },
     }, display);
 
     new_button = try button_bar.add(.{
         .name = "create.word.list",
-        .minimum = .{ .width = 10, .height = 15 },
+        .background = .{ .image_corner_radius = 50, .corner_radius = 14 },
+        .minimum = .{ .width = 5, .height = 7 },
         .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .button = .{
@@ -99,12 +103,12 @@ pub fn init(
                 .hover_name = "edit list button",
             },
             .button = .{
-                .default_name = "white rounded rect2",
-                .hover_name = "white rounded rect2",
-                .pressed_name = "white rounded rect2",
+                .default_name = "default button",
+                .hover_name = "hover default",
+                .pressed_name = "pressed default",
             },
             .on_pressed = .{ .func = @ptrCast(&addList), .ptr = self },
-            .spacing = 20,
+            .spacing = 10,
         } },
     }, display);
 }
@@ -183,5 +187,5 @@ const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
 const Lists = @import("lists.zig");
-const ParsingMenuScreen = @import("screen_parsing_menu.zig");
-const ListEditScreen = @import("screen_list_edit.zig");
+const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
+const ListEditScreen = @import("ListEditScreen.zig");

@@ -158,8 +158,13 @@ pub fn init(
     self.new_button = try list_menu.add(.{
         .name = "new.word.list",
         .minimum = .{ .width = 10, .height = 15 },
+        .background = .{
+            .corner_radius = 14,
+            .image_corner_radius = 50,
+        },
         .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
         .layout = .{ .x = .shrinks, .y = .shrinks },
+        .style = .faded,
         .type = .{ .button = .{
             .text = "New Word Set",
             .icon = .{
@@ -169,9 +174,9 @@ pub fn init(
                 .size = .{ .width = 20, .height = 20 },
             },
             .button = .{
-                .default_name = "white rounded rect2",
-                .pressed_name = "white rounded rect2",
-                .hover_name = "white rounded rect2",
+                .default_name = "default button",
+                .pressed_name = "pressed button",
+                .hover_name = "hover button",
             },
             .on_pressed = .{ .func = @ptrCast(&show_new_word_list), .ptr = self },
             .spacing = 8,
@@ -250,15 +255,15 @@ fn make_button_bar(
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .background = .{
                 .corner_radius = 14,
-                .image_corner_radius = 14,
+                .image_corner_radius = 50,
             },
             .type = .{ .button = .{
                 .text = word,
                 .on_pressed = .{ .func = @ptrCast(&show_parsing_setup), .ptr = self },
                 .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
+                    .default_name = "default button",
+                    .pressed_name = "pressed button",
+                    .hover_name = "hovered button",
                 },
             } },
         }, display);

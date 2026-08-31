@@ -44,7 +44,7 @@ pub fn init(self: *PrivacyScreen, context: *AppContext) !void {
     );
 
     self.back_button = try self.app.add_back_button(self.panel, .{
-        .func = @ptrCast(&close_me),
+        .func = @ptrCast(&tapBack),
         .ptr = self,
     });
 
@@ -92,7 +92,7 @@ pub fn deinit(self: *PrivacyScreen) void {
     self.* = undefined;
 }
 
-pub fn close_me(
+pub fn tapBack(
     _: *PrivacyScreen,
     display: *Display,
     _: *Entity,

@@ -265,7 +265,7 @@ pub const WordSet = struct {
         self.* = undefined;
     }
 
-    pub fn has_noun_or_adjective(self: *WordSet) bool {
+    pub fn hasNounOrAdjective(self: *WordSet) bool {
         for (self.forms.items) |form| {
             if (form.parsing.part_of_speech == .noun) return true;
             if (form.parsing.part_of_speech == .adjective) return true;
@@ -275,11 +275,27 @@ pub const WordSet = struct {
         return false;
     }
 
-    pub fn has_verb(self: *WordSet) bool {
+    pub fn hasVerb(self: *WordSet) bool {
         for (self.forms.items) |form| {
             if (form.parsing.part_of_speech == .verb) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    pub fn hasActive(self: *WordSet) bool {
+        for (self.forms.items) |form| {
+            if (form.lexeme) |lexeme|
+                if (lexeme.hasActiveForm()) return true;
+        }
+        return false;
+    }
+
+    pub fn hasMiddlePassive(self: *WordSet) bool {
+        for (self.forms.items) |form| {
+            if (form.lexeme) |lexeme|
+                if (lexeme.hasMiddlePassiveForm()) return true;
         }
         return false;
     }

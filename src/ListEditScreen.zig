@@ -84,12 +84,12 @@ pub fn init(
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
         .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
         .visible = .hidden,
         .type = .{ .panel = .{
             .direction = .top_to_bottom,
-            .spacing = 5,
+            .spacing = 3,
             .choosable = .choosable,
         } },
         .on_resized = .{ .func = @ptrCast(&resizeList), .ptr = self },
@@ -107,7 +107,7 @@ pub fn init(
         .type = .{ .label = .{
             .text_size = .heading,
         } },
-        .pad = .{ .top = 30, .bottom = 20 },
+        .pad = .{ .top = 15, .bottom = 10 },
     }, display);
 
     _ = try display.add_spacer(self.panel, 1);
@@ -116,10 +116,10 @@ pub fn init(
         .name = "list.edit.screen",
         .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
-        .pad = .{ .left = 20, .right = 20, .top = 0, .bottom = 0 },
-        .minimum = .{ .width = 500, .height = 30 },
-        .maximum = .{ .width = 1000 },
-        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 5 } },
+        .pad = .{ .left = 10, .right = 10 },
+        .minimum = .{ .width = 250, .height = 15 },
+        .maximum = .{ .width = 500 },
+        .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 3 } },
         .on_resized = .{ .func = @ptrCast(&resizeList), .ptr = self },
     }, display);
 
@@ -127,8 +127,8 @@ pub fn init(
         .name = "search_query",
         .background = .{ .image_name = "white rounded rect" },
         .layout = .{ .x = .grows, .y = .shrinks },
-        .pad = .{ .left = 20, .right = 20 },
-        .minimum = .{ .height = 20 },
+        .pad = .{ .left = 10, .right = 10 },
+        .minimum = .{ .height = 10 },
         .type = .{ .text_input = .{
             .max_length = @min(30, praxis.max_word_size),
             .on_change = .{ .func = @ptrCast(&search_update), .ptr = self },
@@ -144,16 +144,16 @@ pub fn init(
         .name = "scroll.panel",
         .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
-        .minimum = .{ .width = 400, .height = 600 },
-        .pad = .{ .left = 20, .right = 20 },
+        .minimum = .{ .width = 200, .height = 300 },
+        .pad = .{ .left = 10, .right = 10 },
         .type = .{
             .panel = .{
                 .scrollable = .{
                     .scroll = .{ .x = false, .y = true },
-                    .size = .{ .width = 600, .height = 600 },
+                    .size = .{ .width = 300, .height = 300 },
                 },
                 .direction = .top_to_bottom,
-                .spacing = 20,
+                .spacing = 10,
             },
         },
     }, display);
@@ -182,7 +182,7 @@ pub fn init(
     // Build the list entry elements
     x = 0;
     for (0..MAX_LIST_ENTRIES) |i| {
-        list_entries[i] = try self.create_list_entry_panel(display, scroller);
+        list_entries[i] = try self.initListEntryPanel(display, scroller);
     }
 
     _ = try display.add_spacer(scroller, 80);
@@ -252,7 +252,7 @@ pub fn show_list_entries(self: *ListEditScreen, display: *Display, _: *Entity, e
         const result = list_entries[i].type.panel.children.items;
 
         string_buffers[string_buffer_index].clearRetainingCapacity();
-        if (form.glosses_by_lang(Lang.english)) |value| {
+        if (form.glossesByLang(Lang.english)) |value| {
             value.string(&string_buffers[string_buffer_index].writer) catch {};
         } else {
             return;
@@ -460,11 +460,11 @@ pub fn resizeGlossList(
     const word = element.type.panel.children.items[0];
     const gloss = element.type.panel.children.items[1];
     const delete = element.type.panel.children.items[2];
-    const gloss_width = element.rect.width - word.rect.width - delete.rect.width - 26;
+    const gloss_width = element.rect.width - word.rect.width - delete.rect.width - 13;
     if (gloss.rect.width != gloss_width) {
         gloss.rect.width = gloss_width;
         gloss.minimum.width = gloss_width;
-        gloss.maximum.width = gloss_width + 6;
+        gloss.maximum.width = gloss_width + 3;
         updated = true;
     }
     return updated;
@@ -480,11 +480,11 @@ pub fn resizeClossResult(
     const add = element.type.panel.children.items[0];
     const word = element.type.panel.children.items[1];
     const gloss = element.type.panel.children.items[2];
-    const gloss_width = element.rect.width - word.rect.width - add.rect.width - 26;
+    const gloss_width = element.rect.width - word.rect.width - add.rect.width - 13;
     if (gloss.rect.width != gloss_width) {
         gloss.rect.width = gloss_width;
         gloss.minimum.width = gloss_width;
-        gloss.maximum.width = gloss_width + 6;
+        gloss.maximum.width = gloss_width + 3;
         updated = true;
     }
     return updated;
@@ -492,8 +492,8 @@ pub fn resizeClossResult(
 
 pub fn resizeList(_: *ListEditScreen, display: *Display, _: *Entity) bool {
     var updated = false;
-    if (scroller.rect.height != display.root.rect.height - 340) {
-        scroller.rect.height = display.root.rect.height - 340;
+    if (scroller.rect.height != display.root.rect.height - 170) {
+        scroller.rect.height = display.root.rect.height - 170;
         scroller.minimum.height = scroller.rect.height;
         scroller.maximum.height = scroller.rect.height;
         updated = true;
@@ -544,7 +544,7 @@ inline fn update_search_result_panel(
         try seen.put(lexeme.uid, form);
     }
     string_buffers[string_buffer_index].clearRetainingCapacity();
-    if (form.glosses_by_lang(Lang.english)) |value| {
+    if (form.glossesByLang(Lang.english)) |value| {
         value.string(&string_buffers[string_buffer_index].writer) catch {};
     } else {
         return;
@@ -576,7 +576,7 @@ pub fn create_search_result_panel(
         .type = .{
             .panel = .{
                 .direction = .left_to_right,
-                .spacing = 10,
+                .spacing = 5,
             },
         },
         .on_resized = .{ .func = @ptrCast(&resizeClossResult), .ptr = self },
@@ -608,9 +608,9 @@ pub fn create_search_result_panel(
                     },
                 },
                 .button = .{
-                    .default_name = "white rounded rect2",
-                    .hover_name = "white rounded rect2",
-                    .pressed_name = "white rounded rect2",
+                    .default_name = "default button",
+                    .hover_name = "hover button",
+                    .pressed_name = "pressed button",
                 },
             },
         },
@@ -618,40 +618,40 @@ pub fn create_search_result_panel(
 
     _ = try result.add(.{
         .name = "word",
-        .rect = .{ .height = 50 },
-        .minimum = .{ .width = 50, .height = 50 },
-        .maximum = .{ .height = 50 },
+        .rect = .{ .height = 25 },
+        .minimum = .{ .width = 25, .height = 25 },
+        .maximum = .{ .height = 25 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .child_align = .{ .x = .start },
         .style = .tinted,
         .type = .{ .label = .{
             .text_size = .subheading,
         } },
-        .pad = .{ .left = 0, .right = 5, .top = 0, .bottom = 7 },
+        .pad = .{ .right = 2, .bottom = 3 },
     }, display);
 
     _ = try result.add(.{
         .name = "glosses.row",
-        .minimum = .{ .width = 300, .height = 60 },
+        .minimum = .{ .width = 150, .height = 30 },
         .layout = .{ .x = .grows, .y = .shrinks },
         .type = .{ .label = .{} },
-        .pad = .{ .left = 5, .right = 9 },
+        .pad = .{ .left = 2, .right = 4 },
     }, display);
 
     return result;
 }
 
-pub fn create_list_entry_panel(self: *ListEditScreen, display: *Display, parent: *Entity) !*Entity {
+pub fn initListEntryPanel(self: *ListEditScreen, display: *Display, parent: *Entity) !*Entity {
     var result = try parent.add(.{
         .name = "list.entry",
         .visible = .hidden,
-        .pad = .{ .left = 15 },
+        .pad = .{ .left = 7 },
         .layout = .{ .x = .grows },
         .child_align = .{ .x = .start, .y = .start },
         .type = .{
             .panel = .{
                 .direction = .left_to_right,
-                .spacing = 10,
+                .spacing = 5,
             },
         },
         .on_resized = .{ .func = @ptrCast(&resizeGlossList), .ptr = self },
@@ -659,7 +659,7 @@ pub fn create_list_entry_panel(self: *ListEditScreen, display: *Display, parent:
 
     _ = try result.add(.{
         .name = "word.label",
-        .minimum = .{ .width = 50, .height = 50 },
+        .minimum = .{ .width = 25, .height = 25 },
         .maximum = .{ .height = 50 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .child_align = .{ .x = .start },
@@ -668,16 +668,16 @@ pub fn create_list_entry_panel(self: *ListEditScreen, display: *Display, parent:
             .text = "",
             .text_size = .subheading,
         } },
-        .pad = .{ .left = 0, .right = 5, .top = 5, .bottom = 5 },
+        .pad = .{ .right = 2, .top = 2, .bottom = 2 },
     }, display);
 
     _ = try result.add(.{
         .name = "gloss.label",
         .visible = .visible,
-        .minimum = .{ .width = 250, .height = 60 },
+        .minimum = .{ .width = 125, .height = 30 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .label = .{} },
-        .pad = .{ .left = 5, .right = 5, .top = 12, .bottom = 8 },
+        .pad = .{ .left = 2, .right = 2, .top = 6, .bottom = 4 },
     }, display);
 
     _ = try result.add(.{
@@ -705,9 +705,9 @@ pub fn create_list_entry_panel(self: *ListEditScreen, display: *Display, parent:
                     .hover_name = "trash button",
                 },
                 .button = .{
-                    .default_name = "white rounded rect2",
-                    .pressed_name = "white rounded rect2",
-                    .hover_name = "white rounded rect2",
+                    .default_name = "default button",
+                    .pressed_name = "pressed button",
+                    .hover_name = "hover button",
                 },
                 .on_pressed = .{ .func = @ptrCast(&tapRemoveWord), .ptr = self },
             },

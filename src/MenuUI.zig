@@ -260,6 +260,6 @@ const err = engine.log.err;
 const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
-const ParsingMenuScreen = @import("screen_parsing_menu.zig");
+const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const PreferencesScreen = @import("PreferencesScreen.zig");
 const SearchScreen = @import("SearchScreen.zig");
