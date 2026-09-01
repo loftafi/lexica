@@ -7,8 +7,10 @@ app: *AppContext = undefined,
 panel: *Entity = undefined,
 quiz_word: *Entity = undefined,
 help_line: *Entity = undefined,
-correct_panel: *Entity = undefined,
-incorrect_panel: *Entity = undefined,
+progress_bar: *Entity = undefined,
+
+correct_panel: FeedbackPanel,
+incorrect_panel: FeedbackPanel,
 
 pub fn show(
     self: *ParsingCardScreen,
@@ -33,11 +35,12 @@ pub fn show(
         try ctx.parsing_menu.show(display, element, event);
     }
 
-    try self.slide_panel_out(display);
-    self.app.menu_ui.progress_bar.type.progress_bar.progress = 0;
+    self.correct_panel.panel.visible = .hidden;
+    self.incorrect_panel.panel.visible = .hidden;
+
     try self.app.menu_ui.progress_bar.setVisibility(display, .visible);
     try self.app.menu_ui.toolbar.setVisibility(display, .hidden);
-    _ = self.app.menu_ui.align_progress_bar(display, self.app.menu_ui.progress_bar);
+    _ = self.app.menu_ui.resizeProgressBar(display, self.app.menu_ui.progress_bar);
 
     // Adjust order of case buttons depending on user preference
     if (ac.app_context.?.preference.uk_order) {
@@ -71,22 +74,21 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
     seed(app.io);
     help_line_buffer_i = 0;
 
-    self.panel = try display.addPanel(.{
-        .name = "parsing.card",
-        .layout = .{ .x = .grows, .y = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = 10, .right = 10 },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-        .visible = .hidden,
-        .type = .{ .panel = .{
-            .spacing = 10,
-            .direction = .top_to_bottom,
-            .choosable = .choosable,
-            .safe_area = .avoid_safe_area,
-        } },
-        .on_resized = .{ .func = @ptrCast(&resizeCard), .ptr = self },
-    });
+    std.debug.assert(self.app.menu_ui.progress_bar.type == .panel);
+    std.debug.assert(self.app.menu_ui.progress_bar.getChild(0) != null);
+
+    self.progress_bar = self.app.menu_ui.progress_bar.getChild(0).?;
+    self.progress_bar.type.progress_bar.progress = 0;
+
+    _ = try display.appendPanel(
+        \\panel:panel name "parsing.card"
+        \\  hidden vertical choosable avoid_safe_area
+        \\  layout grows grows align centre start
+        \\  minimum width=280 height=360
+        \\  maximum width=500
+        \\  pad left=0.5em right=0.5em top=2em spacing 10
+        \\  on_resized resizeCard
+    , ParsingCardScreen, self);
 
     _ = try app.add_back_button(self.panel, .{
         .func = @ptrCast(&tapBack),
@@ -428,129 +430,26 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
         ), display);
     }
 
-    {
-        self.correct_panel = try self.panel.add(.{
-            .name = "correct.panel.align",
-            .rect = .{ .x = 0, .y = 0, .width = 350, .height = 60 },
-            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .minimum = .{ .width = 300, .height = 120 },
-            .visible = .hidden,
-            .type = .{
-                .panel = .{
-                    .spacing = 10,
-                    .direction = .left_to_right,
-                },
-            },
-        }, display);
-
-        const alert_box = try self.correct_panel.add(.{
-            .name = "correct.panel",
-            .background = .{ .image_name = "white rounded rect" },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 100 },
-            .visible = .visible,
-            .style = .success,
-            .type = .{ .panel = .{
-                .spacing = 10,
-                .direction = .left_to_right,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "correct.feedback",
-            .rect = .{ .width = 510, .height = 20 },
-            .minimum = .{ .width = 310 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .style = .success,
-            .type = .{ .label = .{
-                .text = "Great.",
-                .text_size = .heading,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "next",
-            .rect = .{ .width = 140, .height = 80 },
-            .minimum = .{ .width = 140, .height = 80 },
-            .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .child_align = .{ .x = .centre },
-            .style = .success,
-            .type = .{ .button = .{
-                .text = "Next",
-                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
-
-    {
-        self.incorrect_panel = try self.panel.add(.{
-            .name = "incorrect.panel.align",
-            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
-            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .minimum = .{ .width = 300, .height = 100 },
-            .visible = .hidden,
-            .type = .{
-                .panel = .{
-                    .spacing = 10,
-                    .direction = .left_to_right,
-                },
-            },
-        }, display);
-
-        const alert_box = try self.incorrect_panel.add(.{
-            .name = "incorrect.panel",
-            .background = .{ .image_name = "white rounded rect" },
-            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 100 },
-            .style = .failed,
-            .type = .{ .panel = .{
-                .spacing = 10,
-                .direction = .left_to_right,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "incorrect.feedback",
-            .minimum = .{ .width = 310 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .style = .failed,
-            .type = .{ .label = .{
-                .text = "Try again.",
-                .text_size = .heading,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "next",
-            .minimum = .{ .width = 140, .height = 80 },
-            .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .child_align = .{ .x = .centre },
-            .style = .failed,
-            .type = .{ .button = .{
-                .text = "Next",
-                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
+    try self.correct_panel.init(
+        ac.APP_MINIMUM_WIDTH,
+        ac.APP_MAXIMUM_WIDTH - 40,
+        &self.app.bucket,
+        display,
+        self.panel,
+        .success,
+        .{ .func = null, .ptr = self },
+        .{ .func = @ptrCast(&next_clicked), .ptr = self },
+    );
+    try self.incorrect_panel.init(
+        ac.APP_MINIMUM_WIDTH,
+        ac.APP_MAXIMUM_WIDTH - 40,
+        &self.app.bucket,
+        display,
+        self.panel,
+        .failed,
+        .{ .func = null, .ptr = self },
+        .{ .func = @ptrCast(&next_clicked), .ptr = self },
+    );
 
     _ = try self.panel.add(.{
         .name = "bottom.expander",
@@ -611,8 +510,8 @@ pub fn tapBack(
 ) error{OutOfMemory}!void {
     try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
     try self.app.menu_ui.toolbar.setVisibility(display, .visible);
-    self.correct_panel.visible = .hidden;
-    self.incorrect_panel.visible = .hidden;
+    self.correct_panel.panel.visible = .hidden;
+    self.incorrect_panel.panel.visible = .hidden;
 
     const pc = self.app.parsing_quiz;
     if (pc.lexeme) |lexeme| {
@@ -1129,7 +1028,7 @@ pub fn resizeCard(self: *ParsingCardScreen, display: *Display, _: *Entity) bool 
 }
 
 pub fn next_clicked(self: *ParsingCardScreen, display: *Display, element: *Entity, event: *Event) error{OutOfMemory}!void {
-    try self.slide_panel_out(display);
+    //try self.slide_panel_out(display);
     if (self.app.parsing_quiz.form_bank.items.len == 0) {
         try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
         try self.app.menu_ui.toolbar.setVisibility(display, .visible);
@@ -1177,71 +1076,6 @@ pub fn button_bounce_end(
     button.layout.y = .shrinks;
 }
 
-const panel_slide_duration = 250 * 1000;
-
-pub fn slide_panel_in(
-    self: *ParsingCardScreen,
-    display: *Display,
-    slide_panel: *Entity,
-) error{OutOfMemory}!void {
-    self.correct_panel.visible = .hidden;
-    self.incorrect_panel.visible = .hidden;
-    slide_panel.visible = .visible;
-    slide_panel.rect.x = display.root.rect.width / 2 - slide_panel.rect.width / 2;
-    slide_panel.rect.y = display.root.rect.height + 2;
-    const animation: engine.Animator = .{
-        .target = slide_panel,
-        .mode = .{ .move = .{
-            .start = slide_panel.rect,
-            .end = .{
-                .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
-                .y = display.root.rect.height - display.root.pad.bottom - slide_panel.rect.height - 20,
-                .width = slide_panel.rect.width,
-                .height = slide_panel.rect.height,
-            },
-        } },
-        .movement = .ease,
-        .duration = panel_slide_duration,
-    };
-    try display.addAnimator(animation);
-}
-
-pub fn slide_panel_out(
-    self: *ParsingCardScreen,
-    display: *Display,
-) error{OutOfMemory}!void {
-    if (self.correct_panel.visible != .hidden) {
-        try self.slide_panel_down(display, self.correct_panel);
-    }
-    if (self.incorrect_panel.visible != .hidden) {
-        try self.slide_panel_down(display, self.incorrect_panel);
-    }
-}
-
-pub fn slide_panel_down(
-    _: *ParsingCardScreen,
-    display: *Display,
-    slide_panel: *Entity,
-) error{OutOfMemory}!void {
-    slide_panel.rect.x = display.root.rect.width / 2 - slide_panel.rect.width / 2;
-    slide_panel.rect.y = display.root.rect.height - display.root.pad.bottom - slide_panel.rect.height - 20;
-    const animation: engine.Animator = .{
-        .target = slide_panel,
-        .mode = .{ .move = .{
-            .start = slide_panel.rect,
-            .end = .{
-                .x = display.root.rect.width / 2 - slide_panel.rect.width / 2,
-                .y = display.root.rect.height + 2,
-                .width = slide_panel.rect.width,
-                .height = slide_panel.rect.height,
-            },
-        } },
-        .movement = .ease,
-        .duration = panel_slide_duration,
-    };
-    try display.addAnimator(animation);
-}
-
 var help_line_buffer: [2][500]u8 = undefined;
 var help_line_buffer_i: usize = 0;
 
@@ -1255,7 +1089,7 @@ pub fn setupNextCard(
     }
 
     const form = ac.app_context.?.parsing_quiz.next_form();
-    self.app.menu_ui.progress_bar.type.progress_bar.progress = self.app.parsing_quiz.progress();
+    self.progress_bar.type.progress_bar.progress = self.app.parsing_quiz.progress();
 
     try self.quiz_word.setText(display, form.*.word);
 
@@ -1319,11 +1153,15 @@ fn show_answer_if_ready(self: *ParsingCardScreen, display: *Display) error{OutOf
         const correct = try buttons.mark_answers(current_form, parsing, display.allocator);
         if (correct) {
             info("User chose {any} correct.", .{parsing});
-            try self.slide_panel_in(display, self.correct_panel);
+            self.correct_panel.showCorrectFeedback(display, null, null, &.{}) catch |f| {
+                err("Failed to show correct panel {t}.", .{f});
+            };
             _ = self.app.parsing_quiz.remove_current_form();
         } else {
             info("User chose {any} incorrect. Expecting {any}", .{ parsing, current_form.parsing });
-            try self.slide_panel_in(display, self.incorrect_panel);
+            self.incorrect_panel.showIncorrectFeedback(display, null, null, &.{}) catch |f| {
+                err("Failed to show incorrect panel {t}.", .{f});
+            };
         }
         buttons.lock_unpicked_toggles();
         display.need_relayout = true;
@@ -1567,4 +1405,5 @@ const ac = @import("App.zig");
 const AppContext = ac.AppContext;
 
 const MenuUI = @import("MenuUI.zig");
+const FeedbackPanel = @import("FeedbackPanel.zig");
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");

@@ -584,102 +584,102 @@ pub fn show(
 
         {
             // Clear the panel
-            try clear_row(display, items[ROW1]);
-            try clear_row(display, items[ROW2]);
-            try clear_row(display, items[ROW3]);
-            try clear_row(display, items[ROW4]);
-            try clear_row(display, items[ROW5]);
-            try clear_row(display, items[ROW6]);
-            try clear_row(display, items[ROW7]);
-            try clear_row(display, items[ROW8]);
+            try clearTableRow(display, items[ROW1]);
+            try clearTableRow(display, items[ROW2]);
+            try clearTableRow(display, items[ROW3]);
+            try clearTableRow(display, items[ROW4]);
+            try clearTableRow(display, items[ROW5]);
+            try clearTableRow(display, items[ROW6]);
+            try clearTableRow(display, items[ROW7]);
+            try clearTableRow(display, items[ROW8]);
         }
 
         if (lexeme.pos.part_of_speech == .verb) {
             current.type.panel.children.items[SUBHEADING].visible = .visible;
             if (lexeme.pos.mood == .imperative) {
-                try set_row(display, items[ROW1], "", table.*.top[0]);
-                try set_row(display, items[ROW2], "", table.*.top[1]);
-                try set_row(display, items[ROW3], "", table.*.bottom[0]);
-                try set_row(display, items[ROW4], "", table.*.bottom[1]);
+                try setTableRow(display, items[ROW1], "", table.*.top[0]);
+                try setTableRow(display, items[ROW2], "", table.*.top[1]);
+                try setTableRow(display, items[ROW3], "", table.*.bottom[0]);
+                try setTableRow(display, items[ROW4], "", table.*.bottom[1]);
             } else {
                 current.type.panel.children.items[SPACE3].visible = .visible;
                 current.type.panel.children.items[SPACE4].visible = .hidden;
-                try set_row(display, items[ROW1], "", table.*.top[0]);
-                try set_row(display, items[ROW2], "", table.*.top[1]);
-                try set_row(display, items[ROW3], "", table.*.top[2]);
-                try set_row(display, items[ROW4], "", table.*.bottom[0]);
-                try set_row(display, items[ROW5], "", table.*.bottom[1]);
-                try set_row(display, items[ROW6], "", table.*.bottom[2]);
+                try setTableRow(display, items[ROW1], "", table.*.top[0]);
+                try setTableRow(display, items[ROW2], "", table.*.top[1]);
+                try setTableRow(display, items[ROW3], "", table.*.top[2]);
+                try setTableRow(display, items[ROW4], "", table.*.bottom[0]);
+                try setTableRow(display, items[ROW5], "", table.*.bottom[1]);
+                try setTableRow(display, items[ROW6], "", table.*.bottom[2]);
             }
         } else if (lexeme.pos.part_of_speech == .noun or lexeme.pos.part_of_speech == .adjective or lexeme.uid == 17770 or (lexeme.pos.part_of_speech == .proper_noun and !lexeme.pos.indeclinable)) {
             items[SUBHEADING].visible = .hidden;
             items[SPACE3].visible = .hidden;
             items[SPACE4].visible = .visible;
             if (table.*.gender == .masculine) {
-                try set_row(display, items[ROW1], "ὁ", table.*.top[0]);
+                try setTableRow(display, items[ROW1], "ὁ", table.*.top[0]);
                 if (uk) {
-                    try set_row(display, items[ROW2], "τὸν", table.*.top[3]);
-                    try set_row(display, items[ROW3], "τοῦ", table.*.top[1]);
-                    try set_row(display, items[ROW4], "τῷ", table.*.top[2]);
+                    try setTableRow(display, items[ROW2], "τὸν", table.*.top[3]);
+                    try setTableRow(display, items[ROW3], "τοῦ", table.*.top[1]);
+                    try setTableRow(display, items[ROW4], "τῷ", table.*.top[2]);
                 } else {
-                    try set_row(display, items[ROW2], "τοῦ", table.*.top[1]);
-                    try set_row(display, items[ROW3], "τῷ", table.*.top[2]);
-                    try set_row(display, items[ROW4], "τὸν", table.*.top[3]);
+                    try setTableRow(display, items[ROW2], "τοῦ", table.*.top[1]);
+                    try setTableRow(display, items[ROW3], "τῷ", table.*.top[2]);
+                    try setTableRow(display, items[ROW4], "τὸν", table.*.top[3]);
                 }
 
-                try set_row(display, items[ROW5], "οἱ", table.*.bottom[0]);
+                try setTableRow(display, items[ROW5], "οἱ", table.*.bottom[0]);
                 if (uk) {
-                    try set_row(display, items[ROW6], "τούς", table.*.bottom[3]);
-                    try set_row(display, items[ROW7], "τῶν", table.*.bottom[1]);
-                    try set_row(display, items[ROW8], "τοῖς", table.*.bottom[2]);
+                    try setTableRow(display, items[ROW6], "τούς", table.*.bottom[3]);
+                    try setTableRow(display, items[ROW7], "τῶν", table.*.bottom[1]);
+                    try setTableRow(display, items[ROW8], "τοῖς", table.*.bottom[2]);
                 } else {
-                    try set_row(display, items[ROW6], "τῶν", table.*.bottom[1]);
-                    try set_row(display, items[ROW7], "τοῖς", table.*.bottom[2]);
-                    try set_row(display, items[ROW8], "τούς", table.*.bottom[3]);
+                    try setTableRow(display, items[ROW6], "τῶν", table.*.bottom[1]);
+                    try setTableRow(display, items[ROW7], "τοῖς", table.*.bottom[2]);
+                    try setTableRow(display, items[ROW8], "τούς", table.*.bottom[3]);
                 }
             } else if (table.*.gender == .feminine) {
-                try set_row(display, items[ROW1], "ἡ", table.*.top[0]);
+                try setTableRow(display, items[ROW1], "ἡ", table.*.top[0]);
                 if (uk) {
-                    try set_row(display, items[ROW2], "τὴν", table.*.top[3]);
-                    try set_row(display, items[ROW3], "τῆς", table.*.top[1]);
-                    try set_row(display, items[ROW4], "τῇ", table.*.top[2]);
+                    try setTableRow(display, items[ROW2], "τὴν", table.*.top[3]);
+                    try setTableRow(display, items[ROW3], "τῆς", table.*.top[1]);
+                    try setTableRow(display, items[ROW4], "τῇ", table.*.top[2]);
                 } else {
-                    try set_row(display, items[ROW2], "τῆς", table.*.top[1]);
-                    try set_row(display, items[ROW3], "τῇ", table.*.top[2]);
-                    try set_row(display, items[ROW4], "τὴν", table.*.top[3]);
+                    try setTableRow(display, items[ROW2], "τῆς", table.*.top[1]);
+                    try setTableRow(display, items[ROW3], "τῇ", table.*.top[2]);
+                    try setTableRow(display, items[ROW4], "τὴν", table.*.top[3]);
                 }
 
-                try set_row(display, items[ROW5], "αἱ", table.*.bottom[0]);
+                try setTableRow(display, items[ROW5], "αἱ", table.*.bottom[0]);
                 if (uk) {
-                    try set_row(display, items[ROW6], "τάς", table.*.bottom[3]);
-                    try set_row(display, items[ROW7], "τῶν", table.*.bottom[1]);
-                    try set_row(display, items[ROW8], "ταῖς", table.*.bottom[2]);
+                    try setTableRow(display, items[ROW6], "τάς", table.*.bottom[3]);
+                    try setTableRow(display, items[ROW7], "τῶν", table.*.bottom[1]);
+                    try setTableRow(display, items[ROW8], "ταῖς", table.*.bottom[2]);
                 } else {
-                    try set_row(display, items[ROW6], "τῶν", table.*.bottom[1]);
-                    try set_row(display, items[ROW7], "ταῖς", table.*.bottom[2]);
-                    try set_row(display, items[ROW8], "τάς", table.*.bottom[3]);
+                    try setTableRow(display, items[ROW6], "τῶν", table.*.bottom[1]);
+                    try setTableRow(display, items[ROW7], "ταῖς", table.*.bottom[2]);
+                    try setTableRow(display, items[ROW8], "τάς", table.*.bottom[3]);
                 }
             } else if (table.*.gender == .neuter) {
-                try set_row(display, items[ROW1], "τὸ", table.*.top[0]);
+                try setTableRow(display, items[ROW1], "τὸ", table.*.top[0]);
                 if (uk) {
-                    try set_row(display, items[ROW2], "τὸ", table.*.top[3]);
-                    try set_row(display, items[ROW3], "τοῦ", table.*.top[1]);
-                    try set_row(display, items[ROW4], "τῷ", table.*.top[2]);
+                    try setTableRow(display, items[ROW2], "τὸ", table.*.top[3]);
+                    try setTableRow(display, items[ROW3], "τοῦ", table.*.top[1]);
+                    try setTableRow(display, items[ROW4], "τῷ", table.*.top[2]);
                 } else {
-                    try set_row(display, items[ROW2], "τοῦ", table.*.top[1]);
-                    try set_row(display, items[ROW3], "τῷ", table.*.top[2]);
-                    try set_row(display, items[ROW4], "τὸ", table.*.top[3]);
+                    try setTableRow(display, items[ROW2], "τοῦ", table.*.top[1]);
+                    try setTableRow(display, items[ROW3], "τῷ", table.*.top[2]);
+                    try setTableRow(display, items[ROW4], "τὸ", table.*.top[3]);
                 }
 
-                try set_row(display, items[ROW5], "τὰ", table.*.bottom[0]);
+                try setTableRow(display, items[ROW5], "τὰ", table.*.bottom[0]);
                 if (uk) {
-                    try set_row(display, items[ROW6], "τὰ", table.*.bottom[3]);
-                    try set_row(display, items[ROW7], "τῶν", table.*.bottom[1]);
-                    try set_row(display, items[ROW8], "τοῖς", table.*.bottom[2]);
+                    try setTableRow(display, items[ROW6], "τὰ", table.*.bottom[3]);
+                    try setTableRow(display, items[ROW7], "τῶν", table.*.bottom[1]);
+                    try setTableRow(display, items[ROW8], "τοῖς", table.*.bottom[2]);
                 } else {
-                    try set_row(display, items[ROW6], "τῶν", table.*.bottom[1]);
-                    try set_row(display, items[ROW7], "τοῖς", table.*.bottom[2]);
-                    try set_row(display, items[ROW8], "τὰ", table.*.bottom[3]);
+                    try setTableRow(display, items[ROW6], "τῶν", table.*.bottom[1]);
+                    try setTableRow(display, items[ROW7], "τοῖς", table.*.bottom[2]);
+                    try setTableRow(display, items[ROW8], "τὰ", table.*.bottom[3]);
                 }
             } else {
                 warn("Unhandled gender. {s}", .{@tagName(table.*.gender)});
@@ -688,15 +688,15 @@ pub fn show(
             items[SUBHEADING].visible = .hidden;
             items[SPACE3].visible = .hidden;
             items[SPACE4].visible = .hidden;
-            try set_row(display, items[ROW1], "", table.*.top[0]);
+            try setTableRow(display, items[ROW1], "", table.*.top[0]);
             if (uk) {
-                try set_row(display, items[ROW2], "", table.*.top[3]);
-                try set_row(display, items[ROW3], "", table.*.top[1]);
-                try set_row(display, items[ROW4], "", table.*.top[2]);
+                try setTableRow(display, items[ROW2], "", table.*.top[3]);
+                try setTableRow(display, items[ROW3], "", table.*.top[1]);
+                try setTableRow(display, items[ROW4], "", table.*.top[2]);
             } else {
-                try set_row(display, items[ROW2], "", table.*.top[1]);
-                try set_row(display, items[ROW3], "", table.*.top[2]);
-                try set_row(display, items[ROW4], "", table.*.top[3]);
+                try setTableRow(display, items[ROW2], "", table.*.top[1]);
+                try setTableRow(display, items[ROW3], "", table.*.top[2]);
+                try setTableRow(display, items[ROW4], "", table.*.top[3]);
             }
         }
 
@@ -713,15 +713,13 @@ pub fn show(
     try display.choosePanel("word.info", event);
 }
 
-/// Clear row contents
-fn clear_row(display: *Display, row: *Entity) error{OutOfMemory}!void {
+fn clearTableRow(display: *Display, row: *Entity) error{OutOfMemory}!void {
     try row.type.panel.children.items[0].setText(display, "");
     try row.type.panel.children.items[1].setText(display, "");
     row.visible = .hidden;
 }
 
-/// Set row contents
-fn set_row(
+fn setTableRow(
     display: *Display,
     row: *Entity,
     article: []const u8,

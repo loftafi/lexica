@@ -24,13 +24,20 @@ pub fn init(self: *MenuUI, app: *AppContext) !void {
         \\panel:panel name "menu" hidden not_choosable avoid_safe_area vertical
         \\  layout grows grows align centre start
         \\{
-        \\progress_bar:progress_bar never_focus name "progress_bar" hidden
-        \\  layout fixed fixed float
-        \\  rect x=25 y=25 width=250 height=20
-        \\  minimum width=100 height=20
-        \\  maximum width=800 height=20
-        \\  on_resized align_progress_bar
-        \\  corner_radius 5 image_corner_radius 14
+        \\  panel:progress_bar hidden
+        \\    pad top=1.0em bottom=0em left=2.2em right=2.2em
+        \\    layout grows shrinks float
+        \\      minimum height=20
+        \\      maximum width=500
+        \\  {
+        \\
+        \\    progress_bar never_focus name "progress_bar"
+        \\      layout grows grows
+        \\      minimum width=100 height=12
+        \\      maximum width=800 height=20
+        \\      on_resized resizeProgressBar
+        \\      corner_radius 8 image_corner_radius 14
+        \\  }
         \\}
     , MenuUI, self);
 
@@ -116,6 +123,10 @@ pub fn init(self: *MenuUI, app: *AppContext) !void {
     }, display);
 }
 
+pub fn deinit(self: *MenuUI) void {
+    self.* = undefined;
+}
+
 /// Handle tap on the word info menu icon
 pub fn pick_word_info_menu(display: *Display, _: *Entity, event: *Event) std.mem.Allocator.Error!void {
     try display.choosePanel("word.info", event);
@@ -123,18 +134,20 @@ pub fn pick_word_info_menu(display: *Display, _: *Entity, event: *Event) std.mem
 
 /// Custom code to handle positioning of the progress bar while the
 /// user is participating in a quiz.
-pub fn align_progress_bar(self: *MenuUI, display: *Display, _: *Entity) bool {
+pub fn resizeProgressBar(self: *MenuUI, display: *Display, _: *Entity) bool {
     var updated = false;
+
+    if (self.progress_bar.visible != .visible) return false;
 
     const progress_centre = display.root.rect.width / 2 - self.progress_bar.rect.width / 2;
     if (self.progress_bar.rect.x != progress_centre) {
         self.progress_bar.rect.x = progress_centre;
-        updated = true;
+        updated = false;
     }
-    if (self.progress_bar.rect.y != display.safe_area.top) {
-        self.progress_bar.rect.y = display.safe_area.top;
-        updated = true;
-    }
+    //if (self.progress_bar.rect.y != display.safe_area.top) {
+    //    self.progress_bar.rect.y = display.safe_area.top;
+    //    updated = true;
+    //}
     return updated;
 }
 

@@ -50,6 +50,7 @@ pub const AppContext = struct {
 
     parsing_quiz: ParsingQuiz = undefined,
 
+    bucket: StringBucket,
     lists: Lists,
 
     preference: struct {
@@ -107,6 +108,7 @@ pub const AppContext = struct {
         ac.io = io;
         ac.word_lexeme = null;
         ac.view_history = .empty;
+        ac.bucket = .init(gpa);
         try ac.parsing_quiz.init(gpa);
         errdefer ac.view_history.deinit(gpa);
         ac.panels = try Panels.create(gpa);
@@ -215,6 +217,9 @@ pub const AppContext = struct {
         info("Font load time {d}ms.", .{end - start});
 
         start = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
+        try ac.menu_ui.init(ac);
+        errdefer ac.menu_ui.deinit();
+
         try ac.search_screen.init(ac);
         errdefer ac.search_screen.deinit(ac.allocator);
 
@@ -259,9 +264,6 @@ pub const AppContext = struct {
 
         try ac.sdl.init(ac);
         errdefer ac.sdl.deinit();
-
-        try ac.menu_ui.init(ac);
-        errdefer ac.menu_ui.deinit();
 
         end = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
         info("Screens initialised in {d}ms.", .{end - start});
@@ -712,6 +714,7 @@ const Panels = praxis.Panels;
 
 const engine = @import("engine");
 const Display = engine.Display;
+const StringBucket = engine.StringBucket;
 const Entity = engine.Entity;
 const Event = engine.Event;
 const err = engine.log.err;

@@ -26,7 +26,7 @@ pub fn show(
         err("update_lists failed: {any}", .{e});
     };
 
-    try display.choosePanel("parsing.menu", event);
+    try display.choosePanel(self.panel.name, event);
 }
 
 pub fn deinit(self: *ParsingMenuScreen) void {
@@ -344,7 +344,9 @@ pub fn resizeVerticalScroller(
         display.safe_area.top,
         display.safe_area.bottom,
     });
-    const want_scroller_height = display.root.rect.height - scroll.rect.y - menu_area - display.safe_area.bottom - display.safe_area.top;
+    const want_scroller_height = display.root.rect.height -
+        scroll.rect.y - menu_area - display.safe_area.bottom -
+        display.safe_area.top - 30;
     if (scroll.rect.height != want_scroller_height) {
         scroll.rect.height = want_scroller_height;
         scroll.minimum.height = scroll.rect.height;
