@@ -598,10 +598,10 @@ pub fn tapListDelete(
 pub fn tapPractice(
     self: *ParsingSetupScreen,
     display: *Display,
-    _: *Entity,
+    entity: *Entity,
     event: *const Event,
 ) Allocator.Error!void {
-    try display.choosePanel(self.app.parsing_card.panel.name, event);
+    try self.app.parsing_card.show(display, entity, event);
 }
 
 pub fn tapBack(

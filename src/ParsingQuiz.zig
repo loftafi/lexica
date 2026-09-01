@@ -43,7 +43,7 @@ pub fn setup_with_lexeme(self: *Self, lexeme: *praxis.Lexeme) error{OutOfMemory}
         try self.include_form(form);
     }
 
-    info("parsing quiz bank for {s} filtered from {d} to {d} forms.", .{
+    notice("setup_with_lexeme: parsing quiz bank for {s} filtered from {d} to {d} forms.", .{
         lexeme.word,
         lexeme.forms.items.len,
         self.form_bank.items.len,
@@ -76,7 +76,7 @@ pub fn setup_with_word_set(self: *Self, word_set: *WordSet) error{OutOfMemory}!v
         }
     }
 
-    info("parsing quiz bank for {s} filtered from {d} to {d} forms.", .{
+    notice("setup_with_word_set: parsing quiz bank for {s} filtered from {d} to {d} forms.", .{
         word_set.name.items,
         self.all_forms.items.len,
         self.form_bank.items.len,
@@ -242,6 +242,7 @@ const err = engine.log.err;
 const warn = engine.log.warn;
 const info = engine.log.info;
 const debug = engine.log.debug;
+const notice = engine.log.notice;
 
 const resources = @import("resources");
 const random = praxis.random;

@@ -49,7 +49,7 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
         \\    pad left=0.5em right=0.5em top=0.5em bottom=0.5em
         \\    spacing=10 
         \\
-        \\  expander weight=1
+        \\  expander weight 1
         \\
         \\  label name "choose_language_heading" text "User Interface"
         \\    layout grows shrinks align centre start style tinted

@@ -1,21 +1,20 @@
 pub const ParsingCardScreen = @This();
 
-const PARSING_BUTTON_X_PADDING: f32 = 6.0;
-const PARSING_BUTTON_Y_PADDING: f32 = 8;
+const PARSING_BUTTON_X_PADDING: f32 = 7;
+const PARSING_BUTTON_Y_PADDING: f32 = 7;
 
 app: *AppContext = undefined,
 panel: *Entity = undefined,
-
-var quiz_word: *Entity = undefined;
-var help_line: *Entity = undefined;
-var correct_panel: *Entity = undefined;
-var incorrect_panel: *Entity = undefined;
+quiz_word: *Entity = undefined,
+help_line: *Entity = undefined,
+correct_panel: *Entity = undefined,
+incorrect_panel: *Entity = undefined,
 
 pub fn show(
     self: *ParsingCardScreen,
     display: *Display,
     element: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     const ctx = self.app;
     const allocator = ctx.allocator;
@@ -24,12 +23,13 @@ pub fn show(
         warn("Not starting quiz. Form bank has no words.", .{});
         return;
     }
-    info("Starting quiz. Form bank has {d} words.", .{
+    info("ParsingCard: Starting practice with form bank of {d} words.", .{
         ctx.parsing_quiz.form_bank.items.len,
     });
 
     try display.choosePanel(self.panel.name, event);
-    if (!try self.show_next_quiz_card(display)) {
+    if (!try self.setupNextCard(display)) {
+        err("ParsingCard failed to setupNextCard(). Aborting.", .{});
         try ctx.parsing_menu.show(display, element, event);
     }
 
@@ -59,8 +59,548 @@ pub fn show(
     }
 }
 
+pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
+    OutOfMemory,
+    ResourceNotFound,
+    ResourceReadError,
+    UnknownImageFormat,
+} || ResourcesError || engine.Error)!void {
+    self.app = app;
+    var display = app.display;
+
+    seed(app.io);
+    help_line_buffer_i = 0;
+
+    self.panel = try display.addPanel(.{
+        .name = "parsing.card",
+        .layout = .{ .x = .grows, .y = .grows },
+        .child_align = .{ .x = .centre, .y = .start },
+        .pad = .{ .left = 10, .right = 10 },
+        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .visible = .hidden,
+        .type = .{ .panel = .{
+            .spacing = 10,
+            .direction = .top_to_bottom,
+            .choosable = .choosable,
+            .safe_area = .avoid_safe_area,
+        } },
+        .on_resized = .{ .func = @ptrCast(&resizeCard), .ptr = self },
+    });
+
+    _ = try app.add_back_button(self.panel, .{
+        .func = @ptrCast(&tapBack),
+        .ptr = self,
+    });
+
+    _ = try display.add_spacer(self.panel, 1);
+
+    self.quiz_word = try self.panel.add(.{
+        .name = "parsing.quiz.word",
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .style = .tinted,
+        .type = .{ .label = .{
+            .text = "λυω",
+            .text_size = .heading,
+        } },
+        .pad = .{ .top = 3, .bottom = 5 },
+    }, display);
+
+    self.help_line = try self.panel.add(.{
+        .name = "parsing.quiz.hint",
+        .layout = .{ .x = .grows, .y = .shrinks },
+        .child_align = .{ .x = .centre },
+        .type = .{ .label = .{
+            .text = "Describe the grammar of this word.",
+        } },
+    }, display);
+
+    _ = try self.panel.add(.{
+        .name = "top.expander",
+        .type = .{ .expander = .{ .weight = 0.7 } },
+    }, display);
+
+    {
+        pickers.tense_form = try self.panel.add(.{
+            .name = "tense_form.picker",
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 14,
+                .corner_radius = 14,
+            },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{
+                .spacing = PARSING_BUTTON_Y_PADDING,
+                .direction = .top_to_bottom,
+            } },
+        }, display);
+
+        const tense_form_row1 = try pickers.tense_form.add(.{
+            .name = "tense_form.row1",
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        const tense_form_row2 = try pickers.tense_form.add(.{
+            .name = "tense_form.row2",
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        buttons.present = try tense_form_row1.add(try self.initParsingButton(
+            "present",
+            "Present",
+            @ptrCast(&tense_form_changed),
+        ), display);
+
+        buttons.future = try tense_form_row1.add(try self.initParsingButton(
+            "future",
+            "Future",
+            @ptrCast(&tense_form_changed),
+        ), display);
+
+        buttons.perfect = try tense_form_row1.add(try self.initParsingButton(
+            "perfect",
+            "Perfect",
+            @ptrCast(&tense_form_changed),
+        ), display);
+
+        buttons.aorist = try tense_form_row2.add(try self.initParsingButton(
+            "aorist",
+            "Aorist",
+            @ptrCast(&tense_form_changed),
+        ), display);
+
+        buttons.imperfect = try tense_form_row2.add(try self.initParsingButton(
+            "imperfect",
+            "Imperfect",
+            @ptrCast(&tense_form_changed),
+        ), display);
+
+        buttons.pluperfect = try tense_form_row2.add(try self.initParsingButton(
+            "pluperfect",
+            "Pluperfect",
+            @ptrCast(&tense_form_changed),
+        ), display);
+    }
+
+    {
+        pickers.voice = try self.panel.add(.{
+            .name = "voice.picker",
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 14,
+                .corner_radius = 14,
+            },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        buttons.active = try pickers.voice.add(try self.initParsingButton(
+            "active",
+            "Active",
+            @ptrCast(&voice_changed),
+        ), display);
+
+        buttons.middle = try pickers.voice.add(try self.initParsingButton(
+            "middle",
+            "Middle",
+            @ptrCast(&voice_changed),
+        ), display);
+
+        buttons.passive = try pickers.voice.add(try self.initParsingButton(
+            "passive",
+            "Passive",
+            @ptrCast(&voice_changed),
+        ), display);
+    }
+
+    {
+        pickers.mood = try self.panel.add(.{
+            .name = "mood.picker",
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 14,
+                .corner_radius = 14,
+            },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_Y_PADDING, .direction = .top_to_bottom } },
+        }, display);
+
+        const mood_row1 = try pickers.mood.add(.{
+            .name = "mood.row1",
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        const mood_row2 = try pickers.mood.add(.{
+            .name = "mood.row2",
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        buttons.indicative = try mood_row1.add(try self.initParsingButton(
+            "indicative",
+            "Indicative",
+            @ptrCast(&mood_changed),
+        ), display);
+
+        buttons.participle = try mood_row1.add(try self.initParsingButton(
+            "participle",
+            "Participle",
+            @ptrCast(&mood_changed),
+        ), display);
+
+        buttons.subjunctive = try mood_row1.add(try self.initParsingButton(
+            "subjunctive",
+            "Subjunctive",
+            @ptrCast(&mood_changed),
+        ), display);
+
+        buttons.imperative = try mood_row2.add(try self.initParsingButton(
+            "imperative",
+            "Imperative",
+            @ptrCast(&mood_changed),
+        ), display);
+
+        buttons.infinitive = try mood_row2.add(try self.initParsingButton(
+            "infinitive",
+            "Infinitive",
+            @ptrCast(&mood_changed),
+        ), display);
+    }
+
+    {
+        pickers.person = try self.panel.add(.{
+            .name = "person.picker",
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 14,
+                .corner_radius = 14,
+            },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{
+                .spacing = PARSING_BUTTON_X_PADDING,
+                .direction = .left_to_right,
+            } },
+        }, display);
+
+        buttons.first = try pickers.person.add(try self.initParsingButton(
+            "first_person",
+            "1st Person",
+            @ptrCast(&person_changed),
+        ), display);
+
+        buttons.second = try pickers.person.add(try self.initParsingButton(
+            "second_person",
+            "2nd Person",
+            @ptrCast(&person_changed),
+        ), display);
+
+        buttons.third = try pickers.person.add(try self.initParsingButton(
+            "third_person",
+            "3rd Person",
+            @ptrCast(&person_changed),
+        ), display);
+    }
+
+    {
+        pickers.case = try self.panel.add(.{
+            .name = "case.picker",
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 14,
+                .corner_radius = 14,
+            },
+
+            .layout = .{ .x = .grows, .y = .shrinks },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        buttons.nominative = try pickers.case.add(try self.initParsingButton(
+            "nominative",
+            "Nominative",
+            @ptrCast(&case_changed),
+        ), display);
+
+        buttons.accusative = try pickers.case.add(try self.initParsingButton(
+            "accusative",
+            "Accusative",
+            @ptrCast(&case_changed),
+        ), display);
+
+        buttons.genitive = try pickers.case.add(try self.initParsingButton(
+            "genitive",
+            "Genitive",
+            @ptrCast(&case_changed),
+        ), display);
+
+        buttons.dative = try pickers.case.add(try self.initParsingButton(
+            "dative",
+            "Dative",
+            @ptrCast(&case_changed),
+        ), display);
+    }
+
+    {
+        pickers.number = try self.panel.add(.{
+            .name = "number.picker",
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 14,
+                .corner_radius = 14,
+            },
+            .layout = .{ .x = .grows },
+            .child_align = .{ .x = .centre, .y = .start },
+            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        buttons.singular = try pickers.number.add(try self.initParsingButton(
+            "singular",
+            "Singular",
+            @ptrCast(&number_changed),
+        ), display);
+
+        buttons.plural = try pickers.number.add(try self.initParsingButton(
+            "plural",
+            "Plural",
+            @ptrCast(&number_changed),
+        ), display);
+    }
+
+    {
+        pickers.gender = try self.panel.add(.{
+            .name = "gender.picker",
+            .background = .{
+                .image_name = "white rounded rect",
+                .image_corner_radius = 14,
+                .corner_radius = 14,
+            },
+            .layout = .{ .x = .grows, .y = .shrinks },
+            .child_align = .{ .x = .centre },
+            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .minimum = .{ .width = 300, .height = 30 },
+            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+        }, display);
+
+        buttons.masculine = try pickers.gender.add(try self.initParsingButton(
+            "masculine",
+            "Masculine",
+            @ptrCast(&gender_changed),
+        ), display);
+
+        buttons.feminine = try pickers.gender.add(try self.initParsingButton(
+            "feminine",
+            "Feminine",
+            @ptrCast(&gender_changed),
+        ), display);
+
+        buttons.neuter = try pickers.gender.add(try self.initParsingButton(
+            "neuter",
+            "Neuter",
+            @ptrCast(&gender_changed),
+        ), display);
+    }
+
+    {
+        self.correct_panel = try self.panel.add(.{
+            .name = "correct.panel.align",
+            .rect = .{ .x = 0, .y = 0, .width = 350, .height = 60 },
+            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
+            .child_align = .{ .x = .centre, .y = .centre },
+            .minimum = .{ .width = 300, .height = 120 },
+            .visible = .hidden,
+            .type = .{
+                .panel = .{
+                    .spacing = 10,
+                    .direction = .left_to_right,
+                },
+            },
+        }, display);
+
+        const alert_box = try self.correct_panel.add(.{
+            .name = "correct.panel",
+            .background = .{ .image_name = "white rounded rect" },
+            .layout = .{ .x = .shrinks, .y = .shrinks },
+            .child_align = .{ .x = .centre, .y = .centre },
+            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+            .minimum = .{ .width = 300, .height = 100 },
+            .visible = .visible,
+            .style = .success,
+            .type = .{ .panel = .{
+                .spacing = 10,
+                .direction = .left_to_right,
+            } },
+        }, display);
+
+        _ = try alert_box.add(.{
+            .name = "correct.feedback",
+            .rect = .{ .width = 510, .height = 20 },
+            .minimum = .{ .width = 310 },
+            .layout = .{ .y = .shrinks, .x = .shrinks },
+            .style = .success,
+            .type = .{ .label = .{
+                .text = "Great.",
+                .text_size = .heading,
+            } },
+        }, display);
+
+        _ = try alert_box.add(.{
+            .name = "next",
+            .rect = .{ .width = 140, .height = 80 },
+            .minimum = .{ .width = 140, .height = 80 },
+            .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
+            .layout = .{ .y = .shrinks, .x = .shrinks },
+            .child_align = .{ .x = .centre },
+            .style = .success,
+            .type = .{ .button = .{
+                .text = "Next",
+                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
+            } },
+        }, display);
+    }
+
+    {
+        self.incorrect_panel = try self.panel.add(.{
+            .name = "incorrect.panel.align",
+            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
+            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
+            .child_align = .{ .x = .centre, .y = .centre },
+            .minimum = .{ .width = 300, .height = 100 },
+            .visible = .hidden,
+            .type = .{
+                .panel = .{
+                    .spacing = 10,
+                    .direction = .left_to_right,
+                },
+            },
+        }, display);
+
+        const alert_box = try self.incorrect_panel.add(.{
+            .name = "incorrect.panel",
+            .background = .{ .image_name = "white rounded rect" },
+            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
+            .layout = .{ .x = .grows, .y = .shrinks },
+            .child_align = .{ .x = .centre, .y = .centre },
+            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
+            .minimum = .{ .width = 300, .height = 100 },
+            .style = .failed,
+            .type = .{ .panel = .{
+                .spacing = 10,
+                .direction = .left_to_right,
+            } },
+        }, display);
+
+        _ = try alert_box.add(.{
+            .name = "incorrect.feedback",
+            .minimum = .{ .width = 310 },
+            .layout = .{ .y = .shrinks, .x = .shrinks },
+            .style = .failed,
+            .type = .{ .label = .{
+                .text = "Try again.",
+                .text_size = .heading,
+            } },
+        }, display);
+
+        _ = try alert_box.add(.{
+            .name = "next",
+            .minimum = .{ .width = 140, .height = 80 },
+            .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
+            .layout = .{ .y = .shrinks, .x = .shrinks },
+            .child_align = .{ .x = .centre },
+            .style = .failed,
+            .type = .{ .button = .{
+                .text = "Next",
+                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
+                .button = .{
+                    .default_name = "white rounded rect",
+                    .pressed_name = "white rounded rect",
+                    .hover_name = "white rounded rect",
+                },
+            } },
+        }, display);
+    }
+
+    _ = try self.panel.add(.{
+        .name = "bottom.expander",
+        .rect = .{ .x = 0, .y = 0, .width = 100, .height = 5 },
+        .minimum = .{ .width = 100, .height = 5 },
+        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .type = .{ .expander = .{ .weight = 1.3 } },
+    }, display);
+
+    _ = try self.panel.add(.{
+        .rect = .{ .x = 30, .y = 30 },
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .type = .{ .panel = .{} },
+    }, display);
+}
+
 pub fn deinit(self: *ParsingCardScreen) void {
     self.* = undefined;
+}
+
+fn initParsingButton(
+    self: *ParsingCardScreen,
+    name: []const u8,
+    text: []const u8,
+    handler: *const fn (*anyopaque, *Display, *Entity, *const Event) Allocator.Error!void,
+) !Entity {
+    return .{
+        .name = name,
+        .pad = .{
+            .left = PARSING_BUTTON_X_PADDING,
+            .right = PARSING_BUTTON_X_PADDING,
+            .top = PARSING_BUTTON_Y_PADDING,
+            .bottom = PARSING_BUTTON_Y_PADDING,
+        },
+        .background = .{
+            .image_corner_radius = 14,
+            .corner_radius = 14,
+        },
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .type = .{ .button = .{
+            .text = text,
+            .toggle = .off,
+            .on_pressed = .{ .func = handler, .ptr = self },
+            .button = .{
+                .default_name = "white rounded rect",
+                .pressed_name = "white rounded rect",
+                .hover_name = "white rounded rect",
+            },
+        } },
+    };
 }
 
 pub fn tapBack(
@@ -71,8 +611,8 @@ pub fn tapBack(
 ) error{OutOfMemory}!void {
     try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
     try self.app.menu_ui.toolbar.setVisibility(display, .visible);
-    correct_panel.visible = .hidden;
-    incorrect_panel.visible = .hidden;
+    self.correct_panel.visible = .hidden;
+    self.incorrect_panel.visible = .hidden;
 
     const pc = self.app.parsing_quiz;
     if (pc.lexeme) |lexeme| {
@@ -578,836 +1118,14 @@ var buttons = struct {
     }
 }{};
 
-pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
-    OutOfMemory,
-    ResourceNotFound,
-    ResourceReadError,
-    UnknownImageFormat,
-} || ResourcesError || engine.Error)!void {
-    self.app = app;
-    var display = app.display;
-
-    seed(app.io);
-    help_line_buffer_i = 0;
-
-    self.panel = try display.addPanel(.{
-        .name = "parsing.card",
-        .layout = .{ .x = .grows, .y = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-        .visible = .hidden,
-        .type = .{ .panel = .{
-            .spacing = 10,
-            .direction = .top_to_bottom,
-            .choosable = .choosable,
-        } },
-        .on_resized = .{ .func = @ptrCast(&handle_resize), .ptr = self },
-    });
-
-    _ = try app.add_back_button(self.panel, .{
-        .func = @ptrCast(&tapBack),
-        .ptr = self,
-    });
-
-    _ = try display.add_spacer(self.panel, 1);
-
-    quiz_word = try self.panel.add(.{
-        .name = "parsing.quiz.word",
-        .layout = .{ .x = .grows },
-        .child_align = .{ .x = .centre },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "λυω",
-            .text_size = .heading,
-        } },
-        .pad = .{ .top = 30 + 60 },
-    }, display);
-
-    help_line = try self.panel.add(.{
-        .name = "parsing.quiz.hint",
-        .layout = .{ .x = .grows },
-        .child_align = .{ .x = .centre },
-        .type = .{ .label = .{
-            .text = "Describe the grammar of this word.",
-        } },
-    }, display);
-
-    _ = try self.panel.add(.{
-        .name = "top.expander",
-        .rect = .{ .width = 100, .height = 20 },
-        .minimum = .{ .width = 100, .height = 20 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 0.7 } },
-    }, display);
-
-    {
-        pickers.tense_form = try self.panel.add(.{
-            .name = "tense_form.picker",
-            .background = .{
-                .image_name = "white rounded rect",
-                .image_corner_radius = 50,
-                .corner_radius = 14,
-            },
-            .layout = .{
-                .x = .grows,
-            },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
-        }, display);
-
-        const tense_form_row1 = try pickers.tense_form.add(.{
-            .name = "tense_form.row1",
-            .rect = .{ .width = 500, .height = 30 },
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .top = 5, .bottom = 5 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        }, display);
-
-        const tense_form_row2 = try pickers.tense_form.add(.{
-            .name = "tense_form.row1",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .top = 5, .bottom = 5 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        }, display);
-
-        buttons.present = try tense_form_row1.add(.{
-            .name = "present",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Present",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.future = try tense_form_row1.add(.{
-            .name = "future",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Future",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.perfect = try tense_form_row1.add(.{
-            .name = "perfect",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Perfect",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.aorist = try tense_form_row2.add(.{
-            .name = "aorist",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Aorist",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.imperfect = try tense_form_row2.add(.{
-            .name = "imperfect",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Imperfect",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.pluperfect = try tense_form_row2.add(.{
-            .name = "pluperfect",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Pluperfect",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&tense_form_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
-
-    {
-        pickers.voice = try self.panel.add(.{
-            .name = "voice.picker",
-            .background = .{
-                .image_name = "white rounded rect",
-                .image_corner_radius = 50,
-                .corner_radius = 14,
-            },
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        }, display);
-
-        buttons.active = try pickers.voice.add(try self.make_parsing_button(
-            "active",
-            "Active",
-            @ptrCast(&voice_changed),
-        ), display);
-
-        buttons.middle = try pickers.voice.add(try self.make_parsing_button(
-            "middle",
-            "Middle",
-            @ptrCast(&voice_changed),
-        ), display);
-
-        buttons.passive = try pickers.voice.add(try self.make_parsing_button(
-            "passive",
-            "Passive",
-            @ptrCast(&voice_changed),
-        ), display);
-    }
-
-    {
-        pickers.mood = try self.panel.add(.{
-            .name = "mood.picker",
-            .background = .{
-                .image_name = "white rounded rect",
-                .image_corner_radius = 50,
-                .corner_radius = 14,
-            },
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
-        }, display);
-
-        const mood_row1 = try pickers.mood.add(.{
-            .name = "mood.row1",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .top = 5, .bottom = 5 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        }, display);
-
-        const mood_row2 = try pickers.mood.add(.{
-            .name = "mood.row2",
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .top = 5, .bottom = 5 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        }, display);
-
-        buttons.indicative = try mood_row1.add(try self.make_parsing_button(
-            "indicative",
-            "Indicative",
-            @ptrCast(&mood_changed),
-        ), display);
-
-        buttons.participle = try mood_row1.add(try self.make_parsing_button(
-            "participle",
-            "Participle",
-            @ptrCast(&mood_changed),
-        ), display);
-
-        buttons.subjunctive = try mood_row1.add(try self.make_parsing_button(
-            "subjunctive",
-            "Subjunctive",
-            @ptrCast(&mood_changed),
-        ), display);
-
-        buttons.imperative = try mood_row2.add(try self.make_parsing_button(
-            "imperative",
-            "Imperative",
-            @ptrCast(&mood_changed),
-        ), display);
-
-        buttons.infinitive = try mood_row2.add(try self.make_parsing_button(
-            "infinitive",
-            "Infinitive",
-            @ptrCast(&mood_changed),
-        ), display);
-    }
-
-    {
-        pickers.person = try self.panel.add(.{
-            .name = "person.picker",
-            .background = .{
-                .image_name = "white rounded rect",
-                .image_corner_radius = 50,
-                .corner_radius = 14,
-            },
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        }, display);
-
-        buttons.first = try pickers.person.add(.{
-            .name = "first_person",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "1st Person",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&person_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.second = try pickers.person.add(.{
-            .name = "second_person",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "2nd Person",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&person_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.third = try pickers.person.add(.{
-            .name = "third_person",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "3rd Person",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&person_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
-
-    {
-        pickers.case = try self.panel.add(.{
-            .name = "case.picker",
-            .background = .{
-                .image_name = "white rounded rect",
-                .image_corner_radius = 50,
-                .corner_radius = 14,
-            },
-
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{
-                .spacing = 10,
-                .direction = .left_to_right,
-            } },
-        }, display);
-
-        buttons.nominative = try pickers.case.add(.{
-            .name = "nominative",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Nominative",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.accusative = try pickers.case.add(
-            .{
-                .name = "accusative",
-                .pad = .{
-                    .left = PARSING_BUTTON_X_PADDING,
-                    .right = PARSING_BUTTON_X_PADDING,
-                    .top = PARSING_BUTTON_Y_PADDING,
-                    .bottom = PARSING_BUTTON_Y_PADDING,
-                },
-                .layout = .{ .y = .shrinks, .x = .shrinks },
-                .type = .{ .button = .{
-                    .text = "Accusative",
-                    .toggle = .off,
-                    .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
-                    .button = .{
-                        .default_name = "white rounded rect",
-                        .pressed_name = "white rounded rect",
-                        .hover_name = "white rounded rect",
-                    },
-                } },
-            },
-            display,
-        );
-
-        buttons.genitive = try pickers.case.add(.{
-            .name = "genitive",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Genitive",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect2",
-                    .pressed_name = "white rounded rect2",
-                    .hover_name = "white rounded rect2",
-                },
-            } },
-        }, display);
-
-        buttons.dative = try pickers.case.add(.{
-            .name = "dative",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Dative",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&case_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect2",
-                    .pressed_name = "white rounded rect2",
-                    .hover_name = "white rounded rect2",
-                },
-            } },
-        }, display);
-    }
-
-    {
-        pickers.number = try self.panel.add(.{
-            .name = "number.picker",
-            .background = .{
-                .image_name = "white rounded rect",
-                .image_corner_radius = 50,
-                .corner_radius = 14,
-            },
-            .layout = .{ .x = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{
-                .spacing = 10,
-                .direction = .left_to_right,
-            } },
-        }, display);
-
-        buttons.singular = try pickers.number.add(.{
-            .name = "singular",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Singular",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&number_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.plural = try pickers.number.add(.{
-            .name = "plural",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Plural",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&number_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
-
-    {
-        pickers.gender = try self.panel.add(.{
-            .name = "gender.picker",
-            .background = .{
-                .image_name = "white rounded rect",
-                .image_corner_radius = 50,
-                .corner_radius = 14,
-            },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = 10, .direction = .left_to_right } },
-        }, display);
-
-        buttons.masculine = try pickers.gender.add(.{
-            .name = "masculine",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Masculine",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&gender_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.feminine = try pickers.gender.add(.{
-            .name = "feminine",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .type = .{ .button = .{
-                .text = "Feminine",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&gender_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-
-        buttons.neuter = try pickers.gender.add(.{
-            .name = "neuter",
-            .pad = .{
-                .left = PARSING_BUTTON_X_PADDING,
-                .right = PARSING_BUTTON_X_PADDING,
-                .top = PARSING_BUTTON_Y_PADDING,
-                .bottom = PARSING_BUTTON_Y_PADDING,
-            },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .visible = .visible,
-            .type = .{ .button = .{
-                .text = "Neuter",
-                .toggle = .off,
-                .on_pressed = .{ .func = @ptrCast(&gender_changed), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
-
-    {
-        correct_panel = try self.panel.add(.{
-            .name = "correct.panel.align",
-            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
-            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .minimum = .{ .width = 300, .height = 120 },
-            .visible = .hidden,
-            .type = .{
-                .panel = .{
-                    .spacing = 10,
-                    .direction = .left_to_right,
-                },
-            },
-        }, display);
-
-        const alert_box = try correct_panel.add(.{
-            .name = "correct.panel",
-            .background = .{ .image_name = "white rounded rect" },
-            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 100 },
-            .visible = .visible,
-            .style = .success,
-            .type = .{ .panel = .{
-                .spacing = 10,
-                .direction = .left_to_right,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "correct.feedback",
-            .rect = .{ .width = 510, .height = 20 },
-            .minimum = .{ .width = 310 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .style = .success,
-            .type = .{ .label = .{
-                .text = "Great.",
-                .text_size = .heading,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "next",
-            .rect = .{ .width = 140, .height = 80 },
-            .minimum = .{ .width = 140, .height = 80 },
-            .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .child_align = .{ .x = .centre },
-            .style = .success,
-            .type = .{ .button = .{
-                .text = "Next",
-                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
-
-    {
-        incorrect_panel = try self.panel.add(.{
-            .name = "incorrect.panel.align",
-            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 120 },
-            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .minimum = .{ .width = 300, .height = 100 },
-            .visible = .hidden,
-            .type = .{
-                .panel = .{
-                    .spacing = 10,
-                    .direction = .left_to_right,
-                },
-            },
-        }, display);
-
-        const alert_box = try incorrect_panel.add(.{
-            .name = "incorrect.panel",
-            .background = .{ .image_name = "white rounded rect" },
-            .rect = .{ .x = 0, .y = 0, .width = 700, .height = 100 },
-            .layout = .{ .x = .grows, .y = .shrinks },
-            .child_align = .{ .x = .centre, .y = .centre },
-            .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-            .minimum = .{ .width = 300, .height = 100 },
-            .style = .failed,
-            .type = .{ .panel = .{
-                .spacing = 10,
-                .direction = .left_to_right,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "incorrect.feedback",
-            .minimum = .{ .width = 310 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .style = .failed,
-            .type = .{ .label = .{
-                .text = "Try again.",
-                .text_size = .heading,
-            } },
-        }, display);
-
-        _ = try alert_box.add(.{
-            .name = "next",
-            .minimum = .{ .width = 140, .height = 80 },
-            .pad = .{ .left = 30, .right = 30, .top = 25, .bottom = 25 },
-            .layout = .{ .y = .shrinks, .x = .shrinks },
-            .child_align = .{ .x = .centre },
-            .style = .failed,
-            .type = .{ .button = .{
-                .text = "Next",
-                .on_pressed = .{ .func = @ptrCast(&next_clicked), .ptr = self },
-                .button = .{
-                    .default_name = "white rounded rect",
-                    .pressed_name = "white rounded rect",
-                    .hover_name = "white rounded rect",
-                },
-            } },
-        }, display);
-    }
-
-    _ = try self.panel.add(.{
-        .name = "bottom.expander",
-        .rect = .{ .x = 0, .y = 0, .width = 100, .height = 5 },
-        .minimum = .{ .width = 100, .height = 5 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 1.3 } },
-    }, display);
-}
-
-pub fn handle_resize(self: *ParsingCardScreen, display: *Display, _: *Entity) bool {
-    var updated = false;
-
-    if (self.app.preference.size == .large or self.app.preference.size == .extra_large or display.root.rect.height < 1200) {
-        if (help_line.visible != .hidden) {
-            help_line.visible = .hidden;
-            updated = true;
-        }
-    } else {
-        if (help_line.visible == .hidden) {
-            help_line.visible = .visible;
-            updated = true;
-        }
-    }
-
-    return updated;
-}
-
-fn make_parsing_button(
-    self: *ParsingCardScreen,
-    name: []const u8,
-    text: []const u8,
-    handler: *const fn (*anyopaque, *Display, *Entity, *const Event) Allocator.Error!void,
-) !Entity {
-    return .{
-        .name = name,
-        .pad = .{
-            .left = PARSING_BUTTON_X_PADDING,
-            .right = PARSING_BUTTON_X_PADDING,
-            .top = PARSING_BUTTON_Y_PADDING,
-            .bottom = PARSING_BUTTON_Y_PADDING,
-        },
-        .layout = .{ .y = .shrinks, .x = .shrinks },
-        .type = .{ .button = .{
-            .text = text,
-            .toggle = .off,
-            .on_pressed = .{ .func = handler, .ptr = self },
-            .button = .{
-                .default_name = "white rounded rect",
-                .pressed_name = "white rounded rect",
-                .hover_name = "white rounded rect",
-            },
-        } },
-    };
+pub fn resizeCard(self: *ParsingCardScreen, display: *Display, _: *Entity) bool {
+    if (self.app.preference.size == .large or
+        self.app.preference.size == .extra_large or
+        display.root.rect.height < 1200)
+        self.help_line.setVisibility(display, .hidden) catch {}
+    else
+        self.help_line.setVisibility(display, .visible) catch {};
+    return false;
 }
 
 pub fn next_clicked(self: *ParsingCardScreen, display: *Display, element: *Entity, event: *Event) error{OutOfMemory}!void {
@@ -1422,7 +1140,7 @@ pub fn next_clicked(self: *ParsingCardScreen, display: *Display, element: *Entit
         }
         return;
     }
-    _ = try self.show_next_quiz_card(display);
+    _ = try self.setupNextCard(display);
 }
 
 pub fn button_bounce(
@@ -1462,11 +1180,12 @@ pub fn button_bounce_end(
 const panel_slide_duration = 250 * 1000;
 
 pub fn slide_panel_in(
+    self: *ParsingCardScreen,
     display: *Display,
     slide_panel: *Entity,
 ) error{OutOfMemory}!void {
-    correct_panel.visible = .hidden;
-    incorrect_panel.visible = .hidden;
+    self.correct_panel.visible = .hidden;
+    self.incorrect_panel.visible = .hidden;
     slide_panel.visible = .visible;
     slide_panel.rect.x = display.root.rect.width / 2 - slide_panel.rect.width / 2;
     slide_panel.rect.y = display.root.rect.height + 2;
@@ -1491,11 +1210,11 @@ pub fn slide_panel_out(
     self: *ParsingCardScreen,
     display: *Display,
 ) error{OutOfMemory}!void {
-    if (correct_panel.visible != .hidden) {
-        try self.slide_panel_down(display, correct_panel);
+    if (self.correct_panel.visible != .hidden) {
+        try self.slide_panel_down(display, self.correct_panel);
     }
-    if (incorrect_panel.visible != .hidden) {
-        try self.slide_panel_down(display, incorrect_panel);
+    if (self.incorrect_panel.visible != .hidden) {
+        try self.slide_panel_down(display, self.incorrect_panel);
     }
 }
 
@@ -1526,7 +1245,7 @@ pub fn slide_panel_down(
 var help_line_buffer: [2][500]u8 = undefined;
 var help_line_buffer_i: usize = 0;
 
-pub fn show_next_quiz_card(
+pub fn setupNextCard(
     self: *ParsingCardScreen,
     display: *Display,
 ) error{OutOfMemory}!bool {
@@ -1538,7 +1257,7 @@ pub fn show_next_quiz_card(
     const form = ac.app_context.?.parsing_quiz.next_form();
     self.app.menu_ui.progress_bar.type.progress_bar.progress = self.app.parsing_quiz.progress();
 
-    try quiz_word.setText(display, form.*.word);
+    try self.quiz_word.setText(display, form.*.word);
 
     help_line_buffer_i += 1;
     if (help_line_buffer_i >= help_line_buffer.len) {
@@ -1546,7 +1265,7 @@ pub fn show_next_quiz_card(
     }
 
     const text = std.fmt.bufPrint(&help_line_buffer[help_line_buffer_i], "Describe the grammar of {s}.", .{form.*.word}) catch "Describe the grammar of this word.";
-    try help_line.setText(display, text);
+    try self.help_line.setText(display, text);
 
     info("showing card {s} ({any})", .{ form.*.word, form.*.parsing });
 
@@ -1584,7 +1303,7 @@ pub fn show_next_quiz_card(
             }
         },
         else => {
-            err("show_next_quiz_card doesnt handle {s}", .{@tagName(form.*.parsing.part_of_speech)});
+            err("setupNextCard doesnt handle {s}", .{@tagName(form.*.parsing.part_of_speech)});
         },
     }
 
@@ -1600,11 +1319,11 @@ fn show_answer_if_ready(self: *ParsingCardScreen, display: *Display) error{OutOf
         const correct = try buttons.mark_answers(current_form, parsing, display.allocator);
         if (correct) {
             info("User chose {any} correct.", .{parsing});
-            try slide_panel_in(display, correct_panel);
+            try self.slide_panel_in(display, self.correct_panel);
             _ = self.app.parsing_quiz.remove_current_form();
         } else {
             info("User chose {any} incorrect. Expecting {any}", .{ parsing, current_form.parsing });
-            try slide_panel_in(display, incorrect_panel);
+            try self.slide_panel_in(display, self.incorrect_panel);
         }
         buttons.lock_unpicked_toggles();
         display.need_relayout = true;
