@@ -27,7 +27,6 @@ pub fn init(self: *NotoScreen, app: *AppContext) !void {
 
     self.panel = try display.addPanel(.{
         .name = "noto.info",
-        .rect = .{ .x = 0, .y = 0 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
@@ -55,7 +54,7 @@ pub fn init(self: *NotoScreen, app: *AppContext) !void {
             .text = "Noto Sans and Noto Sans TC",
             .text_size = .heading,
         } },
-        .pad = .{ .top = 30 },
+        .pad = .{ .top = 10 },
     }, display);
 
     _ = try display.add_spacer(self.panel, 60);
@@ -135,7 +134,7 @@ pub fn vertical_scroller_resize(
         display.safe_area.top,
         display.safe_area.bottom,
     });
-    const want_scroller_height = display.root.rect.height - scroll.rect.y - menu_area - display.safe_area.bottom - display.safe_area.top;
+    const want_scroller_height = display.root.rect.height - scroll.rect.y - menu_area - display.safe_area.bottom; // - display.safe_area.top;
     if (scroll.rect.height != want_scroller_height) {
         scroll.rect.height = want_scroller_height;
         scroll.minimum.height = scroll.rect.height;
