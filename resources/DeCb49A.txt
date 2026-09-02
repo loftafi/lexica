@@ -1,0 +1,6 @@
+i:DeCb49A
+d:202602170137
+v:true
+c:opensil
+s:NotoSansKR-VF.ttf
+s:NotoSansKR-VF

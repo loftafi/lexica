@@ -161,10 +161,13 @@ pub inline fn can_practice_lexeme(lexeme: *Lexeme) bool {
 }
 
 const std = @import("std");
-const praxis = @import("praxis");
+
 const engine = @import("engine");
-const ac = @import("app_context.zig");
-const trace = engine.trace;
-const err = engine.err;
+const trace = engine.log.trace;
+const err = engine.log.err;
+
+const praxis = @import("praxis");
 const Form = praxis.Form;
 const Lexeme = praxis.Lexeme;
+
+const ac = @import("App.zig");

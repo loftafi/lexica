@@ -1,69 +1,73 @@
-en,el
-Practice,ἀσκεῖν
-Verb,ῥῆμα
-Noun,ὄνομα
-Adjective,ἐπὶθετον
-Adverb,ἐπίρρημα
-Article,ἄρθρον
-Conjunction,σύνδεσμος
-Pronoun,ἀντωνυμία
-Preposition,ἀντωνυμία
-Participle,μετοχή
-Active,ἐνέργεια
-Middle,μεσότης
-Passive,πάθος
-Person,πρώσοπα
-1st Person,πρῶτον
-2nd Person,δεύτερον
-3rd Person,τρίτον
-x1st Person,πρῶτον πρώσοπον
-x2nd Person,δεύτερον πρώσοπον
-x3rd Person,τρίτον πρώσοπον
-Nominative,ὀνομαστική
-NominativeAlt,ὀρθή
-Accusative,αἰτιατική
-Genitive,γενική
-Dative,δοτική
-Vocative,κλητική
-Masculine,ἀρσενικόν
-Feminine,θηλυκόν
-Neuter,οὐδέτερον
-Singular,ἑνικός
-Dual,δυϊκός
-Plural,πληθυντικός
-Declines,Declines
-Part of Speech,μέρος τοῦ λόγου
-Strongs Number,Strongs Number
-Parsing Quiz,ἀσκεῖν
-Dictionary,λεξικόν
-Correct,ὀρθῶς
-Incorrect,Incorrect
-Done,τέλειον
-Next,ὕστερον
-Check,δοκίμασον
-Tap the buttons to describe this word.,Tap the buttons to describe this word.
-Participles,μετοχή
-Verbs,μέρη τοῦ ῥήματος
-Present and Future,ἐνεστώς καὶ μέλλων
-Perfect and Pluperfect,παρακειμένος καὶ ὑπερσυντέλικος
-Middle and Passive,μεσότης ἢ πάθος
-Nouns and Adjectives,ὄνομα καὶ ἐπὶθετον
-Nominative and Accusative,ὀνομαστική καὶ αἰτιατική
-Genitive and Dative,γενικὴ καὶ δοτική
-Masculine Singular,ἀρσενικόν ἑνικόν
-Masculine Plural,ἀρσενικόν πληθυντικόν
-Feminine Singular,θηλυκόν ἑνικόν
-Feminine Plural,θηλυκόν πληθυντικόν
-Neuter Singular,οὐδέτερον ἑνικόν
-Neuter Plural,οὐδέτερον πληθυντικόν
-Present,ἐνεστώς
-Imperfect,παρατατικός
-Future,μέλλων
-Aorist,ἀόριστον
-Perfect,παρακειμένος
-Pluperfect,ὑπερσυντέλικος
-Mood,ἐγκλίσεις
-Subjunctive,ὑποτακτική
-Imperative,προστακτική
-Indicative,ὁριστική
-Infinitive,ἀπαρέμφατος
+keys,en,el
+PRACTICE,Practice,ἀσκεῖν
+VERB,Verb,ῥῆμα
+NOUN,Noun,ὄνομα
+ADJECTIVE,Adjective,ἐπὶθετον
+ADVERB,Adverb,ἐπίρρημα
+ARTICLE,Article,ἄρθρον
+CONJUNCTION,Conjunction,σύνδεσμος
+PRONOUN,Pronoun,ἀντωνυμία
+PREPOSITION,Preposition,ἀντωνυμία
+PARTICIPLE,Participle,μετοχή
+ACTIVE,Active,ἐνέργεια
+MIDDLE,Middle,μεσότης
+PASSIVE,Passive,πάθος
+PERSON,Person,πρώσοπα
+1ST_PERSON,1st Person,πρῶτον
+2ND_PERSON,2nd Person,δεύτερον
+3RD_PERSON,3rd Person,τρίτον
+X1ST_PERSON,x1st Person,πρῶτον πρώσοπον
+X2ND_PERSON,x2nd Person,δεύτερον πρώσοπον
+X3RD_PERSON,x3rd Person,τρίτον πρώσοπον
+NOMINATIVE,Nominative,ὀνομαστική
+NOMINATIVEALT,NominativeAlt,ὀρθή
+ACCUSATIVE,Accusative,αἰτιατική
+GENITIVE,Genitive,γενική
+DATIVE,Dative,δοτική
+VOCATIVE,Vocative,κλητική
+MASCULINE,Masculine,ἀρσενικόν
+FEMININE,Feminine,θηλυκόν
+NEUTER,Neuter,οὐδέτερον
+SINGULAR,Singular,ἑνικός
+DUAL,Dual,δυϊκός
+PLURAL,Plural,πληθυντικός
+DECLINES,Declines,Declines
+PART_OF_SPEECH,Part of Speech,μέρος τοῦ λόγου
+STRONGS_NUMBER,Strongs Number,Strongs Number
+PARSING_QUIZ,Parsing Quiz,ἀσκεῖν
+DICTIONARY,Dictionary,λεξικόν
+CORRECT,Correct,ὀρθῶς
+INCORRECT,Incorrect,Incorrect
+DONE,Done,τέλειον
+NEXT,Next,ὕστερον
+CHECK,Check,δοκίμασον
+PARSE_WORD_HELP,Tap the buttons to describe this word.,Tap the buttons to describe this word.
+PARTICIPLES,Participles,μετοχή
+VERBS,Verbs,μέρη τοῦ ῥήματος
+PRESENT_AND_FUTURE,Present and Future,ἐνεστώς καὶ μέλλων
+PERFECT_AND_PLUPERFECT,Perfect and Pluperfect,παρακειμένος καὶ ὑπερσυντέλικος
+MIDDLE_AND_PASSIVE,Middle and Passive,μεσότης ἢ πάθος
+NOUNS_AND_ADJECTIVES,ὄνομα καὶ ἐπὶθετον
+NOMINATIVE_AND_ACCUSATIVE,Nominative and Accusative,ὀνομαστική καὶ αἰτιατική
+GENITIVE_AND_DATIVE,Genitive and Dative,γενικὴ καὶ δοτική
+MASCULINE_SINGULAR,Masculine Singular,ἀρσενικόν ἑνικόν
+MASCULINE_PLURAL,Masculine Plural,ἀρσενικόν πληθυντικόν
+FEMININE_SINGULAR,Feminine Singular,θηλυκόν ἑνικόν
+FEMININE_PLURAL,Feminine Plural,θηλυκόν πληθυντικόν
+NEUTER_SINGULAR,Neuter Singular,οὐδέτερον ἑνικόν
+NEUTER_PLURAL,Neuter Plural,οὐδέτερον πληθυντικόν
+PRESENT,Present,ἐνεστώς
+IMPERFECT,Imperfect,παρατατικός
+FUTURE,Future,μέλλων
+AORIST,Aorist,ἀόριστον
+PERFECT,Perfect,παρακειμένος
+PLUPERFECT,Pluperfect,ὑπερσυντέλικος
+MOOD,Mood,ἐγκλίσεις
+SUBJUNCTIVE,Subjunctive,ὑποτακτική
+IMPERATIVE,Imperative,προστακτική
+INDICATIVE,Indicative,ὁριστική
+INFINITIVE,Infinitive,ἀπαρέμφατος
+LICENSES,Licenses,Licenses
+TERMS_OF_USE,Terms,Terms
+TERMS_OF_SERVICE,Terms,Terms
+PRIVACY_POLICY,Privacy,Privacy

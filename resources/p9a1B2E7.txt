@@ -1,0 +1,6 @@
+i:p9a1B2E7
+d:202608170137
+v:true
+c:opensil
+s:NotoSans-Regular
+s:NotoSans-Regular.ttf
