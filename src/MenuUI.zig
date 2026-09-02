@@ -36,7 +36,8 @@ pub fn init(self: *MenuUI, app: *AppContext) !void {
         \\      minimum width=100 height=12
         \\      maximum width=800 height=20
         \\      on_resized resizeProgressBar
-        \\      corner_radius 8 image_corner_radius 14
+        \\      image "white rounded rect"
+        \\      corner_radius 6 image_corner_radius 14
         \\  }
         \\}
     , MenuUI, self);

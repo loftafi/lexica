@@ -1,5 +1,6 @@
 pub const PreferencesScreen = @This();
 
+app: *AppContext,
 panel: *Entity = undefined,
 picker_panel: *Entity = undefined,
 preferences_heading: *Entity = undefined,
@@ -24,8 +25,9 @@ pub fn show(
     self.tap_counter = 0;
 }
 
-pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
-    var display = context.display;
+pub fn init(self: *PreferencesScreen, app: *AppContext) !void {
+    var display = app.display;
+    self.app = app;
 
     _ = try display.appendPanel(
         \\panel:panel name "preferences.screen" hidden vertical choosable
@@ -59,7 +61,6 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
     , PreferencesScreen, self);
 
     try initPickerTable(
-        context.allocator,
         display,
         self.picker_panel,
         &[4][]const u8{ "ὁ", "τοῦ", "τῷ", "τόν" },
@@ -73,7 +74,6 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
     };
 
     try initPickerTable(
-        context.allocator,
         display,
         self.picker_panel,
         &[4][]const u8{ "ὁ", "τόν", "τοῦ", "τῷ" },
@@ -143,61 +143,69 @@ pub fn init(self: *PreferencesScreen, context: *AppContext) !void {
 
     const links = try self.panel.add(.{
         .name = "link_menu",
-        .rect = .{ .width = 150, .height = 50 },
-        .minimum = .{ .height = 40, .width = 150 },
-        .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
-        .layout = .{ .x = .grows },
+        .minimum = .{ .height = 44, .width = 300 },
+        .pad = .{ .top = 5 },
+        .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
-        .type = .{ .panel = .{ .direction = .left_to_right } },
+        .type = .{ .panel = .{ .direction = .left_to_right_wrap, .spacing = 0 } },
     }, display);
 
     _ = try links.add(.{
         .name = "privacy.link",
-        .layout = .{ .y = .shrinks, .x = .shrinks },
-        .pad = .{ .left = 10, .right = 10 },
         .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Privacy",
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .pad = .{ .top = 7, .bottom = 7, .left = 0, .right = 12 },
+        .child_align = .{ .x = .start },
+        .type = .{ .button = .{
+            .text = "PRIVACY_POLICY",
             .text_size = .small,
-            .on_pressed = .{ .func = @ptrCast(&PrivacyScreen.show), .ptr = self },
+            .icon = .{
+                .size = .{ .width = 17, .height = 17 },
+                .default_name = "small shield icon",
+            },
+            .spacing = 4,
+            .on_pressed = .{ .func = @ptrCast(&PrivacyScreen.show), .ptr = &self.app.privacy },
         } },
     }, display);
 
     _ = try links.add(.{
         .name = "terms.link",
-        .layout = .{ .y = .shrinks, .x = .shrinks },
-        .pad = .{ .left = 10, .right = 10 },
-        .child_align = .{ .x = .centre },
         .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Terms",
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .pad = .{ .top = 7, .bottom = 7, .left = 12, .right = 12 },
+        .child_align = .{ .x = .centre },
+        .type = .{ .button = .{
+            .text = "TERMS_OF_USE",
             .text_size = .small,
-            .on_pressed = .{ .func = @ptrCast(&TermsScreen.show), .ptr = self },
+            .icon = .{
+                .size = .{ .width = 17, .height = 17 },
+                .default_name = "small document icon",
+            },
+            .spacing = 4,
+            .on_pressed = .{ .func = @ptrCast(&TermsScreen.show), .ptr = &self.app.terms },
         } },
     }, display);
 
     _ = try links.add(.{
         .name = "license.link",
-        .layout = .{ .y = .shrinks, .x = .shrinks },
-        .pad = .{ .left = 10, .right = 10 },
         .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Licences",
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .pad = .{ .top = 7, .bottom = 7, .left = 12, .right = 0 },
+        .child_align = .{ .x = .start },
+        .type = .{ .button = .{
+            .text = "LICENSES",
             .text_size = .small,
-            .on_pressed = .{ .func = @ptrCast(&LicenseScreen.show), .ptr = self },
+            .icon = .{
+                .size = .{ .width = 17, .height = 17 },
+                .default_name = "small archive icon",
+            },
+            .spacing = 6,
+            .on_pressed = .{ .func = @ptrCast(&LicenseScreen.show), .ptr = &self.app.license },
         } },
     }, display);
 
-    _ = try self.panel.add(.{
-        .name = "end.expander",
-        .rect = .{ .width = 50, .height = 2 },
-        .minimum = .{ .width = 50, .height = 2 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 1 } },
-    }, display);
-
     // Don't allow expanders to push under the menu area.
-    _ = try context.display.add_spacer(self.panel, 75);
+    _ = try app.display.add_spacer(self.panel, 75);
 }
 
 pub fn deinit(self: *PreferencesScreen) void {
@@ -356,7 +364,6 @@ pub fn tapThemeButton(
 }
 
 pub fn initPickerTable(
-    _: Allocator,
     display: *Display,
     parent: *Entity,
     articles: []const []const u8,
@@ -375,11 +382,11 @@ pub fn initPickerTable(
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .pad = .{ .left = 2, .right = 2, .top = 2, .bottom = 2 },
         .style = .custom,
-        .type = .{ .panel = .{} },
+        .type = .{ .panel = .{ .direction = .top_left } },
     }, display);
 
     panel.* = try panel_ring.*.add(.{
-        .name = "present",
+        .name = "table",
         .background = .{
             .image_name = "white rounded rect",
             .corner_radius = 14,

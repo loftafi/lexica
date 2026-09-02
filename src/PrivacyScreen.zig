@@ -24,42 +24,31 @@ pub fn init(self: *PrivacyScreen, context: *AppContext) !void {
 
     var display = context.display;
 
-    self.panel = try display.addPanel(
-        .{
-            .name = "privacy.screen",
-            .rect = .{ .x = 0, .y = 0 },
-            .layout = .{ .x = .grows, .y = .grows },
-            .child_align = .{ .x = .centre, .y = .start },
-            .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
-            .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-            .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-            .visible = .hidden,
-            .type = .{ .panel = .{
-                .spacing = 10,
-                .direction = .top_to_bottom,
-                .choosable = .choosable,
-            } },
-        },
-    );
+    _ = try display.appendPanel(
+        \\panel:panel name "privacy.screen" spacing 10 vertical hidden
+        \\  choosable avoid_safe_area
+        \\  layout grows grows
+        \\  align centre start
+        \\  minimum 100 100
+        \\  pad left=1em right=1em pad top=1.5em
+        \\{
+        \\  button name "heading_icon" icon_default "icon shield" never_focus
+        \\    layout grows shrinks
+        \\    align centre centre
+        \\    icon_size width=2em height=2em
+        \\
+        \\  label name "heading_text" text "PRIVACY_POLICY"
+        \\    style tinted accessibility_focus
+        \\    layout grows shrinks align centre centre
+        \\    text_size heading
+        \\    pad top=0.25em bottom=1em
+        \\}
+    , PrivacyScreen, self);
 
     self.back_button = try self.app.add_back_button(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });
-
-    var heading = try self.panel.add(.{
-        .name = "privacy_heading",
-        .layout = .{ .y = .shrinks, .x = .grows },
-        .child_align = .{ .x = .centre },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Privacy",
-            .text_size = .heading,
-        } },
-    }, display);
-    heading.pad.top = 30;
-
-    _ = try display.add_spacer(self.panel, 60);
 
     self.scroller = try self.panel.add(.{
         .name = "scroll.panel",

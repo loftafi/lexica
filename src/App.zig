@@ -27,7 +27,8 @@ pub const AppContext = struct {
     dictionary_arena: std.heap.ArenaAllocator = undefined,
 
     byz: ByzScreen = undefined,
-    license: LicenseScren = undefined,
+    license: LicenseScreen = undefined,
+    license_info: LicenseInfoScreen = undefined,
     list_delete: ListDeleteScreen = undefined,
     list_edit: ListEditScreen = undefined,
     list_new: ListNewScreen = undefined,
@@ -176,6 +177,7 @@ pub const AppContext = struct {
         ac.parsing_quiz.deinit(ac.allocator);
         ac.privacy.deinit();
         ac.license.deinit();
+        ac.license_info.deinit();
         ac.terms.deinit();
         ac.byz.deinit();
         ac.noto.deinit();
@@ -243,6 +245,9 @@ pub const AppContext = struct {
 
         try ac.license.init(ac);
         errdefer ac.license.deinit();
+
+        try ac.license_info.init(ac, ac.display, &ac.license);
+        errdefer ac.license_info.deinit();
 
         try ac.terms.init(ac);
         errdefer ac.terms.deinit();
@@ -732,7 +737,8 @@ const WordSet = Lists.WordSet;
 const ParsingQuiz = @import("ParsingQuiz.zig");
 
 const ByzScreen = @import("ByzScreen.zig");
-const LicenseScren = @import("LicenseScreen.zig");
+const LicenseScreen = @import("LicenseScreen.zig");
+const LicenseInfoScreen = @import("LicenseInfoScreen.zig");
 const ListNewScreen = @import("ListNewScreen.zig");
 const ListEditScreen = @import("ListEditScreen.zig");
 const ListDeleteScreen = @import("ListDeleteScreen.zig");

@@ -104,7 +104,7 @@ pub fn init(
             },
             .button = .{
                 .default_name = "default button",
-                .hover_name = "hover default",
+                .hover_name = "hover button",
                 .pressed_name = "pressed button",
             },
             .on_pressed = .{ .func = @ptrCast(&tapAddList), .ptr = self },

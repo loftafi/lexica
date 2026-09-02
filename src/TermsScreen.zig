@@ -23,39 +23,32 @@ pub fn show(
 pub fn init(self: *TermsScreen, app: *AppContext) !void {
     self.app = app;
     var display = app.display;
-    self.panel = try display.addPanel(.{
-        .name = "terms.screen",
-        .layout = .{ .x = .grows, .y = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .visible = .hidden,
-        .type = .{ .panel = .{
-            .spacing = 10,
-            .direction = .top_to_bottom,
-            .choosable = .choosable,
-        } },
-    });
+
+    _ = try display.appendPanel(
+        \\panel:panel name "terms.screen" spacing 10 vertical hidden
+        \\  choosable avoid_safe_area
+        \\  layout grows grows
+        \\  align centre start
+        \\  minimum 100 100
+        \\  pad left=1em right=1em pad top=1.5em
+        \\{
+        \\  button name "heading_icon" icon_default "document icon" never_focus
+        \\    layout grows shrinks
+        \\    align centre centre
+        \\    icon_size width=2em height=2em
+        \\
+        \\  label name "heading_text" text "TERMS_OF_USE"
+        \\    style tinted accessibility_focus
+        \\    layout grows shrinks align centre centre
+        \\    text_size heading
+        \\    pad top=0.25em bottom=1em
+        \\}
+    , TermsScreen, self);
 
     self.back_button = try ac.app_context.?.add_back_button(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });
-
-    _ = try self.panel.add(.{
-        .name = "terms_heading",
-        .layout = .{ .y = .shrinks, .x = .grows },
-        .child_align = .{ .x = .centre },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Terms",
-            .text_size = .heading,
-        } },
-        .pad = .{ .top = 30, .bottom = 5 },
-    }, display);
-
-    _ = try display.add_spacer(self.panel, 60);
 
     self.scroller = try self.panel.add(.{
         .name = "scroll.panel",

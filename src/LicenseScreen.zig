@@ -5,6 +5,8 @@ panel: *Entity = undefined,
 back_button: *Entity = undefined,
 scroller: *Entity = undefined,
 
+debug_tap_count: u8 = 0,
+
 pub fn show(self: *LicenseScreen, display: *Display, _: *Entity, event: *Event) Allocator.Error!void {
     try display.choosePanel("license.screen", event);
     if (display.root.getChildByName("menu")) |child| {
@@ -12,46 +14,38 @@ pub fn show(self: *LicenseScreen, display: *Display, _: *Entity, event: *Event) 
     }
     _ = self.resizeScroller(display, self.scroller);
     display.relayout();
+    self.debug_tap_count = 0;
 }
 
 pub fn init(self: *LicenseScreen, app: *AppContext) !void {
     self.app = app;
     var display = app.display;
 
-    self.panel = try display.addPanel(.{
-        .name = "license.screen",
-        .rect = .{ .x = 0, .y = 0 },
-        .layout = .{ .x = .grows, .y = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
-        .visible = .hidden,
-        .type = .{ .panel = .{
-            .spacing = 10,
-            .direction = .top_to_bottom,
-            .choosable = .choosable,
-        } },
-    });
+    _ = try display.appendPanel(
+        \\panel:panel name "license.screen" spacing 10 vertical hidden choosable
+        \\  layout grows grows
+        \\  align centre start
+        \\  minimum 100 100
+        \\  pad left=1em right=1em pad top=1.5em
+        \\{
+        \\  button name "heading_icon" icon_default "archive icon" never_focus
+        \\    layout grows shrinks
+        \\    align centre centre
+        \\    icon_size width=2em height=2em
+        \\
+        \\  label name "heading_text" text "LICENSES"
+        \\    style tinted accessibility_focus
+        \\    layout grows shrinks align centre centre
+        \\    text_size heading
+        \\    pad top=0.25em bottom=1em
+        \\    on_pressed enableDebug
+        \\}
+    , LicenseScreen, self);
 
     self.back_button = try ac.app_context.?.add_back_button(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });
-
-    _ = try self.panel.add(.{
-        .name = "licenses_heading",
-        .layout = .{ .x = .grows },
-        .child_align = .{ .x = .centre },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Resources",
-            .text_size = .heading,
-        } },
-        .pad = .{ .top = 30 },
-    }, display);
-
-    _ = try display.add_spacer(self.panel, 60);
 
     self.scroller = try self.panel.add(.{
         .name = "scroll.panel",
@@ -84,11 +78,17 @@ pub fn init(self: *LicenseScreen, app: *AppContext) !void {
 
     _ = try self.scroller.add(.{
         .name = "byz.link",
-        .layout = .{ .x = .grows },
         .style = .tinted,
-        .type = .{ .label = .{
+        .layout = .{ .x = .grows },
+        .pad = .{ .left = 11, .top = 11 },
+        .type = .{ .button = .{
             .text = "Robinson Pierpoint Text",
             .text_size = .small,
+            .icon = .{
+                .size = .{ .width = 16, .height = 16 },
+                .default_name = "small document icon",
+            },
+            .spacing = 4,
             .on_pressed = .{ .func = @ptrCast(&ByzScreen.show), .ptr = &app.byz },
         } },
     }, display);
@@ -101,25 +101,39 @@ pub fn init(self: *LicenseScreen, app: *AppContext) !void {
         .name = "noto.link",
         .layout = .{ .x = .grows },
         .style = .tinted,
-        .type = .{ .label = .{
+        .pad = .{ .left = 11, .top = 11 },
+        .type = .{ .button = .{
             .text = "Noto Sans and Noto Sans TC",
             .text_size = .small,
+            .spacing = 4,
+            .icon = .{
+                .size = .{ .width = 16, .height = 16 },
+                .default_name = "small document icon",
+            },
             .on_pressed = .{ .func = @ptrCast(&NotoScreen.show), .ptr = &app.noto },
         } },
     }, display);
     _ = try display.add_spacer(self.scroller, 30);
 
-    try display.add_paragraph(self.scroller, .normal, "p5", "SDL3 is used under the zlib license.");
-    _ = try self.scroller.add(.{
-        .name = "sdl.link",
-        .layout = .{ .x = .grows },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "SDL 3.0 License",
-            .text_size = .small,
-            .on_pressed = .{ .func = @ptrCast(&SDLScreen.show), .ptr = &app.sdl },
-        } },
-    }, display);
+    try display.add_paragraph(self.scroller, .normal, "p5", "The following libaries are also involved in the creation of this app:");
+
+    for (engine.License.licenses) |license| {
+        _ = try self.scroller.add(.{
+            .name = license.library,
+            .layout = .{ .x = .grows },
+            .pad = .{ .left = 11, .top = 11 },
+            .type = .{ .button = .{
+                .text = license.library,
+                .text_size = .small,
+                .icon = .{
+                    .size = .{ .width = 16, .height = 16 },
+                    .default_name = "small document icon",
+                },
+                .spacing = 4,
+                .on_pressed = .{ .func = @ptrCast(&LicenseInfoScreen.show), .ptr = &self.app.license_info },
+            } },
+        }, display);
+    }
 }
 
 pub fn deinit(self: *LicenseScreen) void {
@@ -163,6 +177,23 @@ pub fn resizeScroller(
     return updated;
 }
 
+pub fn enableDebug(
+    self: *LicenseScreen,
+    display: *Display,
+    _: *Entity,
+    _: *const Event,
+) Allocator.Error!void {
+    _ = display;
+    info("enableDebug count={d}", .{self.debug_tap_count});
+    self.debug_tap_count += 1;
+
+    if (self.debug_tap_count >= 15) {
+        self.debug_tap_count = 0;
+        info("enableDebug enable debug mode", .{});
+        engine.dev_mode = !engine.dev_mode;
+    }
+}
+
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
@@ -171,6 +202,7 @@ const Display = engine.Display;
 const Entity = engine.Entity;
 const Event = engine.Event;
 const debug = engine.log.debug;
+const info = engine.log.info;
 
 const ac = @import("App.zig");
 const AppContext = ac.AppContext;
@@ -179,3 +211,4 @@ const MenuUI = @import("MenuUI.zig");
 const ByzScreen = @import("ByzScreen.zig");
 const NotoScreen = @import("NotoScreen.zig");
 const SDLScreen = @import("SDLScreen.zig");
+const LicenseInfoScreen = @import("LicenseInfoScreen.zig");
