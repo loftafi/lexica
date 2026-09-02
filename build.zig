@@ -95,7 +95,7 @@ pub fn build(b: *std.Build) !void {
     var make_bundle = b.addRunArtifact(exe);
     make_bundle.has_side_effects = true;
     make_bundle.addArg("make_bundle");
-    make_bundle.addDirectoryArg(b.path("app_resources"));
+    make_bundle.addDirectoryArg(b.path(app_resources));
     app_resource_package.dependOn(&make_bundle.step);
 
     {

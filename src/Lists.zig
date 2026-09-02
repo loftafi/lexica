@@ -362,9 +362,7 @@ const Dictionary = praxis.Dictionary;
 
 test "list file" {
     const dict = try praxis.test_dictionary(std.testing.allocator);
-    defer dict.destroy(std.testing.allocator);
-    const list = try Lists.create(std.testing.allocator, dict);
-    defer list.*.destroy(std.testing.allocator);
-    //var sets = Lists.create(std.testing.allocator, dictionary);
-    //defer sets.destroy();
+    defer dict.destroy();
+    var list: Lists = .init(dict);
+    defer list.deinit(std.testing.allocator);
 }

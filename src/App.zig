@@ -299,8 +299,9 @@ pub const AppContext = struct {
         try ac.display.setKeybinding(.p, .{ .func = @ptrCast(&pick_preferences_screen), .ptr = ac });
         try ac.display.setKeybinding(.q, .{ .func = @ptrCast(&pick_parsing_screen), .ptr = ac });
 
-        if (engine.dev_build) {
+        if (builtin.mode == .Debug) {
             try ac.display.setKeybinding(.m, .{ .func = @ptrCast(&toggle_menu), .ptr = ac });
+            try ac.display.setKeybinding(.@"6", .{ .func = @ptrCast(&makeAppBundle), .ptr = ac });
         }
 
         if (builtin.target.os.tag != .ios and
@@ -315,6 +316,11 @@ pub const AppContext = struct {
         }
         try ac.display.choosePanel("search.screen", &.{});
         ac.display.relayout();
+
+        if (ac.display.config.command == .make_bundle and builtin.mode == .Debug) {
+            try ac.makeAppBundle(ac.display, &.{ .type = .{ .panel = .{} } }, &.{});
+            return;
+        }
     }
 
     pub fn save_preferences(self: *AppContext) void {
@@ -365,6 +371,32 @@ pub const AppContext = struct {
         ) catch |e| {
             err("Failed to save preference data. {t}", .{e});
         };
+    }
+
+    pub fn makeAppBundle(
+        self: *AppContext,
+        _: *Display,
+        _: *const Entity,
+        _: *const Event,
+    ) Allocator.Error!void {
+        if (builtin.mode != .Debug) return;
+        if (self.display.resources.used_resources == null) {
+            err("Abort makeAppBundle. No manifest was built.", .{});
+            return;
+        }
+        notice("Make app bundle {s}", .{app_info.app_bundle});
+        self.display.resources.saveBundle(
+            self.allocator,
+            self.io,
+            app_info.app_bundle,
+            //self.display.resources.used_resources.?,
+            self.display.required_resource,
+            &.{},
+            "/tmp",
+        ) catch |e| {
+            err("Abort makeAppBundle. Error: {any}", .{e});
+        };
+        self.display.endMainLoop();
     }
 
     pub const view_history_file = "view_history.txt";
@@ -753,6 +785,8 @@ const SearchScreen = @import("SearchScreen.zig");
 const TermsScreen = @import("TermsScreen.zig");
 const WordInfoScreen = @import("WordInfoScreen.zig");
 const SDLScreen = @import("SDLScreen.zig");
+
+pub const app_info = @import("app_info");
 
 test "scale enum" {
     try std.testing.expectEqual(Scale.extra_large, Scale.parse("extra_large"));

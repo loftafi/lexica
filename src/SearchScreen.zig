@@ -28,6 +28,8 @@ pub fn show(
 pub fn init(self: *SearchScreen, app: *AppContext) !void {
     self.app = app;
 
+    try app.display.requireResourceRecord("dict", .bin);
+
     self.seen_result = AutoHashMap(u24, *Form).init(app.display.allocator);
     for (0..self.string_buffers.len) |i| {
         self.string_buffers[i] = .init(app.display.allocator);
