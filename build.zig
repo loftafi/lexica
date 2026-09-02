@@ -138,8 +138,9 @@ pub fn build(b: *std.Build) !void {
 
         // Copy the xcode template
         var copy_xcode_template = b.step("xcode_template_copy", "Copy ios template");
+        const template_path = b.dependency("engine", .{}).path("templates/xcode/");
         const do_copy = b.addInstallDirectory(.{
-            .source_dir = b.path("assets/xcode-template/"),
+            .source_dir = template_path,
             .install_dir = .{ .custom = "xcode/" },
             .install_subdir = "",
         });
