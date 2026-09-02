@@ -20,6 +20,10 @@ pub fn show(
 ) Allocator.Error!void {
     try display.choosePanel("preferences.screen", event);
     display.need_relayout = true;
+    if (display.root.getChildByName("menu")) |child| {
+        child.visible = .visible;
+    }
+
     display.relayout();
     self.updateRing();
     self.tap_counter = 0;

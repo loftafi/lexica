@@ -11,7 +11,6 @@ heading: *Entity = undefined,
 subheading: *Entity = undefined,
 
 license: *const engine.License = undefined,
-back: Entity.Callback = undefined,
 
 /// Initialise any required panels with `display.addPanel()`, and/or
 /// report a future need for a specific image or audio resource with
@@ -22,17 +21,15 @@ pub fn init(
     self: *LicenseInfoScreen,
     app: *App,
     display: *Display,
-    screen: *LicenseScreen,
 ) (Allocator.Error || Resources.Error || engine.Error)!void {
     // Lazy initialisation. Don'actually init on startup. Only init if needed
     self.app = app;
-    self.back = .{ .func = @ptrCast(&LicenseScreen.show), .ptr = screen };
 
     _ = try display.appendPanel(
         \\panel:panel name "license.info" spacing 11 vertical hidden choosable
         \\  layout grows grows align centre start
         \\  minimum 100 100
-        \\  pad left=1em right=1em pad top=1.5em
+        \\  pad left=1em right=1em pad top=0.5em
         \\{
         \\  label:heading name "heading" text "Heading"
         \\    style tinted
@@ -48,7 +45,10 @@ pub fn init(
         \\}
     , LicenseInfoScreen, self);
 
-    self.back_button = try app.add_back_button(self.panel, self.back);
+    self.back_button = try app.add_back_button(self.panel, .{
+        .func = @ptrCast(&LicenseScreen.show),
+        .ptr = &app.license,
+    });
 
     self.scroller = try self.panel.add(.{
         .name = "scroll.panel",

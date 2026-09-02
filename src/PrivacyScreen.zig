@@ -30,7 +30,7 @@ pub fn init(self: *PrivacyScreen, context: *AppContext) !void {
         \\  layout grows grows
         \\  align centre start
         \\  minimum 100 100
-        \\  pad left=1em right=1em pad top=1.5em
+        \\  pad left=1em right=1em pad top=0.5em
         \\{
         \\  button name "heading_icon" icon_default "icon shield" never_focus
         \\    layout grows shrinks

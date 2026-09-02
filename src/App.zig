@@ -246,7 +246,7 @@ pub const AppContext = struct {
         try ac.license.init(ac);
         errdefer ac.license.deinit();
 
-        try ac.license_info.init(ac, ac.display, &ac.license);
+        try ac.license_info.init(ac, ac.display);
         errdefer ac.license_info.deinit();
 
         try ac.terms.init(ac);

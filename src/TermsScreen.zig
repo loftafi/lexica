@@ -30,7 +30,7 @@ pub fn init(self: *TermsScreen, app: *AppContext) !void {
         \\  layout grows grows
         \\  align centre start
         \\  minimum 100 100
-        \\  pad left=1em right=1em pad top=1.5em
+        \\  pad left=1em right=1em pad top=0.5em
         \\{
         \\  button name "heading_icon" icon_default "document icon" never_focus
         \\    layout grows shrinks
@@ -110,7 +110,7 @@ pub fn resizeScroller(
         display.safe_area.top,
         display.safe_area.bottom,
     });
-    const want_scroller_height = display.root.rect.height - scroll.rect.y - menu_area - display.safe_area.bottom - display.safe_area.top;
+    const want_scroller_height = display.root.rect.height - scroll.rect.y - menu_area - display.safe_area.bottom; // - display.safe_area.top;
     if (scroll.rect.height != want_scroller_height) {
         scroll.rect.height = want_scroller_height;
         scroll.minimum.height = scroll.rect.height;

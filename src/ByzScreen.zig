@@ -58,7 +58,7 @@ pub fn init(self: *ByzScreen, app: *AppContext) !void {
             .text = "Robinson-Pierpont",
             .text_size = .heading,
         } },
-        .pad = .{ .top = 30 },
+        .pad = .{ .top = 10 },
     }, display);
 
     _ = try display.add_spacer(self.panel, 60);

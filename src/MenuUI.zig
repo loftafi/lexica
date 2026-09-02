@@ -23,6 +23,7 @@ pub fn init(self: *MenuUI, app: *AppContext) !void {
     self.panel = try display.appendPanel(
         \\panel:panel name "menu" hidden not_choosable avoid_safe_area vertical
         \\  layout grows grows align centre start
+        \\  on_resized resizeProgressBar
         \\{
         \\  panel:progress_bar hidden
         \\    pad top=1.0em bottom=0em left=2.2em right=2.2em
@@ -35,7 +36,6 @@ pub fn init(self: *MenuUI, app: *AppContext) !void {
         \\      layout grows grows
         \\      minimum width=100 height=12
         \\      maximum width=800 height=20
-        \\      on_resized resizeProgressBar
         \\      image "white rounded rect"
         \\      corner_radius 6 image_corner_radius 14
         \\  }
@@ -145,10 +145,10 @@ pub fn resizeProgressBar(self: *MenuUI, display: *Display, _: *Entity) bool {
         self.progress_bar.rect.x = progress_centre;
         updated = false;
     }
-    //if (self.progress_bar.rect.y != display.safe_area.top) {
-    //    self.progress_bar.rect.y = display.safe_area.top;
-    //    updated = true;
-    //}
+    if (self.progress_bar.rect.y != display.safe_area.top) {
+        self.progress_bar.rect.y = display.safe_area.top;
+        updated = true;
+    }
     return updated;
 }
 
