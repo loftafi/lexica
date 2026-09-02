@@ -300,7 +300,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
     self.practice_button = try button_align.add(.{
         .name = "start.button",
         .pad = .{ .left = 15, .right = 15, .top = 15, .bottom = 15 },
-        .background = .{ .corner_radius = 14, .image_corner_radius = 50 },
+        .background = .{ .corner_radius = 22, .image_corner_radius = 50 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .style = .faded,
         .type = .{

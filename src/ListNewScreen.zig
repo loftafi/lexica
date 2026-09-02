@@ -91,7 +91,7 @@ pub fn init(
 
     self.new_button = try button_bar.add(.{
         .name = "create.word.list",
-        .background = .{ .image_corner_radius = 50, .corner_radius = 14 },
+        .background = .{ .image_corner_radius = 50, .corner_radius = 22 },
         .minimum = .{ .width = 5, .height = 7 },
         .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },
         .layout = .{ .x = .shrinks, .y = .shrinks },

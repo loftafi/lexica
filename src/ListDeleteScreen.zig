@@ -94,7 +94,7 @@ pub fn init(
         .name = "delete.word.set.button",
         .minimum = .{ .width = 5, .height = 7 },
         .background = .{
-            .corner_radius = 14,
+            .corner_radius = 22,
             .image_corner_radius = 50,
         },
         .pad = .{ .left = ICON_PAD, .right = ICON_PAD, .top = ICON_PAD, .bottom = ICON_PAD },

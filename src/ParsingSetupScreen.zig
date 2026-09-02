@@ -474,6 +474,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
                 .top = ICON_PAD,
                 .bottom = ICON_PAD,
             },
+            .background = .{ .corner_radius = 22, .image_corner_radius = 50 },
             .child_align = .{ .x = .start, .y = .start },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{
@@ -503,6 +504,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
                 .top = ICON_PAD,
                 .bottom = ICON_PAD,
             },
+            .background = .{ .corner_radius = 22, .image_corner_radius = 50 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{
                 .button = .{
@@ -540,7 +542,7 @@ pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
             },
             .child_align = .{ .x = .start, .y = .start },
             .layout = .{ .x = .shrinks, .y = .shrinks },
-            .background = .{ .corner_radius = 14, .image_corner_radius = 50 },
+            .background = .{ .corner_radius = 22, .image_corner_radius = 50 },
             .style = .faded,
             .type = .{
                 .button = .{
