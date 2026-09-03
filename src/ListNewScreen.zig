@@ -1,7 +1,7 @@
 //! This panel allows creating a word set.
 pub const ListNewScreen = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 new_button: *Entity = undefined,
 text_input: *Entity = undefined,
@@ -20,7 +20,7 @@ pub fn show(
 
 pub fn init(
     self: *ListNewScreen,
-    app: *AppContext,
+    app: *App,
 ) (error{ OutOfMemory, ResourceNotFound, ResourceReadError, UnknownImageFormat } || engine.Error || ResourcesError)!void {
     self.app = app;
 
@@ -180,7 +180,7 @@ const Resources = @import("resources").Resources;
 const ResourcesError = Resources.Error;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 
 const Lists = @import("Lists.zig");
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");

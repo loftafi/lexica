@@ -2,7 +2,7 @@ pub const SearchScreen = @This();
 
 pub const MAX_SEARCH_RESULTS: usize = 30;
 
-app: *AppContext = undefined,
+app: *App = undefined,
 
 panel: *Entity = undefined,
 scroller: *Entity = undefined,
@@ -28,7 +28,7 @@ pub fn show(
     }
 }
 
-pub fn init(self: *SearchScreen, app: *AppContext) !void {
+pub fn init(self: *SearchScreen, app: *App) !void {
     self.app = app;
 
     try app.display.requireResourceRecord("dict", .bin);
@@ -133,16 +133,16 @@ pub fn tapSearchResult(
         if (i == element) {
             if (self.search_result_form[x]) |form| {
                 self.remove_form_from_view_history(form);
-                if (ac.app_context.?.view_history.items.len == ac.MAX_SEARCH_HISTORY) {
-                    _ = ac.app_context.?.view_history.pop();
+                if (self.app.view_history.items.len == ac.MAX_SEARCH_HISTORY) {
+                    _ = self.app.view_history.pop();
                 }
-                try ac.app_context.?.view_history.insert(display.allocator, 0, form);
-                ac.app_context.?.save_view_history() catch {
+                try self.app.view_history.insert(display.allocator, 0, form);
+                self.app.saveSearchHistory() catch {
                     err("Save word view history failed.", .{});
                 };
                 if (form.lexeme) |lexeme| {
                     //debug("tap on search result found matching form", .{});
-                    return ac.app_context.?.word_info.show(display, lexeme, event);
+                    return self.app.word_info.show(display, lexeme, event);
                 }
                 warn("tap on search result {d} has form with no lexeme", .{x});
                 return;
@@ -170,7 +170,7 @@ pub fn search_query_changed(
     var i: usize = 0;
     self.seen_result.clearRetainingCapacity();
 
-    var item = ac.app_context.?.dictionary.by_form.lookup(query) catch null;
+    var item = self.app.dictionary.by_form.lookup(query) catch null;
     if (item) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
@@ -182,7 +182,7 @@ pub fn search_query_changed(
         }
     }
 
-    item = ac.app_context.?.dictionary.by_gloss.lookup(query) catch null;
+    item = self.app.dictionary.by_gloss.lookup(query) catch null;
     if (item) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
@@ -194,7 +194,7 @@ pub fn search_query_changed(
         }
     }
 
-    item = ac.app_context.?.dictionary.by_transliteration.lookup(query) catch null;
+    item = self.app.dictionary.by_transliteration.lookup(query) catch null;
     if (item) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
@@ -209,7 +209,7 @@ pub fn search_query_changed(
     trace("search for '{s}' found {d} result(s)", .{ query, i });
 
     if (i == 0 and query.len == 0) {
-        for (ac.app_context.?.view_history.items) |form| {
+        for (self.app.view_history.items) |form| {
             self.search_result_form[i] = form;
             try self.update_search_result_row(form, &i, &self.seen_result, query);
         }
@@ -232,8 +232,8 @@ pub fn search_query_changed(
 pub fn show_search_history(self: *SearchScreen, display: *Display) error{OutOfMemory}!void {
     var x: usize = 0;
     for (0..MAX_SEARCH_RESULTS) |i| {
-        if (i < ac.app_context.?.view_history.items.len) {
-            self.search_result_form[i] = ac.app_context.?.view_history.items[i];
+        if (i < self.app.view_history.items.len) {
+            self.search_result_form[i] = self.app.view_history.items[i];
             try self.update_search_result_row(self.search_result_form[i].?, &x, &self.seen_result, "");
         } else {
             const top = self.search_results[i].type.panel.children.items[0];
@@ -288,7 +288,7 @@ inline fn update_search_result_row(
     _: []const u8,
 ) Allocator.Error!void {
     var search_result = self.search_results[i.*];
-    const display = ac.app_context.?.display;
+    const display = self.app.display;
 
     if (form.lexeme) |lexeme| {
         if (seen.contains(lexeme.uid)) {
@@ -443,7 +443,7 @@ const Lang = praxis.Lang;
 const Form = praxis.Form;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const MenuUI = @import("MenuUI.zig");
 const WordInfoScreen = @import("WordInfoScreen.zig");
 const show_word_panel = WordInfoScreen.show;

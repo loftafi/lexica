@@ -6,7 +6,7 @@ const ICON_PAD = 15;
 const FIELD_LABEL_WIDTH = 205;
 const FIELD_WIDTH = 205;
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 scroller: *Entity = undefined,
 back_button: *Entity = undefined,
@@ -31,7 +31,7 @@ strongs_buffer: std.Io.Writer.Allocating = undefined,
 gloss_buffer: std.Io.Writer.Allocating = undefined,
 tags_buffer: std.Io.Writer.Allocating = undefined,
 
-pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
+pub fn init(self: *WordInfoScreen, app: *App) !void {
     self.app = app;
     var display = app.display;
 
@@ -757,6 +757,6 @@ const Panels = praxis.Panels;
 const Lang = praxis.Lang;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const SearchScreen = @import("SearchScreen.zig");
 const can_practice_lexeme = @import("filter_stats.zig").can_practice_lexeme;

@@ -1,7 +1,7 @@
 //! Display the terms and conditions as at the date this version was released.
 pub const TermsScreen = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 back_button: *Entity = undefined,
 scroller: *Entity = undefined,
@@ -20,7 +20,7 @@ pub fn show(
     display.need_relayout = true;
 }
 
-pub fn init(self: *TermsScreen, app: *AppContext) !void {
+pub fn init(self: *TermsScreen, app: *App) !void {
     self.app = app;
     var display = app.display;
 
@@ -132,5 +132,5 @@ const debug = engine.log.debug;
 const praxis = @import("praxis");
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const MenuUI = @import("MenuUI.zig");

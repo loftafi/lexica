@@ -157,6 +157,6 @@ const Resources = @import("resources").Resources;
 const MenuUI = @import("MenuUI.zig");
 
 const ac = @import("App.zig");
-const App = ac.AppContext;
+const App = ac.App;
 
 const LicenseScreen = @import("LicenseScreen.zig");

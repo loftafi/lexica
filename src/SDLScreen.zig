@@ -1,7 +1,7 @@
 //! Display required information about the SDL3 library.
 pub const SDLScreen = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 
 pub var back_button: *Entity = undefined;
@@ -25,7 +25,7 @@ pub fn show(
     display.need_relayout = true;
 }
 
-pub fn init(self: *SDLScreen, app: *AppContext) !void {
+pub fn init(self: *SDLScreen, app: *App) !void {
     self.app = app;
     var display = app.display;
 
@@ -136,6 +136,6 @@ const Event = engine.Event;
 const ac = @import("App.zig");
 const APP_NAME = ac.APP_NAME;
 const APP_OWNER = "the author";
-const AppContext = ac.AppContext;
+const App = ac.App;
 const Theme = ac.Theme;
 const MenuUI = @import("MenuUI.zig");

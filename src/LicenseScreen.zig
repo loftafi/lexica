@@ -1,6 +1,6 @@
 pub const LicenseScreen = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 back_button: *Entity = undefined,
 scroller: *Entity = undefined,
@@ -17,7 +17,7 @@ pub fn show(self: *LicenseScreen, display: *Display, _: *Entity, event: *Event) 
     self.debug_tap_count = 0;
 }
 
-pub fn init(self: *LicenseScreen, app: *AppContext) !void {
+pub fn init(self: *LicenseScreen, app: *App) !void {
     self.app = app;
     var display = app.display;
 
@@ -204,7 +204,7 @@ const debug = engine.log.debug;
 const info = engine.log.info;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 
 const MenuUI = @import("MenuUI.zig");
 const ByzScreen = @import("ByzScreen.zig");

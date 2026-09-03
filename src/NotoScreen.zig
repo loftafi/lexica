@@ -1,7 +1,7 @@
 //! Display required information about the noto font.
 pub const NotoScreen = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 
 pub var back_button: *Entity = undefined;
@@ -21,7 +21,7 @@ pub fn show(
     display.need_relayout = true;
 }
 
-pub fn init(self: *NotoScreen, app: *AppContext) !void {
+pub fn init(self: *NotoScreen, app: *App) !void {
     self.app = app;
     var display = app.display;
 
@@ -158,7 +158,7 @@ const Event = engine.Event;
 const TextSize = engine.TextSize;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const APP_NAME = ac.APP_NAME;
 const APP_OWNER = "the author";
 const Theme = ac.Theme;

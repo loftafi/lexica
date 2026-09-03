@@ -13,7 +13,7 @@ pub const MAX_LIST_ENTRIES: usize = Lists.MAX_FORMS_IN_SET;
 pub var icon_size: f32 = 18;
 pub var icon_pad: f32 = 10;
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 list: ?*WordSet = null,
 heading: *Entity = undefined,
@@ -65,7 +65,7 @@ pub fn deinit(self: *ListEditScreen, _: Allocator) void {
 
 pub fn init(
     self: *ListEditScreen,
-    app: *AppContext,
+    app: *App,
 ) (error{OutOfMemory} || engine.Error || Resources.Error)!void {
     const display = app.display;
 
@@ -708,7 +708,7 @@ const debug = engine.log.debug;
 const trace = engine.log.trace;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 
 const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;

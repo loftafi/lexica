@@ -2,7 +2,7 @@ pub const ParsingCardScreen = @This();
 
 const button_pad: f32 = 5;
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 quiz_word: *Entity = undefined,
 help_line: *Entity = undefined,
@@ -61,7 +61,7 @@ pub fn show(
     }
 }
 
-pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
+pub fn init(self: *ParsingCardScreen, app: *App) (error{
     OutOfMemory,
     ResourceNotFound,
     ResourceReadError,
@@ -1479,7 +1479,7 @@ const ResourcesError = resources.Resources.Error;
 const seed = praxis.random.seed;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 
 const MenuUI = @import("MenuUI.zig");
 const FeedbackPanel = @import("FeedbackPanel.zig");

@@ -6,7 +6,7 @@
 //! the list ofavailable word sets.
 pub const ParsingMenuScreen = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 scroller: *Entity = undefined,
 info2: *Entity = undefined,
@@ -35,7 +35,7 @@ pub fn deinit(self: *ParsingMenuScreen) void {
 
 pub fn init(
     self: *ParsingMenuScreen,
-    context: *AppContext,
+    context: *App,
 ) (engine.Error || error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || ResourcesError)!void {
     var display = context.display;
     self.app = context;
@@ -373,7 +373,7 @@ const praxis = @import("praxis");
 const Lang = praxis.Lang;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const MenuUI = @import("MenuUI.zig");
 const ResourcesError = @import("resources").Resources.Error;
 const Lists = @import("Lists.zig");

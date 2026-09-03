@@ -1,7 +1,6 @@
-//! Main entry point for the dictionary application.
-//!
-//! This is used to setup all of the screens/scenes, then enter
-//! the main loop once all data is loaded.
+/// Initialises all screens used by the application, and handles
+/// events that are not related to individual screens.
+pub const App = @This();
 
 pub const APP_PAD = 25;
 pub const APP_MINIMUM_WIDTH = 390;
@@ -12,558 +11,561 @@ pub const MAX_PANEL_TABLES: usize = 20;
 
 pub const study_optative = false;
 
-pub var app_context: ?*AppContext = null;
+pub var app_context: ?*App = null;
 pub var writing_enabled = true;
 
-pub const AppContext = struct {
+// Global app variables
+allocator: Allocator,
+io: std.Io,
+display: *Display = undefined,
+theme: []const u8 = "",
 
-    // Global app variables
-    allocator: Allocator,
-    io: std.Io,
-    display: *Display = undefined,
+dictionary: *Dictionary = undefined,
+dictionary_arena: std.heap.ArenaAllocator = undefined,
+
+byz: ByzScreen = undefined,
+license: LicenseScreen = undefined,
+license_info: LicenseInfoScreen = undefined,
+list_delete: ListDeleteScreen = undefined,
+list_edit: ListEditScreen = undefined,
+list_new: ListNewScreen = undefined,
+menu_ui: MenuUI = undefined,
+noto: NotoScreen = undefined,
+parsing_card: ParsingCardScreen = undefined,
+parsing_menu: ParsingMenuScreen = undefined,
+parsing_setup: ParsingSetupScreen = undefined,
+preferences: PreferencesScreen = undefined,
+privacy: PrivacyScreen = undefined,
+terms: TermsScreen = undefined,
+sdl: SDLScreen = undefined,
+search_screen: SearchScreen = undefined,
+word_info: WordInfoScreen = undefined,
+
+// Word info screen data
+word_lexeme: ?*praxis.Lexeme = null,
+panels: *Panels = undefined,
+panel_tables: [MAX_PANEL_TABLES]*Entity = undefined,
+
+parsing_quiz: ParsingQuiz = undefined,
+
+bucket: StringBucket,
+lists: Lists,
+
+preference: struct {
+    uk_order: bool = true,
+    use_koine: bool = false,
+    show_strongs: bool = false,
+    accessibility: bool = false,
+    size: Scale = .normal,
     theme: []const u8 = "",
 
-    dictionary: *Dictionary = undefined,
-    dictionary_arena: std.heap.ArenaAllocator = undefined,
+    present_future: bool = true,
+    imperfect: bool = false,
+    perfect_pluperfect: bool = false,
+    aorist: bool = false,
+    nominative_accusative: bool = true,
+    genitive_dative: bool = false,
+    mi: bool = false,
+    third_declension: bool = false,
+    middle_passive: bool = false,
+    indicative: bool = true,
+    imperative: bool = false,
+    participle: bool = false,
+    subjunctive: bool = false,
+    optative: bool = false,
+    infinitive: bool = false,
+},
 
-    byz: ByzScreen = undefined,
-    license: LicenseScreen = undefined,
-    license_info: LicenseInfoScreen = undefined,
-    list_delete: ListDeleteScreen = undefined,
-    list_edit: ListEditScreen = undefined,
-    list_new: ListNewScreen = undefined,
-    menu_ui: MenuUI = undefined,
-    noto: NotoScreen = undefined,
-    parsing_card: ParsingCardScreen = undefined,
-    parsing_menu: ParsingMenuScreen = undefined,
-    parsing_setup: ParsingSetupScreen = undefined,
-    preferences: PreferencesScreen = undefined,
-    privacy: PrivacyScreen = undefined,
-    terms: TermsScreen = undefined,
-    sdl: SDLScreen = undefined,
-    search_screen: SearchScreen = undefined,
-    word_info: WordInfoScreen = undefined,
+/// Words that were tapped to be viewed
+view_history: std.ArrayListUnmanaged(*praxis.Form),
 
-    // Word info screen data
-    word_lexeme: ?*praxis.Lexeme = null,
-    panels: *Panels = undefined,
-    panel_tables: [MAX_PANEL_TABLES]*Entity = undefined,
+data_loaded_event: u32,
 
-    parsing_quiz: ParsingQuiz = undefined,
+/// Complete all setup needed to get to the blank startup screen.
+/// Setup continues on in a background thread so that initial startup
+/// screen drawing may occur.
+pub fn create(
+    gpa: Allocator,
+    io: std.Io,
+    config: *engine.Config,
+) (engine.Error || Allocator.Error || error{
+    ThreadCreationFailed,
+    Utf8ExpectedContinuation,
+    Utf8OverlongEncoding,
+    Utf8EncodesSurrogateHalf,
+    Utf8CodepointTooLarge,
+    Utf8InvalidStartByte,
+    FailedReadingTimezone,
+    ObjCFailure,
+    AndroidFailure,
+} || Resources.Error || std.Io.File.OpenError || std.Io.File.StatError)!*App {
+    info("Starting app {s} {s}", .{ config.app_name orelse "", config.app_build orelse "" });
+    var self = try gpa.create(App);
+    errdefer gpa.destroy(self);
+    self.allocator = gpa;
+    self.io = io;
+    self.word_lexeme = null;
+    self.view_history = .empty;
+    self.bucket = .init(gpa);
+    try self.parsing_quiz.init(gpa);
+    errdefer self.view_history.deinit(gpa);
+    self.panels = try Panels.create(gpa);
+    errdefer self.panels.destroy(gpa);
 
-    bucket: StringBucket,
-    lists: Lists,
+    self.display = try Display.create(
+        gpa,
+        io,
+        config.*,
+    );
+    errdefer self.display.destroy();
 
-    preference: struct {
-        uk_order: bool = true,
-        use_koine: bool = false,
-        show_strongs: bool = false,
-        accessibility: bool = false,
-        size: Scale = .normal,
-        theme: []const u8 = "",
+    debug("Loading preferences", .{});
+    try self.loadPreferences();
+    debug("Apply preferences", .{});
+    if (self.preference.use_koine) {
+        try self.display.setLanguage(Lang.greek);
+    } else {
+        try self.display.setLanguage(Lang.english);
+    }
+    self.display.setUserScale(self.preference.size);
+    self.display.blind_accessibility = self.preference.accessibility;
+    _ = try self.display.setTheme(self.preference.theme);
+    debug("Loaded preferences. Scale={d}/{s}", .{
+        self.display.user_scale,
+        @tagName(self.preference.size),
+    });
 
-        present_future: bool = true,
-        imperfect: bool = false,
-        perfect_pluperfect: bool = false,
-        aorist: bool = false,
-        nominative_accusative: bool = true,
-        genitive_dative: bool = false,
-        mi: bool = false,
-        third_declension: bool = false,
-        middle_passive: bool = false,
-        indicative: bool = true,
-        imperative: bool = false,
-        participle: bool = false,
-        subjunctive: bool = false,
-        optative: bool = false,
-        infinitive: bool = false,
-    },
+    app_context = self;
+    errdefer app_context = null;
 
-    /// Words that were tapped to be viewed
-    view_history: std.ArrayListUnmanaged(*praxis.Form),
+    // Placeholder for the dictionary in case this object is destroyed later
+    self.dictionary_arena = std.heap.ArenaAllocator.init(gpa);
+    errdefer self.dictionary_arena.deinit();
+    self.dictionary = try Dictionary.create(self.dictionary_arena.allocator());
+    errdefer self.dictionary.destroy();
+    self.lists = Lists.init(self.dictionary);
 
-    data_loaded_event: u32,
+    debug("Setup resource loading thread", .{});
+    self.display.setEventHook(self, @ptrCast(&eventHook));
+    self.data_loaded_event = self.display.registerEventHook();
 
-    // Complete all setup needed to get to the blank startup screen.
-    // Setup continues on in a background thread so that initial startup
-    // screen drawing may occur.
-    pub fn create(
-        gpa: Allocator,
-        io: std.Io,
-        config: *engine.Config,
-    ) (engine.Error || Allocator.Error || error{
-        ThreadCreationFailed,
-        Utf8ExpectedContinuation,
-        Utf8OverlongEncoding,
-        Utf8EncodesSurrogateHalf,
-        Utf8CodepointTooLarge,
-        Utf8InvalidStartByte,
-        FailedReadingTimezone,
-        ObjCFailure,
-        AndroidFailure,
-    } || Resources.Error || std.Io.File.OpenError || std.Io.File.StatError)!*AppContext {
-        info("Starting app {s} {s}", .{ config.app_name orelse "", config.app_build orelse "" });
-        var ac = try gpa.create(AppContext);
-        errdefer gpa.destroy(ac);
-        ac.allocator = gpa;
-        ac.io = io;
-        ac.word_lexeme = null;
-        ac.view_history = .empty;
-        ac.bucket = .init(gpa);
-        try ac.parsing_quiz.init(gpa);
-        errdefer ac.view_history.deinit(gpa);
-        ac.panels = try Panels.create(gpa);
-        errdefer ac.panels.destroy(gpa);
+    var a = io.async(loadDictionary, .{ self, gpa, io });
+    defer _ = a.cancel(io);
 
-        ac.display = try Display.create(
-            gpa,
-            io,
-            config.*,
-        );
-        errdefer ac.display.destroy();
+    try self.initPanels();
 
-        debug("Loading preferences", .{});
-        try ac.load_preferences();
-        debug("Apply preferences", .{});
-        if (ac.preference.use_koine) {
-            try ac.display.setLanguage(Lang.greek);
-        } else {
-            try ac.display.setLanguage(Lang.english);
-        }
-        ac.display.setUserScale(ac.preference.size);
-        ac.display.blind_accessibility = ac.preference.accessibility;
-        _ = try ac.display.setTheme(ac.preference.theme);
-        debug("Loaded preferences. Scale={d}/{s}", .{ ac.display.user_scale, @tagName(ac.preference.size) });
+    // Display window can now be created and drawn with the initial
+    // `background_screen`
+    self.display.initial_draw() catch |f| {
+        err("initial draw failed {any}", .{f});
+        return f;
+    };
 
-        app_context = ac;
-        errdefer app_context = null;
+    return self;
+}
 
-        // Placeholder for the dictionary in case this object is destroyed later
-        ac.dictionary_arena = std.heap.ArenaAllocator.init(gpa);
-        errdefer ac.dictionary_arena.deinit();
-        ac.dictionary = try Dictionary.create(ac.dictionary_arena.allocator());
-        errdefer ac.dictionary.destroy();
-        ac.lists = Lists.init(ac.dictionary);
+/// Release all memory
+pub fn destroy(self: *App) void {
+    if (self.dictionary.lexemes.count() > 0) {
+        debug("cleanup screens, dictionary was loaded with {d} records", .{self.dictionary.lexemes.count()});
+        self.parsing_setup.deinit();
+        self.search_screen.deinit(self.allocator);
+        self.list_edit.deinit(self.allocator);
+        self.word_info.deinit();
+    }
+    self.view_history.deinit(self.allocator);
+    self.display.destroy();
+    self.panels.destroy(self.allocator);
+    self.parsing_quiz.deinit(self.allocator);
+    self.privacy.deinit();
+    self.license.deinit();
+    self.license_info.deinit();
+    self.terms.deinit();
+    self.byz.deinit();
+    self.noto.deinit();
+    self.sdl.deinit();
+    self.lists.deinit(self.allocator);
 
-        debug("Setup resource loading thread", .{});
-        ac.display.setEventHook(ac, @ptrCast(&eventHook));
-        ac.data_loaded_event = ac.display.registerEventHook();
+    self.dictionary.destroy();
+    self.dictionary_arena.deinit();
+    self.bucket.deinit();
 
-        var a = io.async(loadDictionary, .{ gpa, io, ac });
-        defer _ = a.cancel(io);
+    const allocator = self.allocator;
+    self.* = undefined;
+    allocator.destroy(self);
+}
 
-        try ac.setup_screens();
+fn eventHook(self: *App, _: Allocator, e: u32) Allocator.Error!void {
 
-        // Display window can now be created and drawn with the initial
-        // `background_screen`
-        ac.display.initial_draw() catch |f| {
-            err("initial draw failed {any}", .{f});
-            return f;
+    // Is the event the 'data loaded' event?
+    if (e == self.data_loaded_event) {
+        trace("SDL event hook called {any}", .{e});
+        sdl3.SDL_PumpEvents();
+        self.enableScreens() catch |er| {
+            err("Enable main screens failed. {any}", .{er});
         };
+    } else {
+        trace("SDL event hook ignoring {any}", .{e});
+    }
+}
 
-        return ac;
+/// Load the display with each of the panels used in the application.
+/// This should be fast to minimise the app startup time.
+pub fn initPanels(ac: *App) !void {
+
+    // Load fonts after screen initialisation so that the
+    // screen pixel density can be accounted for.
+    var start = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
+    _ = try ac.display.setDefaultFont("NotoSans-Regular", .unknown, .{});
+    _ = try ac.display.setDefaultFont("NotoSans-Regular", .english, .{});
+    _ = try ac.display.setDefaultFont("NotoSansKR-VF", .korean, .{});
+    _ = try ac.display.setDefaultFont("NotoSans-Regular", .greek, .{});
+    var end = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
+    info("Font load time {d}ms.", .{end - start});
+
+    start = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
+    try ac.menu_ui.init(ac);
+    errdefer ac.menu_ui.deinit();
+
+    try ac.search_screen.init(ac);
+    errdefer ac.search_screen.deinit(ac.allocator);
+
+    try ac.preferences.init(ac);
+    errdefer ac.preferences.deinit();
+
+    try ac.parsing_menu.init(ac);
+    errdefer ac.parsing_menu.deinit();
+
+    try ac.privacy.init(ac);
+    errdefer ac.privacy.deinit();
+
+    try ac.parsing_setup.init(ac);
+    errdefer ac.parsing_setup.deinit();
+
+    try ac.parsing_card.init(ac);
+    errdefer ac.parsing_card.deinit();
+
+    try ac.word_info.init(ac);
+    errdefer ac.word_info.deinit();
+
+    try ac.license.init(ac);
+    errdefer ac.license.deinit();
+
+    try ac.license_info.init(ac, ac.display);
+    errdefer ac.license_info.deinit();
+
+    try ac.terms.init(ac);
+    errdefer ac.terms.deinit();
+
+    try ac.list_new.init(ac);
+    errdefer ac.list_new.deinit();
+
+    try ac.list_delete.init(ac);
+    errdefer ac.list_delete.deinit();
+
+    try ac.list_edit.init(ac);
+    errdefer ac.list_edit.deinit(ac.display.allocator);
+
+    try ac.byz.init(ac);
+    errdefer ac.byz.deinit();
+
+    try ac.noto.init(ac);
+    errdefer ac.noto.deinit();
+
+    try ac.sdl.init(ac);
+    errdefer ac.sdl.deinit();
+
+    end = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
+    info("Panels initialised in {d}ms.", .{end - start});
+}
+
+pub fn enableScreens(ac: *App) !void {
+    info("Enabling screens", .{});
+    debug("Loading view history", .{});
+    app_context.?.loadViewHistory(app_context.?.dictionary) catch |e| {
+        err("Error reading view history file. {any}", .{e});
+        return;
+    };
+    debug("loaded view history.", .{});
+    try ac.search_screen.show_search_history(ac.display);
+
+    debug("Loading word lists", .{});
+    app_context.?.lists.load(ac.display.allocator, &ac.display.config) catch |e| {
+        err("Error reading word lists. {any}", .{e});
+        return;
+    };
+
+    debug("Loaded word lists.", .{});
+    try ac.search_screen.show_search_history(ac.display);
+
+    debug("Adding keybindings.", .{});
+    try ac.display.setKeybinding(.space, .{ .func = @ptrCast(&pick_search_screen), .ptr = ac });
+    try ac.display.setKeybinding(.s, .{ .func = @ptrCast(&pick_search_screen), .ptr = ac });
+    try ac.display.setKeybinding(.p, .{ .func = @ptrCast(&pick_preferences_screen), .ptr = ac });
+    try ac.display.setKeybinding(.q, .{ .func = @ptrCast(&pick_parsing_screen), .ptr = ac });
+
+    if (builtin.mode == .Debug) {
+        try ac.display.setKeybinding(.m, .{ .func = @ptrCast(&toggle_menu), .ptr = ac });
+        try ac.display.setKeybinding(.@"6", .{ .func = @ptrCast(&makeAppBundle), .ptr = ac });
     }
 
-    pub fn destroy(ac: *AppContext) void {
-        if (ac.dictionary.lexemes.count() > 0) {
-            debug("cleanup screens, dictionary was loaded with {d} records", .{ac.dictionary.lexemes.count()});
-            ac.parsing_setup.deinit();
-            ac.search_screen.deinit(ac.allocator);
-            ac.list_edit.deinit(ac.allocator);
-            ac.word_info.deinit();
-        }
-        ac.view_history.deinit(ac.allocator);
-        ac.display.destroy();
-        ac.panels.destroy(ac.allocator);
-        ac.parsing_quiz.deinit(ac.allocator);
-        ac.privacy.deinit();
-        ac.license.deinit();
-        ac.license_info.deinit();
-        ac.terms.deinit();
-        ac.byz.deinit();
-        ac.noto.deinit();
-        ac.sdl.deinit();
-        ac.lists.deinit(ac.allocator);
+    if (builtin.target.os.tag != .ios and
+        !builtin.target.abi.isAndroid())
+    {
+        try ac.display.setKeybinding(.escape, .{ .func = @ptrCast(&escape_quit), .ptr = ac });
+    }
+    try ac.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&android_back), .ptr = ac });
 
-        ac.dictionary.destroy();
-        ac.dictionary_arena.deinit();
-        ac.bucket.deinit();
+    if (ac.display.getPanel("menu")) |menu| {
+        menu.visible = .visible;
+    }
+    try ac.display.choosePanel("search.screen", &.{});
+    ac.display.relayout();
 
-        const allocator = ac.allocator;
-        ac.* = undefined;
-        allocator.destroy(ac);
+    if (ac.display.config.command == .make_bundle and builtin.mode == .Debug) {
+        try ac.makeAppBundle(ac.display, &.{ .type = .{ .panel = .{} } }, &.{});
+        return;
+    }
+}
+
+pub fn savePreferences(self: *App) void {
+    var data = std.ArrayList(u8).initCapacity(self.allocator, 5000) catch {
+        warn("Save preferences out of memory.", .{});
+        return;
+    };
+    defer data.deinit(self.allocator);
+
+    data.appendSliceAssumeCapacity("show_strongs=");
+    if (self.preference.show_strongs) {
+        data.appendSliceAssumeCapacity("true\n");
+    } else {
+        data.appendSliceAssumeCapacity("false\n");
     }
 
-    fn eventHook(self: *AppContext, _: Allocator, e: u32) Allocator.Error!void {
-
-        // Is the event the 'data loaded' event?
-        if (e == self.data_loaded_event) {
-            trace("SDL event hook called {any}", .{e});
-            sdl.SDL_PumpEvents();
-            self.enableScreens() catch |er| {
-                err("Enable main screens failed. {any}", .{er});
-            };
-        } else {
-            trace("SDL event hook ignoring {any}", .{e});
-        }
+    data.appendSliceAssumeCapacity("use_koine=");
+    if (self.preference.use_koine) {
+        data.appendSliceAssumeCapacity("true\n");
+    } else {
+        data.appendSliceAssumeCapacity("false\n");
     }
 
-    pub fn setup_screens(ac: *AppContext) !void {
-
-        // Load fonts after screen initialisation so that the
-        // screen pixel density can be accounted for.
-        var start = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
-        _ = try ac.display.setDefaultFont("NotoSans-Regular", .unknown, .{});
-        _ = try ac.display.setDefaultFont("NotoSans-Regular", .english, .{});
-        _ = try ac.display.setDefaultFont("NotoSansKR-VF", .korean, .{});
-        _ = try ac.display.setDefaultFont("NotoSans-Regular", .greek, .{});
-        var end = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
-        info("Font load time {d}ms.", .{end - start});
-
-        start = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
-        try ac.menu_ui.init(ac);
-        errdefer ac.menu_ui.deinit();
-
-        try ac.search_screen.init(ac);
-        errdefer ac.search_screen.deinit(ac.allocator);
-
-        try ac.preferences.init(ac);
-        errdefer ac.preferences.deinit();
-
-        try ac.parsing_menu.init(ac);
-        errdefer ac.parsing_menu.deinit();
-
-        try ac.privacy.init(ac);
-        errdefer ac.privacy.deinit();
-
-        try ac.parsing_setup.init(ac);
-        errdefer ac.parsing_setup.deinit();
-
-        try ac.parsing_card.init(ac);
-        errdefer ac.parsing_card.deinit();
-
-        try ac.word_info.init(ac);
-        errdefer ac.word_info.deinit();
-
-        try ac.license.init(ac);
-        errdefer ac.license.deinit();
-
-        try ac.license_info.init(ac, ac.display);
-        errdefer ac.license_info.deinit();
-
-        try ac.terms.init(ac);
-        errdefer ac.terms.deinit();
-
-        try ac.list_new.init(ac);
-        errdefer ac.list_new.deinit();
-
-        try ac.list_delete.init(ac);
-        errdefer ac.list_delete.deinit();
-
-        try ac.list_edit.init(ac);
-        errdefer ac.list_edit.deinit(ac.display.allocator);
-
-        try ac.byz.init(ac);
-        errdefer ac.byz.deinit();
-
-        try ac.noto.init(ac);
-        errdefer ac.noto.deinit();
-
-        try ac.sdl.init(ac);
-        errdefer ac.sdl.deinit();
-
-        end = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
-        info("Screens initialised in {d}ms.", .{end - start});
+    data.appendSliceAssumeCapacity("uk_order=");
+    if (self.preference.uk_order) {
+        data.appendSliceAssumeCapacity("true\n");
+    } else {
+        data.appendSliceAssumeCapacity("false\n");
     }
 
-    pub fn enableScreens(ac: *AppContext) !void {
-        info("Enabling screens", .{});
-        debug("Loading view history", .{});
-        app_context.?.loadViewHistory(app_context.?.dictionary) catch |e| {
-            err("Error reading view history file. {any}", .{e});
+    data.appendSliceAssumeCapacity("theme=");
+    data.appendSliceAssumeCapacity(self.preference.theme);
+    data.appendSliceAssumeCapacity("\nscale=");
+    data.appendSliceAssumeCapacity(@tagName(self.preference.size));
+    data.appendSliceAssumeCapacity("\naccessibility=");
+    if (self.preference.accessibility) {
+        data.appendSliceAssumeCapacity("true");
+    } else {
+        data.appendSliceAssumeCapacity("false");
+    }
+
+    engine.savePreferenceData(
+        self.allocator,
+        self.io,
+        &self.display.config,
+        settings_file,
+        data.items,
+    ) catch |e| {
+        err("Failed to save preference data. {t}", .{e});
+    };
+}
+
+pub fn makeAppBundle(
+    self: *App,
+    _: *Display,
+    _: *const Entity,
+    _: *const Event,
+) Allocator.Error!void {
+    if (builtin.mode != .Debug) return;
+    if (self.display.resources.used_resources == null) {
+        err("Abort makeAppBundle. No manifest was built.", .{});
+        return;
+    }
+    notice("Make app bundle {s}", .{app_info.app_bundle});
+    self.display.resources.saveBundle(
+        self.allocator,
+        self.io,
+        app_info.app_bundle,
+        //self.display.resources.used_resources.?,
+        self.display.required_resource,
+        &.{},
+        "/tmp",
+    ) catch |e| {
+        err("Abort makeAppBundle. Error: {any}", .{e});
+    };
+    self.display.endMainLoop();
+}
+
+pub const view_history_file = "view_history.txt";
+pub const settings_file = "settings.txt";
+
+pub fn loadViewHistory(self: *App, dictionary: *Dictionary) !void {
+    const data = engine.loadPreferenceData(self.allocator, &self.display.config, view_history_file) catch |f| switch (f) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => |e| {
+            err("loadActivityHistory() failed. file={q} error={t}", .{
+                view_history_file,
+                e,
+            });
             return;
+        },
+    } orelse {
+        notice("View history file not yet created.", .{});
+        return;
+    };
+    defer self.allocator.free(data);
+
+    var iter = std.mem.tokenizeAny(u8, data, "\n\r\t= ");
+    while (iter.next()) |item| {
+        const form = dictionary.by_form.lookup(item) catch |e| {
+            warn("View history has invalid utf8 {t}", .{e});
+            continue;
         };
-        debug("loaded view history.", .{});
-        try ac.search_screen.show_search_history(ac.display);
-
-        debug("Loading word lists", .{});
-        app_context.?.lists.load(ac.display.allocator, &ac.display.config) catch |e| {
-            err("Error reading word lists. {any}", .{e});
-            return;
-        };
-
-        debug("Loaded word lists.", .{});
-        try ac.search_screen.show_search_history(ac.display);
-
-        debug("Adding keybindings.", .{});
-        try ac.display.setKeybinding(.space, .{ .func = @ptrCast(&pick_search_screen), .ptr = ac });
-        try ac.display.setKeybinding(.s, .{ .func = @ptrCast(&pick_search_screen), .ptr = ac });
-        try ac.display.setKeybinding(.p, .{ .func = @ptrCast(&pick_preferences_screen), .ptr = ac });
-        try ac.display.setKeybinding(.q, .{ .func = @ptrCast(&pick_parsing_screen), .ptr = ac });
-
-        if (builtin.mode == .Debug) {
-            try ac.display.setKeybinding(.m, .{ .func = @ptrCast(&toggle_menu), .ptr = ac });
-            try ac.display.setKeybinding(.@"6", .{ .func = @ptrCast(&makeAppBundle), .ptr = ac });
-        }
-
-        if (builtin.target.os.tag != .ios and
-            !builtin.target.abi.isAndroid())
-        {
-            try ac.display.setKeybinding(.escape, .{ .func = @ptrCast(&escape_quit), .ptr = ac });
-        }
-        try ac.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&android_back), .ptr = ac });
-
-        if (ac.display.getPanel("menu")) |menu| {
-            menu.visible = .visible;
-        }
-        try ac.display.choosePanel("search.screen", &.{});
-        ac.display.relayout();
-
-        if (ac.display.config.command == .make_bundle and builtin.mode == .Debug) {
-            try ac.makeAppBundle(ac.display, &.{ .type = .{ .panel = .{} } }, &.{});
-            return;
-        }
-    }
-
-    pub fn save_preferences(self: *AppContext) void {
-        var data = std.ArrayList(u8).initCapacity(self.allocator, 5000) catch {
-            warn("Save preferences out of memory.", .{});
-            return;
-        };
-        defer data.deinit(self.allocator);
-
-        data.appendSliceAssumeCapacity("show_strongs=");
-        if (self.preference.show_strongs) {
-            data.appendSliceAssumeCapacity("true\n");
-        } else {
-            data.appendSliceAssumeCapacity("false\n");
-        }
-
-        data.appendSliceAssumeCapacity("use_koine=");
-        if (self.preference.use_koine) {
-            data.appendSliceAssumeCapacity("true\n");
-        } else {
-            data.appendSliceAssumeCapacity("false\n");
-        }
-
-        data.appendSliceAssumeCapacity("uk_order=");
-        if (self.preference.uk_order) {
-            data.appendSliceAssumeCapacity("true\n");
-        } else {
-            data.appendSliceAssumeCapacity("false\n");
-        }
-
-        data.appendSliceAssumeCapacity("theme=");
-        data.appendSliceAssumeCapacity(self.preference.theme);
-        data.appendSliceAssumeCapacity("\nscale=");
-        data.appendSliceAssumeCapacity(@tagName(self.preference.size));
-        data.appendSliceAssumeCapacity("\naccessibility=");
-        if (self.preference.accessibility) {
-            data.appendSliceAssumeCapacity("true");
-        } else {
-            data.appendSliceAssumeCapacity("false");
-        }
-
-        engine.savePreferenceData(
-            self.allocator,
-            self.io,
-            &self.display.config,
-            settings_file,
-            data.items,
-        ) catch |e| {
-            err("Failed to save preference data. {t}", .{e});
-        };
-    }
-
-    pub fn makeAppBundle(
-        self: *AppContext,
-        _: *Display,
-        _: *const Entity,
-        _: *const Event,
-    ) Allocator.Error!void {
-        if (builtin.mode != .Debug) return;
-        if (self.display.resources.used_resources == null) {
-            err("Abort makeAppBundle. No manifest was built.", .{});
-            return;
-        }
-        notice("Make app bundle {s}", .{app_info.app_bundle});
-        self.display.resources.saveBundle(
-            self.allocator,
-            self.io,
-            app_info.app_bundle,
-            //self.display.resources.used_resources.?,
-            self.display.required_resource,
-            &.{},
-            "/tmp",
-        ) catch |e| {
-            err("Abort makeAppBundle. Error: {any}", .{e});
-        };
-        self.display.endMainLoop();
-    }
-
-    pub const view_history_file = "view_history.txt";
-    pub const settings_file = "settings.txt";
-
-    pub fn loadViewHistory(self: *AppContext, dictionary: *Dictionary) !void {
-        const data = engine.loadPreferenceData(self.allocator, &self.display.config, view_history_file) catch |f| switch (f) {
-            error.OutOfMemory => return error.OutOfMemory,
-            else => |e| {
-                err("loadActivityHistory() failed. file={q} error={t}", .{
-                    view_history_file,
-                    e,
-                });
-                return;
-            },
-        } orelse {
-            notice("View history file not yet created.", .{});
-            return;
-        };
-        defer self.allocator.free(data);
-
-        var iter = std.mem.tokenizeAny(u8, data, "\n\r\t= ");
-        while (iter.next()) |item| {
-            const form = dictionary.by_form.lookup(item) catch |e| {
-                warn("View history has invalid utf8 {t}", .{e});
-                continue;
-            };
-            if (form) |result| {
-                if (result.exact_accented.items.len > 0) {
-                    try self.view_history.append(self.allocator, result.exact_accented.items[0]);
-                } else {
-                    warn("Read view history cant find exact word {s}", .{item});
-                }
+        if (form) |result| {
+            if (result.exact_accented.items.len > 0) {
+                try self.view_history.append(self.allocator, result.exact_accented.items[0]);
             } else {
-                warn("Read view history cant find word {s}", .{item});
+                warn("Read view history cant find exact word {s}", .{item});
             }
-            if (self.view_history.items.len == MAX_SEARCH_HISTORY) {
-                break;
-            }
+        } else {
+            warn("Read view history cant find word {s}", .{item});
         }
-    }
-
-    pub fn save_view_history(self: *AppContext) error{WriteFailed}!void {
-        var data: std.Io.Writer.Allocating = .init(self.allocator);
-        defer data.deinit();
-
-        for (self.view_history.items, 0..) |item, i| {
-            if (i > 0)
-                data.writer.writeByte(' ') catch return error.WriteFailed;
-
-            data.writer.writeAll(item.word) catch return error.WriteFailed;
-            if (i == MAX_SEARCH_HISTORY) break;
-        }
-
-        engine.savePreferenceData(
-            self.allocator,
-            self.io,
-            &self.display.config,
-            view_history_file,
-            data.written(),
-        ) catch |e| {
-            err("Save view history file faled. {t}", .{e});
-            return error.WriteFailed;
-        };
-    }
-
-    /// Provides a standardised way to place a back button in the top left
-    /// corner of the screen.
-    pub fn add_back_button(
-        self: *AppContext,
-        parent: *Entity,
-        close_fn: Entity.Callback,
-    ) (engine.Error || Allocator.Error || Resources.Error)!*Entity {
-        return try parent.add(.{
-            .name = "back",
-            .focus = .can_focus,
-            .rect = .{ .x = 10, .y = 10, .width = 60, .height = 60 },
-            .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
-            .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
-            .type = .{ .button = .{
-                .icon = .{
-                    .default_name = "icon-back",
-                    .pressed_name = "icon-back",
-                    .hover_name = "icon-back",
-                    .size = .{ .width = 35, .height = 35 },
-                },
-                .on_pressed = close_fn,
-            } },
-            .on_resized = .{ .func = @ptrCast(&back_button_resize), .ptr = self },
-        }, self.display);
-    }
-
-    pub fn load_preferences(self: *AppContext) error{OutOfMemory}!void {
-        // Start with basic defaults
-        self.preference.use_koine = false;
-        self.preference.show_strongs = false;
-        self.preference.accessibility = false;
-        self.preference.theme = "default";
-        self.preference.size = .normal;
-        self.preference.uk_order = true;
-
-        self.preference.present_future = true;
-        self.preference.imperfect = false;
-        self.preference.aorist = false;
-        self.preference.mi = false;
-        self.preference.imperative = false;
-        self.preference.infinitive = false;
-        self.preference.subjunctive = false;
-        self.preference.optative = false;
-        self.preference.indicative = true;
-        self.preference.participle = false;
-        self.preference.middle_passive = false;
-        self.preference.third_declension = false;
-        self.preference.perfect_pluperfect = false;
-        self.preference.middle_passive = false;
-        self.preference.nominative_accusative = true;
-        self.preference.genitive_dative = false;
-
-        const data = engine.loadPreferenceData(
-            self.allocator,
-            &self.display.config,
-            settings_file,
-        ) catch |f| switch (f) {
-            error.OutOfMemory => return error.OutOfMemory,
-            else => |e| {
-                err("load_preferences() failed. file={q} error={t}", .{
-                    settings_file,
-                    e,
-                });
-                return;
-            },
-        } orelse {
-            notice("load_preferences() no preferences file exists yet.", .{});
-            return;
-        };
-        defer self.allocator.free(data);
-
-        var iter = std.mem.tokenizeAny(u8, data, "\n\r\t= ");
-
-        while (true) {
-            if (iter.next()) |field| {
-                if (iter.next()) |value| {
-                    debug("preference {s}={s}", .{ field, value });
-                    if (std.mem.eql(u8, "use_koine", field)) {
-                        self.preference.use_koine = is_true(field, value);
-                    } else if (std.mem.eql(u8, "show_strongs", field)) {
-                        self.preference.show_strongs = is_true(field, value);
-                    } else if (std.mem.eql(u8, "accessibility", field)) {
-                        self.preference.accessibility = is_true(field, value);
-                    } else if (std.mem.eql(u8, "theme", field)) {
-                        self.preference.theme = self.display.validate_theme(value);
-                    } else if (std.mem.eql(u8, "scale", field)) {
-                        self.preference.size = Scale.parse(value);
-                    } else if (std.mem.eql(u8, "uk_order", field)) {
-                        self.preference.uk_order = is_true(field, value);
-                    } else {
-                        warn("Unrecognised preference {s}={s}", .{ field, value });
-                    }
-                    continue;
-                }
-            }
+        if (self.view_history.items.len == MAX_SEARCH_HISTORY) {
             break;
         }
     }
-};
+}
+
+pub fn saveSearchHistory(self: *App) error{WriteFailed}!void {
+    var data: std.Io.Writer.Allocating = .init(self.allocator);
+    defer data.deinit();
+
+    for (self.view_history.items, 0..) |item, i| {
+        if (i > 0)
+            data.writer.writeByte(' ') catch return error.WriteFailed;
+
+        data.writer.writeAll(item.word) catch return error.WriteFailed;
+        if (i == MAX_SEARCH_HISTORY) break;
+    }
+
+    engine.savePreferenceData(
+        self.allocator,
+        self.io,
+        &self.display.config,
+        view_history_file,
+        data.written(),
+    ) catch |e| {
+        err("Save view history file faled. {t}", .{e});
+        return error.WriteFailed;
+    };
+}
+
+/// Provides a standardised way to place a back button in the top left
+/// corner of the screen.
+pub fn add_back_button(
+    self: *App,
+    parent: *Entity,
+    close_fn: Entity.Callback,
+) (engine.Error || Allocator.Error || Resources.Error)!*Entity {
+    return try parent.add(.{
+        .name = "back",
+        .focus = .can_focus,
+        .rect = .{ .x = 10, .y = 10, .width = 60, .height = 60 },
+        .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
+        .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
+        .type = .{ .button = .{
+            .icon = .{
+                .default_name = "icon-back",
+                .pressed_name = "icon-back",
+                .hover_name = "icon-back",
+                .size = .{ .width = 35, .height = 35 },
+            },
+            .on_pressed = close_fn,
+        } },
+        .on_resized = .{ .func = @ptrCast(&back_button_resize), .ptr = self },
+    }, self.display);
+}
+
+pub fn loadPreferences(self: *App) error{OutOfMemory}!void {
+    // Start with basic defaults
+    self.preference.use_koine = false;
+    self.preference.show_strongs = false;
+    self.preference.accessibility = false;
+    self.preference.theme = "default";
+    self.preference.size = .normal;
+    self.preference.uk_order = true;
+
+    self.preference.present_future = true;
+    self.preference.imperfect = false;
+    self.preference.aorist = false;
+    self.preference.mi = false;
+    self.preference.imperative = false;
+    self.preference.infinitive = false;
+    self.preference.subjunctive = false;
+    self.preference.optative = false;
+    self.preference.indicative = true;
+    self.preference.participle = false;
+    self.preference.middle_passive = false;
+    self.preference.third_declension = false;
+    self.preference.perfect_pluperfect = false;
+    self.preference.middle_passive = false;
+    self.preference.nominative_accusative = true;
+    self.preference.genitive_dative = false;
+
+    const data = engine.loadPreferenceData(
+        self.allocator,
+        &self.display.config,
+        settings_file,
+    ) catch |f| switch (f) {
+        error.OutOfMemory => return error.OutOfMemory,
+        else => |e| {
+            err("loadPreferences() failed. file={q} error={t}", .{
+                settings_file,
+                e,
+            });
+            return;
+        },
+    } orelse {
+        notice("loadPreferences() no preferences file exists yet.", .{});
+        return;
+    };
+    defer self.allocator.free(data);
+
+    var iter = std.mem.tokenizeAny(u8, data, "\n\r\t= ");
+
+    while (true) {
+        if (iter.next()) |field| {
+            if (iter.next()) |value| {
+                debug("preference {s}={s}", .{ field, value });
+                if (std.mem.eql(u8, "use_koine", field)) {
+                    self.preference.use_koine = is_true(field, value);
+                } else if (std.mem.eql(u8, "show_strongs", field)) {
+                    self.preference.show_strongs = is_true(field, value);
+                } else if (std.mem.eql(u8, "accessibility", field)) {
+                    self.preference.accessibility = is_true(field, value);
+                } else if (std.mem.eql(u8, "theme", field)) {
+                    self.preference.theme = self.display.validate_theme(value);
+                } else if (std.mem.eql(u8, "scale", field)) {
+                    self.preference.size = Scale.parse(value);
+                } else if (std.mem.eql(u8, "uk_order", field)) {
+                    self.preference.uk_order = is_true(field, value);
+                } else {
+                    warn("Unrecognised preference {s}={s}", .{ field, value });
+                }
+                continue;
+            }
+        }
+        break;
+    }
+}
 
 fn is_true(field: []const u8, value: []const u8) bool {
     if (std.ascii.eqlIgnoreCase("true", value)) {
@@ -597,7 +599,7 @@ fn is_true(field: []const u8, value: []const u8) bool {
 }
 
 fn pick_search_screen(
-    self: *AppContext,
+    self: *App,
     display: *Display,
     _: *Entity,
     event: *const Event,
@@ -608,7 +610,7 @@ fn pick_search_screen(
 }
 
 pub fn pick_preferences_screen(
-    _: *AppContext,
+    _: *App,
     display: *Display,
     _: *Entity,
     event: *const Event,
@@ -617,7 +619,7 @@ pub fn pick_preferences_screen(
 }
 
 fn pick_parsing_screen(
-    _: *AppContext,
+    _: *App,
     display: *Display,
     _: *Entity,
     event: *const Event,
@@ -626,7 +628,7 @@ fn pick_parsing_screen(
 }
 
 fn toggle_menu(
-    self: *AppContext,
+    self: *App,
     display: *Display,
     _: *Entity,
     _: *const Event,
@@ -641,7 +643,7 @@ fn toggle_menu(
 }
 
 fn escape_quit(
-    _: *AppContext,
+    _: *App,
     display: *Display,
     _: *Entity,
     _: *const Event,
@@ -651,7 +653,7 @@ fn escape_quit(
 }
 
 fn android_back(
-    self: *AppContext,
+    self: *App,
     display: *Display,
     _: *Entity,
     event: *const Event,
@@ -673,7 +675,7 @@ fn android_back(
 /// This event handler repositions a back button into the top left corner
 /// when the screen is resized or rotated.
 pub fn back_button_resize(
-    _: *AppContext,
+    _: *App,
     display: *Display,
     entity: *Entity,
     _: *Event,
@@ -693,9 +695,9 @@ pub fn back_button_resize(
 /// Moves dictionary loading to a background thread to speed
 /// up app opening time.
 pub fn loadDictionary(
+    app: *App,
     gpa: Allocator,
     io: std.Io,
-    app: *AppContext,
 ) bool {
     const dict_name = "dict";
 
@@ -764,7 +766,7 @@ const notice = engine.log.notice;
 const trace = engine.log.trace;
 const Scale = engine.Scale;
 const loadResourceSdl = engine.loadResourceSdl;
-const sdl = engine.sdl;
+const sdl3 = engine.sdl;
 
 const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;

@@ -4,7 +4,7 @@ pub const PrivacyScreen = @This();
 panel: *Entity = undefined,
 back_button: *Entity = undefined,
 scroller: *Entity = undefined,
-app: *AppContext = undefined,
+app: *App = undefined,
 
 pub fn show(
     self: *PrivacyScreen,
@@ -19,7 +19,7 @@ pub fn show(
     _ = self.resizeScroller(display, self.scroller);
 }
 
-pub fn init(self: *PrivacyScreen, context: *AppContext) !void {
+pub fn init(self: *PrivacyScreen, context: *App) !void {
     self.app = context;
 
     var display = context.display;
@@ -128,5 +128,5 @@ const debug = engine.log.debug;
 const praxis = @import("praxis");
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const MenuUI = @import("MenuUI.zig");

@@ -3,7 +3,7 @@ pub const ListDeleteScreen = @This();
 
 const ICON_PAD = 15;
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 delete_button: *Entity = undefined,
 heading: *Entity = undefined,
@@ -29,7 +29,7 @@ pub fn deinit(self: *ListDeleteScreen) void {
 
 pub fn init(
     self: *ListDeleteScreen,
-    app: *AppContext,
+    app: *App,
 ) (error{ OutOfMemory, ResourceNotFound, ResourceReadError, UnknownImageFormat } || engine.Error || ResourceErrors)!void {
     self.app = app;
     var display = app.display;
@@ -168,7 +168,7 @@ pub fn resizeList(
 }
 
 const std = @import("std");
-const AppContext = ac.AppContext;
+const App = ac.App;
 
 const engine = @import("engine");
 const Display = engine.Display;

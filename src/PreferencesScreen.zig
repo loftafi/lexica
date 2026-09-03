@@ -1,6 +1,6 @@
 pub const PreferencesScreen = @This();
 
-app: *AppContext,
+app: *App,
 panel: *Entity = undefined,
 picker_panel: *Entity = undefined,
 preferences_heading: *Entity = undefined,
@@ -29,7 +29,7 @@ pub fn show(
     self.tap_counter = 0;
 }
 
-pub fn init(self: *PreferencesScreen, app: *AppContext) !void {
+pub fn init(self: *PreferencesScreen, app: *App) !void {
     var display = app.display;
     self.app = app;
 
@@ -385,7 +385,7 @@ pub fn tapThemeButton(
     const theme = display.validate_theme(event.name);
     _ = try display.setTheme(theme);
     ac.app_context.?.preference.theme = theme;
-    ac.app_context.?.save_preferences();
+    ac.app_context.?.savePreferences();
 }
 
 pub fn initPickerTable(
@@ -471,7 +471,7 @@ pub fn chooseUKOrder(
     std.debug.assert(entity.type == .panel);
     ac.app_context.?.preference.uk_order = true;
     self.updateRing();
-    ac.app_context.?.save_preferences();
+    ac.app_context.?.savePreferences();
 }
 
 pub fn chooseUSOrder(
@@ -484,7 +484,7 @@ pub fn chooseUSOrder(
     std.debug.assert(entity.type == .panel);
     ac.app_context.?.preference.uk_order = false;
     self.updateRing();
-    ac.app_context.?.save_preferences();
+    ac.app_context.?.savePreferences();
 }
 
 pub fn updateRing(self: *PreferencesScreen) void {
@@ -509,7 +509,7 @@ pub fn changeKoinePreference(
 
     std.debug.assert(entity.type == .checkbox);
     ctx.preference.use_koine = entity.type.checkbox.checked;
-    ctx.save_preferences();
+    ctx.savePreferences();
     if (ctx.preference.use_koine) {
         try display.setLanguage(Lang.greek);
     } else {
@@ -525,7 +525,7 @@ pub fn changeStrongsPreference(
 ) std.mem.Allocator.Error!void {
     std.debug.assert(entity.type == .checkbox);
     ac.app_context.?.preference.show_strongs = entity.type.checkbox.checked;
-    ac.app_context.?.save_preferences();
+    ac.app_context.?.savePreferences();
 }
 
 pub fn changeKeyboardAccess(
@@ -537,7 +537,7 @@ pub fn changeKeyboardAccess(
     std.debug.assert(entity.type == .checkbox);
     if (ac.app_context) |app| {
         app.preference.accessibility = entity.type.checkbox.checked;
-        app.save_preferences();
+        app.savePreferences();
         display.blind_accessibility = app.preference.accessibility;
     }
 }
@@ -559,7 +559,7 @@ const praxis = @import("praxis");
 const Lang = praxis.Lang;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 
 const MenuUI = @import("MenuUI.zig");
 const best_width = @import("ParsingMenuScreen.zig").best_width;

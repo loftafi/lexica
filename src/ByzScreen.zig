@@ -1,6 +1,6 @@
 pub const ByzScreen = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 
 pub var back_button: *Entity = undefined;
@@ -24,7 +24,7 @@ pub fn show(
     display.need_relayout = true;
 }
 
-pub fn init(self: *ByzScreen, app: *AppContext) !void {
+pub fn init(self: *ByzScreen, app: *App) !void {
     self.app = app;
     var display = app.display;
 
@@ -134,5 +134,5 @@ const Event = engine.Event;
 const praxis = @import("praxis");
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const MenuUI = @import("MenuUI.zig");

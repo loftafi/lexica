@@ -3,7 +3,7 @@ pub const ParsingSetupScreen = @This();
 
 const ICON_PAD = 15;
 
-app: *AppContext = undefined,
+app: *App = undefined,
 
 panel: *Entity = undefined,
 noun_panel: *Entity = undefined,
@@ -175,7 +175,7 @@ pub fn deinit(self: *ParsingSetupScreen) void {
     self.* = undefined;
 }
 
-pub fn init(self: *ParsingSetupScreen, context: *AppContext) !void {
+pub fn init(self: *ParsingSetupScreen, context: *App) !void {
     self.app = context;
 
     var display = context.display;
@@ -983,7 +983,7 @@ const praxis = @import("praxis");
 const Lexeme = praxis.Lexeme;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const ParsingCardScreen = @import("ParsingCardScreen.zig");
 const ListEditScreen = @import("ListEditScreen.zig");

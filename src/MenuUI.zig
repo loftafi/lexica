@@ -3,7 +3,7 @@
 //! that floats on the top of a quiz.
 pub const MenuUI = @This();
 
-app: *AppContext = undefined,
+app: *App = undefined,
 panel: *Entity = undefined,
 toolbar: *Entity = undefined,
 buttons: *Entity = undefined,
@@ -16,7 +16,7 @@ preferences_button: *Entity = undefined,
 
 pub const ICON_PAD = 10;
 
-pub fn init(self: *MenuUI, app: *AppContext) !void {
+pub fn init(self: *MenuUI, app: *App) !void {
     self.app = app;
     var display = app.display;
 
@@ -272,7 +272,7 @@ const info = engine.log.info;
 const err = engine.log.err;
 
 const ac = @import("App.zig");
-const AppContext = ac.AppContext;
+const App = ac.App;
 
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const PreferencesScreen = @import("PreferencesScreen.zig");
