@@ -17,21 +17,20 @@ pub fn show(
     element: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
-    const ctx = self.app;
-    const allocator = ctx.allocator;
+    const allocator = self.app.allocator;
 
-    if (ctx.parsing_quiz.form_bank.items.len == 0) {
+    if (self.app.parsing_quiz.form_bank.items.len == 0) {
         warn("Not starting quiz. Form bank has no words.", .{});
         return;
     }
     info("ParsingCard: Starting practice with form bank of {d} words.", .{
-        ctx.parsing_quiz.form_bank.items.len,
+        self.app.parsing_quiz.form_bank.items.len,
     });
 
     try display.choosePanel(self.panel.name, event);
     if (!try self.setupNextCard(display)) {
         err("ParsingCard failed to setupNextCard(). Aborting.", .{});
-        try ctx.parsing_menu.show(display, element, event);
+        try self.app.parsing_menu.show(display, element, event);
     }
 
     self.correct_panel.panel.visible = .hidden;
@@ -42,7 +41,7 @@ pub fn show(
     _ = self.app.menu_ui.resizeProgressBar(display, self.app.menu_ui.progress_bar);
 
     // Adjust order of case buttons depending on user preference
-    if (ac.app_context.?.preference.uk_order) {
+    if (self.app.preference.uk_order) {
         trace("Case buttons in UK order", .{});
         pickers.case.type.panel.children.clearRetainingCapacity();
         try pickers.case.type.panel.children.append(allocator, buttons.nominative_container);
@@ -670,9 +669,9 @@ var buttons = struct {
         }
     }
 
-    fn options_picked(self: *Self, form: *praxis.Form) ?praxis.Parsing {
+    fn options_picked(self: *Self, form: *praxis.Form, parsing_quiz: *ParsingQuiz) ?praxis.Parsing {
         var parsing: praxis.Parsing = .{
-            .part_of_speech = ac.app_context.?.parsing_quiz.form_bank.items[0].parsing.part_of_speech,
+            .part_of_speech = parsing_quiz.form_bank.items[0].parsing.part_of_speech,
         };
         var count: usize = 0;
         switch (form.parsing.part_of_speech) {
@@ -1098,11 +1097,10 @@ pub fn resizeCard(self: *ParsingCardScreen, display: *Display, _: *Entity) bool 
 }
 
 pub fn next_clicked(self: *ParsingCardScreen, display: *Display, element: *Entity, event: *Event) error{OutOfMemory}!void {
-    //try self.slide_panel_out(display);
     if (self.app.parsing_quiz.form_bank.items.len == 0) {
         try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
         try self.app.menu_ui.toolbar.setVisibility(display, .visible);
-        if (ac.app_context.?.word_lexeme) |lexeme| {
+        if (self.app.word_lexeme) |lexeme| {
             try self.app.parsing_setup.study_by_form(display, lexeme, self.app.parsing_setup.called_by, event);
         } else {
             try self.app.parsing_menu.show(display, element, event);
@@ -1158,7 +1156,7 @@ pub fn setupNextCard(
         return false;
     }
 
-    const form = ac.app_context.?.parsing_quiz.next_form();
+    const form = self.app.parsing_quiz.next_form();
     self.progress_bar.type.progress_bar.progress = self.app.parsing_quiz.progress();
 
     try self.quiz_word.setText(display, form.*.word);
@@ -1219,7 +1217,7 @@ pub fn setupNextCard(
 fn show_answer_if_ready(self: *ParsingCardScreen, display: *Display) error{OutOfMemory}!void {
     std.debug.assert(self.app.parsing_quiz.form_bank.items.len > 0);
     const current_form = self.app.parsing_quiz.form_bank.items[0];
-    if (buttons.options_picked(current_form)) |parsing| {
+    if (buttons.options_picked(current_form, &self.app.parsing_quiz)) |parsing| {
         const correct = try buttons.mark_answers(current_form, parsing, display.allocator);
         if (correct) {
             info("User chose {any} correct.", .{parsing});
@@ -1482,5 +1480,6 @@ const ac = @import("App.zig");
 const App = ac.App;
 
 const MenuUI = @import("MenuUI.zig");
+const ParsingQuiz = @import("ParsingQuiz.zig");
 const FeedbackPanel = @import("FeedbackPanel.zig");
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");

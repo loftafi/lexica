@@ -48,7 +48,7 @@ pub fn show(
     if (self.list) |list| {
         err("Show ListEditScreen: {s}", .{list.name.items});
         try self.heading.setText(display, list.name.items);
-        try self.show_list_entries(display, element, event);
+        try self.updateSearchResults(display, element, event);
         try display.choosePanel(self.panel.name, event);
     } else {
         err("Show ListEditScreen called without a list", .{});
@@ -116,7 +116,6 @@ pub fn init(
         .minimum = .{ .width = 250, .height = 15 },
         .maximum = .{ .width = 500 },
         .type = .{ .panel = .{ .direction = .left_to_right, .spacing = 3 } },
-        //.on_resized = .{ .func = @ptrCast(&resizeList), .ptr = self },
     }, display);
 
     self.text_input = try input_line.add(.{
@@ -173,9 +172,9 @@ pub fn init(
         const element = try self.initSearchResultRow(display, self.scroller);
         search_results[i] = element;
         search_result_form[i] = null;
-        if (i < ac.app_context.?.view_history.items.len) {
-            search_result_form[i] = ac.app_context.?.view_history.items[i];
-            try update_search_result_panel(search_result_form[i].?, &x, &seen_result, "");
+        if (i < app.view_history.items.len) {
+            search_result_form[i] = app.view_history.items[i];
+            try updateSearchResultPanel(search_result_form[i].?, &x, &seen_result, "", display);
         }
     }
 
@@ -188,42 +187,17 @@ pub fn init(
     _ = try display.add_spacer(self.scroller, 80);
 }
 
-pub fn tapSearchResult(display: *Display, element: *Entity) error{OutOfMemory}!void {
-    for (search_results, 0..) |i, x| {
-        if (i == element) {
-            if (search_result_form[x]) |form| {
-                try ac.app_context.?.view_history.insert(0, form);
-                if (ac.app_context.?.view_history.items.len == ac.MAX_SEARCH_HISTORY) {
-                    _ = ac.app_context.?.view_history.pop();
-                }
-                ac.app_context.?.save_view_history();
-                if (form.lexeme) |lexeme| {
-                    //debug("tap on search result found matching form", .{});
-                    return show_word_panel(display, lexeme);
-                }
-                warn("tap on search result {d} has form with no lexeme", .{x});
-                return;
-            } else {
-                warn("tap on search result {d} with no form", .{x});
-                return;
-            }
-        }
-    }
-    warn("tap on search result found no form", .{});
-    return;
-}
-
 pub fn tapBack(
     self: *ListEditScreen,
     display: *Display,
     _: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
-    try ac.app_context.?.parsing_quiz.setup_with_word_set(self.list.?);
-    try display.choosePanel("parsing.setup", event);
+    try self.app.parsing_quiz.setupWithWordSet(self.app.allocator, self.list.?, self.app);
+    try display.choosePanel(self.app.parsing_setup.panel.name, event);
 }
 
-pub fn show_list_entries(
+pub fn updateSearchResults(
     self: *ListEditScreen,
     display: *Display,
     _: *Entity,
@@ -242,7 +216,7 @@ pub fn show_list_entries(
     display.need_relayout = true;
 
     if (self.list == null) {
-        err("show_list_entries expects valid list", .{});
+        err("updateSearchResults expects valid list", .{});
         return;
     }
 
@@ -306,13 +280,12 @@ pub fn changedTextInput(
     element: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
-    const ctx = ac.app_context.?;
     const query = element.type.text_input.text.items;
 
     trace("search text_input box changed to: {s}", .{query});
 
     if (query.len == 0) {
-        try self.show_list_entries(display, element, event);
+        try self.updateSearchResults(display, element, event);
         return;
     }
 
@@ -327,7 +300,7 @@ pub fn changedTextInput(
     i = 0;
     seen_result.clearRetainingCapacity();
 
-    var r = ctx.dictionary.by_form.lookup(query) catch null;
+    var r = self.app.dictionary.by_form.lookup(query) catch null;
     if (r) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
@@ -335,13 +308,13 @@ pub fn changedTextInput(
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
                 if (lexeme.primaryForm()) |first| {
-                    try update_search_result_panel(first, &i, &seen_result, query);
+                    try updateSearchResultPanel(first, &i, &seen_result, query, display);
                 }
             }
         }
     }
 
-    r = ctx.dictionary.by_gloss.lookup(query) catch null;
+    r = self.app.dictionary.by_gloss.lookup(query) catch null;
     if (r) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
@@ -349,13 +322,13 @@ pub fn changedTextInput(
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
                 if (lexeme.primaryForm()) |first| {
-                    try update_search_result_panel(first, &i, &seen_result, query);
+                    try updateSearchResultPanel(first, &i, &seen_result, query, display);
                 }
             }
         }
     }
 
-    r = ctx.dictionary.by_transliteration.lookup(query) catch null;
+    r = self.app.dictionary.by_transliteration.lookup(query) catch null;
     if (r) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
@@ -363,7 +336,7 @@ pub fn changedTextInput(
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
                 if (lexeme.primaryForm()) |first| {
-                    try update_search_result_panel(first, &i, &seen_result, query);
+                    try updateSearchResultPanel(first, &i, &seen_result, query, display);
                 }
             }
         }
@@ -399,8 +372,8 @@ pub fn tapRemoveWord(
 ) error{OutOfMemory}!void {
     if (self.get_form_from_list_entry_panels(element)) |form| {
         _ = self.list.?.remove(form);
-        try ac.app_context.?.lists.save(display.allocator, display.io, &display.config);
-        try self.show_list_entries(display, element, event);
+        try self.app.lists.save(display.allocator, display.io, &display.config);
+        try self.updateSearchResults(display, element, event);
     }
 }
 
@@ -411,7 +384,6 @@ pub fn get_form_from_list_entry_panels(self: *ListEditScreen, element: *Entity) 
         }
         if (list_entries[i].type.panel.children.items[2] == element) {
             if (i < self.list.?.forms.items.len) {
-                //const word = result.type.panel.children.items[1].type.label.text;
                 debug("match found {s}", .{self.list.?.forms.items[i].word});
                 return self.list.?.forms.items[i];
             }
@@ -432,9 +404,9 @@ pub fn tapAddWord(
     if (form_item) |form| {
         info("Adding word {s} to list {s}", .{ form.word, self.list.?.name.items });
         _ = try self.list.?.add(display.allocator, form);
-        try ac.app_context.?.lists.save(display.allocator, display.io, &display.config);
+        try self.app.lists.save(display.allocator, display.io, &display.config);
         try self.text_input.setText(display, "");
-        try self.show_list_entries(display, element, event);
+        try self.updateSearchResults(display, element, event);
     }
 }
 
@@ -445,7 +417,6 @@ pub fn get_form_from_scroll_list(_: *ListEditScreen, element: *Entity) ?*Form {
         }
         if (result.type.panel.children.items[0] == element) {
             if (search_result_form[i]) |word| {
-                //const word = result.type.panel.children.items[1].type.label.text;
                 debug("match found {s}", .{word.word});
                 return word;
             }
@@ -511,14 +482,14 @@ pub fn resizeSearchResult(
     gloss.maximum.width = gloss_width;
 }
 
-inline fn update_search_result_panel(
+inline fn updateSearchResultPanel(
     form: *praxis.Form,
     i: *usize,
     seen: *std.AutoHashMap(u24, *Form),
     _: []const u8,
+    display: *engine.Display,
 ) error{OutOfMemory}!void {
     var search_result = search_results[i.*];
-    const display = ac.app_context.?.display;
 
     if (form.lexeme) |lexeme| {
         if (seen.contains(lexeme.uid)) {

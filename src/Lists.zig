@@ -38,41 +38,42 @@ pub fn lookup(self: *Lists, name: []const u8) ?*WordSet {
 
 /// If no list data file exists at all, create a placeholder list
 /// file with some example word sets.
-pub fn prefill(self: *Lists, gpa: Allocator) error{OutOfMemory}!void {
+pub fn prefill(self: *Lists, gpa: Allocator, dictionary: *Dictionary) error{OutOfMemory}!void {
     var l = try WordSet.create(gpa);
     try l.name.appendSlice("People");
     try self.sets.append(l);
-    var f = ac.app_context.?.dictionary.by_form.lookup("Ἄννα");
+    var f = dictionary.by_form.lookup("Ἄννα");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("Ἰησοῦς");
+    f = dictionary.by_form.lookup("Ἰησοῦς");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("Μαρία");
+    f = dictionary.by_form.lookup("Μαρία");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("Μᾶρκος");
+    f = dictionary.by_form.lookup("Μᾶρκος");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("Παῦλος");
+    f = dictionary.by_form.lookup("Παῦλος");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("Πέτρος");
+    f = dictionary.by_form.lookup("Πέτρος");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("Χλόη");
+    f = dictionary.by_form.lookup("Χλόη");
     try l.forms.append(f.?.exact_accented.items[0]);
 
     l = try WordSet.create(self.sets.allocator);
     try l.name.appendSlice("Food and Drink");
-    try ac.app_context.?.lists.sets.append(l);
-    f = ac.app_context.?.dictionary.by_form.lookup("ἄρτος");
+    try self.sets.append(l);
+
+    f = dictionary.by_form.lookup("ἄρτος");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("ὄσπριον");
+    f = dictionary.by_form.lookup("ὄσπριον");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("οἶνος");
+    f = dictionary.by_form.lookup("οἶνος");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("συκῆ");
+    f = dictionary.by_form.lookup("συκῆ");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("τυρός");
+    f = dictionary.by_form.lookup("τυρός");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("σταφυλή");
+    f = dictionary.by_form.lookup("σταφυλή");
     try l.forms.append(f.?.exact_accented.items[0]);
-    f = ac.app_context.?.dictionary.by_form.lookup("ᾠόν");
+    f = dictionary.by_form.lookup("ᾠόν");
     try l.forms.append(f.?.exact_accented.items[0]);
     try self.save();
 }

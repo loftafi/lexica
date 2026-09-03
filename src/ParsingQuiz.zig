@@ -1,6 +1,6 @@
-//! A Parsing Quiz allows studying the forms associated with a `lexeme` or
-//! a word study `set`.  It collects each form to be studied. Each form
-//! is then removed from the study bank as the user completes the quiz.
+/// A simple flashcard deck of word forms. The word forms may be from an
+/// individual lexeme, or a set of lexemes.
+const ParsingQuiz = @This();
 
 lexeme: ?*praxis.Lexeme = null,
 word_set: ?*WordSet = null,
@@ -9,38 +9,40 @@ form_bank: ArrayListUnmanaged(*praxis.Form) = undefined,
 all_forms: ArrayListUnmanaged(*praxis.Form) = undefined,
 total_cards: usize = 0,
 
-const Self = @This();
-
 const ignores = [_][]const u8{"δώσωσιν"};
 const non_endings = [_][]const u8{ "έω", "εω", "άω", "αω", "όω", "οω" };
 
-pub fn init(self: *Self, _: Allocator) !void {
+pub fn init(self: *ParsingQuiz, _: Allocator) !void {
     self.form_bank = .empty;
     self.all_forms = .empty;
 }
 
-pub fn deinit(self: *Self, gpa: Allocator) void {
+pub fn deinit(self: *ParsingQuiz, gpa: Allocator) void {
     self.form_bank.deinit(gpa);
     self.all_forms.deinit(gpa);
 }
 
-pub fn clear(self: *Self, _: Allocator) void {
+pub fn clear(self: *ParsingQuiz, _: Allocator) void {
     self.form_bank.clearRetainingCapacity();
     self.all_forms.clearRetainingCapacity();
     self.word_set = null;
     self.lexeme = null;
 }
 
-pub fn setup_with_lexeme(self: *Self, lexeme: *praxis.Lexeme) error{OutOfMemory}!void {
-    const ac = app.app_context.?;
-
+/// Rebuild this deck with the forms from a specific `lexeme`.
+pub fn setupWithLexeme(
+    self: *ParsingQuiz,
+    gpa: Allocator,
+    lexeme: *praxis.Lexeme,
+    app: *App,
+) error{OutOfMemory}!void {
     self.lexeme = lexeme;
     self.word_set = null;
     self.form_bank.clearRetainingCapacity();
     self.all_forms.clearRetainingCapacity();
 
     for (lexeme.forms.items) |form| {
-        try self.include_form(form);
+        try self.includeForm(form, app);
     }
 
     notice("setup_with_lexeme: parsing quiz bank for {s} filtered from {d} to {d} forms.", .{
@@ -50,7 +52,7 @@ pub fn setup_with_lexeme(self: *Self, lexeme: *praxis.Lexeme) error{OutOfMemory}
     });
     if (engine.dev_mode == true) {
         for (self.form_bank.items) |form| {
-            var ps: std.Io.Writer.Allocating = .init(ac.allocator);
+            var ps: std.Io.Writer.Allocating = .init(gpa);
             defer ps.deinit();
             form.parsing.string(&ps.writer) catch {};
             debug("  {s} {s}", .{ form.word, ps.written() });
@@ -60,9 +62,13 @@ pub fn setup_with_lexeme(self: *Self, lexeme: *praxis.Lexeme) error{OutOfMemory}
     self.total_cards = self.form_bank.items.len;
 }
 
-pub fn setup_with_word_set(self: *Self, word_set: *WordSet) error{OutOfMemory}!void {
-    const ac = app.app_context.?;
-
+/// Rebuild this deck with the forms from a `lexeme` list.
+pub fn setupWithWordSet(
+    self: *ParsingQuiz,
+    gpa: Allocator,
+    word_set: *WordSet,
+    app: *App,
+) error{OutOfMemory}!void {
     self.word_set = word_set;
     self.lexeme = null;
     self.form_bank.clearRetainingCapacity();
@@ -71,7 +77,7 @@ pub fn setup_with_word_set(self: *Self, word_set: *WordSet) error{OutOfMemory}!v
     for (word_set.forms.items) |form| {
         if (form.lexeme) |lexeme| {
             for (lexeme.forms.items) |item| {
-                try self.include_form(item);
+                try self.includeForm(item, app);
             }
         }
     }
@@ -83,7 +89,7 @@ pub fn setup_with_word_set(self: *Self, word_set: *WordSet) error{OutOfMemory}!v
     });
     if (engine.dev_mode == true) {
         for (self.form_bank.items) |form| {
-            var ps: std.Io.Writer.Allocating = .init(ac.allocator);
+            var ps: std.Io.Writer.Allocating = .init(gpa);
             defer ps.deinit();
             form.parsing.string(&ps.writer) catch {};
             debug("  {s} {s}", .{ form.word, ps.written() });
@@ -93,16 +99,18 @@ pub fn setup_with_word_set(self: *Self, word_set: *WordSet) error{OutOfMemory}!v
     self.total_cards = self.form_bank.items.len;
 }
 
-pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
-    const ac = app.app_context.?;
-
+fn includeForm(
+    self: *ParsingQuiz,
+    form: *praxis.Form,
+    app: *App,
+) error{OutOfMemory}!void {
     for (ignores) |ignore| {
         if (std.mem.eql(u8, ignore, form.word)) {
             return;
         }
     }
     if (form.parsing.part_of_speech == .verb) {
-        if (app.study_optative == false and form.parsing.mood == .optative) {
+        if (App.study_optative == false and form.parsing.mood == .optative) {
             return;
         }
         for (non_endings) |ending| {
@@ -110,31 +118,31 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
                 return;
             }
         }
-        if (ac.preference.indicative != true and ac.preference.infinitive != true and
-            ac.preference.imperative != true and ac.preference.subjunctive != true and
-            ac.preference.participle != true)
+        if (app.preference.indicative != true and app.preference.infinitive != true and
+            app.preference.imperative != true and app.preference.subjunctive != true and
+            app.preference.participle != true)
         {
             warn("Verb has non valid mood", .{});
             return;
         }
-        try self.all_forms.append(ac.allocator, form);
-        if (!ac.preference.present_future) {
+        try self.all_forms.append(app.allocator, form);
+        if (!app.preference.present_future) {
             if (form.parsing.tense_form == .future or form.parsing.tense_form == .present) {
                 return;
             }
         }
-        if (!ac.preference.aorist and form.parsing.tense_form == .aorist) {
+        if (!app.preference.aorist and form.parsing.tense_form == .aorist) {
             return;
         }
-        if (!ac.preference.imperfect and form.parsing.tense_form == .imperfect) {
+        if (!app.preference.imperfect and form.parsing.tense_form == .imperfect) {
             return;
         }
-        if (!ac.preference.perfect_pluperfect) {
+        if (!app.preference.perfect_pluperfect) {
             if (form.parsing.tense_form == .perfect or form.parsing.tense_form == .pluperfect) {
                 return;
             }
         }
-        if (!ac.preference.middle_passive) {
+        if (!app.preference.middle_passive) {
             if (form.parsing.voice == .middle or
                 form.parsing.voice == .middle_or_passive or
                 form.parsing.voice == .passive or
@@ -145,19 +153,19 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
                 return;
             }
         }
-        if (!ac.preference.indicative and form.parsing.mood == .indicative) {
+        if (!app.preference.indicative and form.parsing.mood == .indicative) {
             return;
         }
-        if (!ac.preference.infinitive and form.parsing.mood == .infinitive) {
+        if (!app.preference.infinitive and form.parsing.mood == .infinitive) {
             return;
         }
-        if (!ac.preference.imperative and form.parsing.mood == .imperative) {
+        if (!app.preference.imperative and form.parsing.mood == .imperative) {
             return;
         }
-        if (!ac.preference.subjunctive and form.parsing.mood == .subjunctive) {
+        if (!app.preference.subjunctive and form.parsing.mood == .subjunctive) {
             return;
         }
-        if (!ac.preference.participle and form.parsing.mood == .participle) {
+        if (!app.preference.participle and form.parsing.mood == .participle) {
             return;
         }
     } else if (form.parsing.part_of_speech == .noun or form.parsing.part_of_speech == .adjective or form.parsing.part_of_speech == .proper_noun or form.parsing.part_of_speech == .personal_pronoun) {
@@ -176,20 +184,19 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
         if (form.parsing.case == .vocative) {
             return;
         }
-        try self.all_forms.append(ac.allocator, form);
-        if (!ac.preference.nominative_accusative) {
+        try self.all_forms.append(app.allocator, form);
+        if (!app.preference.nominative_accusative) {
             if (form.parsing.case == .nominative or form.parsing.case == .accusative) {
-                //debug("skipping nominative/accusative {any} {s}", .{ ac.preference.nominative_accusative, @tagName(form.parsing.case) });
                 return;
             }
         }
-        if (!ac.preference.genitive_dative) {
+        if (!app.preference.genitive_dative) {
             if (form.parsing.case == .genitive or form.parsing.case == .dative) {
                 return;
             }
         }
     } else {
-        var ps: std.Io.Writer.Allocating = .init(ac.allocator);
+        var ps: std.Io.Writer.Allocating = .init(app.allocator);
         defer ps.deinit();
         form.parsing.string(&ps.writer) catch {};
         warn("Skip unsupported form {s} for wordbank. {s} {s}", .{
@@ -199,17 +206,17 @@ pub fn include_form(self: *Self, form: *praxis.Form) error{OutOfMemory}!void {
         });
         return;
     }
-    try self.form_bank.append(ac.allocator, form);
+    try self.form_bank.append(app.allocator, form);
 }
 
-pub fn progress(self: *Self) f32 {
+pub fn progress(self: *ParsingQuiz) f32 {
     if (self.form_bank.items.len == 0 or self.total_cards == 0) {
         return 1;
     }
     return @as(f32, @floatFromInt(self.total_cards - self.form_bank.items.len)) / @as(f32, @floatFromInt(self.total_cards));
 }
 
-pub fn next_form(self: *Self) *praxis.Form {
+pub fn next_form(self: *ParsingQuiz) *praxis.Form {
     const cards = &self.form_bank.items;
     const choose = random.random(cards.len);
     const form = cards.*[choose];
@@ -218,7 +225,7 @@ pub fn next_form(self: *Self) *praxis.Form {
     return form;
 }
 
-pub fn remove_current_form(self: *Self) usize {
+pub fn remove_current_form(self: *ParsingQuiz) usize {
     var cards = &self.form_bank;
     if (cards.items.len == 0) {
         debug("No more cards to remove", .{});
@@ -248,6 +255,6 @@ const resources = @import("resources");
 const random = praxis.random;
 const praxis = @import("praxis");
 
-const app = @import("App.zig");
+const App = @import("App.zig");
 const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;

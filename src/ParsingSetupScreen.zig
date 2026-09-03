@@ -58,7 +58,7 @@ pub fn study_by_form(
     self.checkboxes.applyPreferences(self.app);
 
     // Only show filter options that are valid for these word forms
-    try self.app.parsing_quiz.setup_with_lexeme(called_lexeme);
+    try self.app.parsing_quiz.setupWithLexeme(self.app.allocator, called_lexeme, self.app);
     self.checkboxes.update_statistics(self.app.parsing_quiz.all_forms.items);
 
     debug("parsing picker for {s}", .{called_lexeme.word});
@@ -770,9 +770,9 @@ fn refresh_menu(self: *ParsingSetupScreen, display: *Display) !void {
     }
 
     if (self.lexeme) |current_lexeme| {
-        try self.app.parsing_quiz.setup_with_lexeme(current_lexeme);
+        try self.app.parsing_quiz.setupWithLexeme(self.app.allocator, current_lexeme, self.app);
     } else if (self.list) |current_list| {
-        try self.app.parsing_quiz.setup_with_word_set(current_list);
+        try self.app.parsing_quiz.setupWithWordSet(self.app.allocator, current_list, self.app);
     } else {
         err("Cant refresh menus without lexeme specified.", .{});
     }

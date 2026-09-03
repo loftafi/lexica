@@ -11,7 +11,6 @@ pub const MAX_PANEL_TABLES: usize = 20;
 
 pub const study_optative = false;
 
-pub var app_context: ?*App = null;
 pub var writing_enabled = true;
 
 // Global app variables
@@ -134,9 +133,6 @@ pub fn create(
         self.display.user_scale,
         @tagName(self.preference.size),
     });
-
-    app_context = self;
-    errdefer app_context = null;
 
     // Placeholder for the dictionary in case this object is destroyed later
     self.dictionary_arena = std.heap.ArenaAllocator.init(gpa);
@@ -282,7 +278,7 @@ pub fn initPanels(self: *App) !void {
 pub fn enableScreens(self: *App) !void {
     info("Enabling screens", .{});
     debug("Loading view history", .{});
-    app_context.?.loadViewHistory(app_context.?.dictionary) catch |e| {
+    self.loadViewHistory(self.dictionary) catch |e| {
         err("Error reading view history file. {any}", .{e});
         return;
     };
@@ -290,7 +286,7 @@ pub fn enableScreens(self: *App) !void {
     try self.search_screen.show_search_history(self.display);
 
     debug("Loading word lists", .{});
-    app_context.?.lists.load(self.display.allocator, &self.display.config) catch |e| {
+    self.lists.load(self.display.allocator, &self.display.config) catch |e| {
         err("Error reading word lists. {any}", .{e});
         return;
     };

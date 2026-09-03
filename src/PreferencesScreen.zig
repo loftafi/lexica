@@ -96,7 +96,7 @@ pub fn init(self: *PreferencesScreen, app: *App) !void {
         .layout = .{ .x = .grows },
         .type = .{ .checkbox = .{
             .text = "Use Koine Greek UI",
-            .checked = ac.app_context.?.preference.use_koine,
+            .checked = self.app.preference.use_koine,
             .on_change = .{
                 .func = @ptrCast(&changeKoinePreference),
                 .ptr = self,
@@ -109,7 +109,7 @@ pub fn init(self: *PreferencesScreen, app: *App) !void {
         .layout = .{ .x = .grows },
         .type = .{ .checkbox = .{
             .text = "Show Strongs Numbers",
-            .checked = ac.app_context.?.preference.show_strongs,
+            .checked = self.app.preference.show_strongs,
             .on_change = .{
                 .func = @ptrCast(&changeStrongsPreference),
                 .ptr = self,
@@ -122,7 +122,7 @@ pub fn init(self: *PreferencesScreen, app: *App) !void {
         .layout = .{ .x = .grows },
         .type = .{ .checkbox = .{
             .text = "Full Keyboard Access",
-            .checked = ac.app_context.?.preference.accessibility,
+            .checked = self.app.preference.accessibility,
             .on_change = .{
                 .func = @ptrCast(&changeKeyboardAccess),
                 .ptr = self,
@@ -378,15 +378,15 @@ pub fn tapHeading(
 }
 
 pub fn tapThemeButton(
-    _: *PreferencesScreen,
+    self: *PreferencesScreen,
     display: *Display,
     event: *Entity,
     _: *Event,
 ) std.mem.Allocator.Error!void {
     const theme = display.validate_theme(event.name);
     _ = try display.setTheme(theme);
-    ac.app_context.?.preference.theme = theme;
-    ac.app_context.?.savePreferences();
+    self.app.preference.theme = theme;
+    self.app.savePreferences();
 }
 
 pub fn initPickerTable(
@@ -470,9 +470,9 @@ pub fn chooseUKOrder(
 ) std.mem.Allocator.Error!void {
     debug("Choose UK order.", .{});
     std.debug.assert(entity.type == .panel);
-    ac.app_context.?.preference.uk_order = true;
+    self.app.preference.uk_order = true;
     self.updateRing();
-    ac.app_context.?.savePreferences();
+    self.app.savePreferences();
 }
 
 pub fn chooseUSOrder(
@@ -483,9 +483,9 @@ pub fn chooseUSOrder(
 ) std.mem.Allocator.Error!void {
     debug("Choose US order.", .{});
     std.debug.assert(entity.type == .panel);
-    ac.app_context.?.preference.uk_order = false;
+    self.app.preference.uk_order = false;
     self.updateRing();
-    ac.app_context.?.savePreferences();
+    self.app.savePreferences();
 }
 
 pub fn updateRing(self: *PreferencesScreen) void {
@@ -493,7 +493,7 @@ pub fn updateRing(self: *PreferencesScreen) void {
     self.uk_panel_ring.background.colour = .transparent;
     self.uk_panel_ring.style = .custom;
     self.us_panel_ring.style = .custom;
-    if (ac.app_context.?.preference.uk_order) {
+    if (self.app.preference.uk_order) {
         self.uk_panel_ring.style = .emphasised;
     } else {
         self.us_panel_ring.style = .emphasised;
@@ -501,17 +501,15 @@ pub fn updateRing(self: *PreferencesScreen) void {
 }
 
 pub fn changeKoinePreference(
-    _: *PreferencesScreen,
+    self: *PreferencesScreen,
     display: *Display,
     entity: *Entity,
     _: *const Event,
 ) std.mem.Allocator.Error!void {
-    const ctx = ac.app_context.?;
-
     std.debug.assert(entity.type == .checkbox);
-    ctx.preference.use_koine = entity.type.checkbox.checked;
-    ctx.savePreferences();
-    if (ctx.preference.use_koine) {
+    self.app.preference.use_koine = entity.type.checkbox.checked;
+    self.app.savePreferences();
+    if (self.app.preference.use_koine) {
         try display.setLanguage(Lang.greek);
     } else {
         try display.setLanguage(Lang.english);
@@ -519,28 +517,26 @@ pub fn changeKoinePreference(
 }
 
 pub fn changeStrongsPreference(
-    _: *PreferencesScreen,
+    self: *PreferencesScreen,
     _: *Display,
     entity: *Entity,
     _: *const Event,
 ) std.mem.Allocator.Error!void {
     std.debug.assert(entity.type == .checkbox);
-    ac.app_context.?.preference.show_strongs = entity.type.checkbox.checked;
-    ac.app_context.?.savePreferences();
+    self.app.preference.show_strongs = entity.type.checkbox.checked;
+    self.app.savePreferences();
 }
 
 pub fn changeKeyboardAccess(
-    _: *PreferencesScreen,
+    self: *PreferencesScreen,
     display: *Display,
     entity: *Entity,
     _: *const Event,
 ) std.mem.Allocator.Error!void {
     std.debug.assert(entity.type == .checkbox);
-    if (ac.app_context) |app| {
-        app.preference.accessibility = entity.type.checkbox.checked;
-        app.savePreferences();
-        display.blind_accessibility = app.preference.accessibility;
-    }
+    self.app.preference.accessibility = entity.type.checkbox.checked;
+    self.app.savePreferences();
+    display.blind_accessibility = self.app.preference.accessibility;
 }
 
 const builtin = @import("builtin");

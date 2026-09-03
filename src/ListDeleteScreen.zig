@@ -118,12 +118,12 @@ pub fn init(
 }
 
 fn tapBack(
-    _: *ListDeleteScreen,
+    self: *ListDeleteScreen,
     display: *Display,
     element: *Entity,
     event: *Event,
 ) error{OutOfMemory}!void {
-    try ac.app_context.?.parsing_menu.show(display, element, event);
+    try self.app.parsing_menu.show(display, element, event);
 }
 
 fn tapDeleteList(
@@ -134,9 +134,9 @@ fn tapDeleteList(
 ) error{OutOfMemory}!void {
     const list = self.app.parsing_setup.list.?;
     self.app.parsing_setup.list = null;
-    ac.app_context.?.parsing_quiz.clear(display.allocator);
+    self.app.parsing_quiz.clear(display.allocator);
     info("Deleting list named {s}.", .{list.name.items});
-    ac.app_context.?.lists.remove_list(display, list) catch |e| {
+    self.app.lists.remove_list(display, list) catch |e| {
         if (e == error.OutOfMemory) return error.OutOfMemory;
         err("delete list failed: {any}", .{e});
         try self.app.parsing_menu.show(display, element, event);

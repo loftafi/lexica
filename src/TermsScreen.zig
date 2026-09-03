@@ -45,7 +45,7 @@ pub fn init(self: *TermsScreen, app: *App) !void {
         \\}
     , TermsScreen, self);
 
-    self.back_button = try ac.app_context.?.add_back_button(self.panel, .{
+    self.back_button = try self.app.add_back_button(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });

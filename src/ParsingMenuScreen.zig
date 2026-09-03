@@ -194,8 +194,7 @@ pub fn init(
 }
 
 pub fn setupLists(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || engine.Error || ResourcesError)!void {
-    const ctx = ac.app_context.?;
-    const display = ctx.display;
+    const display = self.app.display;
 
     // Remove existing list items
     var list_pos: usize = 0;
@@ -218,7 +217,7 @@ pub fn setupLists(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFor
         found.destroy(display);
     }
 
-    for (ac.app_context.?.lists.sets.items) |list| {
+    for (self.app.lists.sets.items) |list| {
         // Add refreshed list items
         _ = try self.scroller.insert(list_pos, .{
             .name = "list.item",
@@ -277,13 +276,13 @@ fn make_button_bar(
 }
 
 pub fn tapPracticeList(
-    _: *ParsingMenuScreen,
+    self: *ParsingMenuScreen,
     display: *Display,
     element: *Entity,
     event: *Event,
 ) error{OutOfMemory}!void {
-    if (ac.app_context.?.lists.lookup(element.type.label.text)) |list| {
-        try ac.app_context.?.parsing_setup.study_by_list(display, list, ac.Screen.parsing_menu, event);
+    if (self.app.lists.lookup(element.type.label.text)) |list| {
+        try self.app.parsing_setup.study_by_list(display, list, ac.Screen.parsing_menu, event);
         info("Picked list to study {s}", .{list.name.items});
         return;
     }
@@ -298,7 +297,7 @@ pub fn tapPracticeWord(
 ) error{OutOfMemory}!void {
     var found: ?*praxis.Lexeme = null;
 
-    const i = ac.app_context.?.dictionary.by_form.lookup(element.type.button.text) catch {
+    const i = self.app.dictionary.by_form.lookup(element.type.button.text) catch {
         notice("practice word parsing for {s} not found.", .{element.type.button.text});
         return;
     };

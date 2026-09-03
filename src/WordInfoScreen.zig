@@ -281,7 +281,7 @@ pub fn init(self: *WordInfoScreen, app: *App) !void {
 
     for (0..ac.MAX_PANEL_TABLES) |i| {
         const parsing_panel = try initFormPanel(display, self.scroller);
-        ac.app_context.?.panel_tables[i] = parsing_panel;
+        self.app.panel_tables[i] = parsing_panel;
     }
 
     _ = try display.add_spacer(self.panel, 5);
@@ -357,7 +357,7 @@ pub fn show_parsing_setup(
 ) error{OutOfMemory}!void {
     try self.app.parsing_setup.study_by_form(
         display,
-        ac.app_context.?.word_lexeme.?,
+        self.app.word_lexeme.?,
         ac.Screen.word_info,
         event,
     );
@@ -488,10 +488,9 @@ pub fn show(
     lexeme: *praxis.Lexeme,
     event: *const Event,
 ) Allocator.Error!void {
-    ac.app_context.?.word_lexeme = lexeme;
+    self.app.word_lexeme = lexeme;
     try self.word_title.setText(display, lexeme.word);
 
-    //const pos = praxis.pos_to_english(lexeme.pos);
     const pos = lexeme.pos.english_part_of_speech();
     try self.word_pos.setText(display, pos);
 
@@ -509,12 +508,12 @@ pub fn show(
     const transliterated = praxis.transliterate(lexeme.word, true, &self.string_buffers[self.string_buffers_i]) catch "";
     try self.word_transliteration.setText(display, transliterated);
 
-    const uk = ac.app_context.?.preference.uk_order;
+    const uk = self.app.preference.uk_order;
 
     self.practice_button.visible = if (can_practice_lexeme(lexeme)) .visible else .hidden;
 
     self.row_strongs.visible = .hidden;
-    if (ac.app_context.?.preference.show_strongs and lexeme.strongs.items.len > 0) {
+    if (self.app.preference.show_strongs and lexeme.strongs.items.len > 0) {
         self.strongs_buffer.clearRetainingCapacity();
         self.row_strongs.visible = .visible;
         for (lexeme.strongs.items, 0..) |strongs, i| {
@@ -577,14 +576,14 @@ pub fn show(
     const ROW7 = 11;
     const ROW8 = 12;
 
-    ac.app_context.?.panels.*.setLexeme(lexeme);
-    const panels = try ac.app_context.?.panels.panels(display.allocator);
+    self.app.panels.*.setLexeme(lexeme);
+    const panels = try self.app.panels.panels(display.allocator);
     var i: usize = 0;
     for (panels) |*table| {
         if (i >= ac.MAX_PANEL_TABLES) {
             break;
         }
-        var current = ac.app_context.?.panel_tables[i];
+        var current = self.app.panel_tables[i];
         var items = current.type.panel.children.items;
         current.visible = .visible;
         try items[HEADING].setText(display, table.*.title);
@@ -713,7 +712,7 @@ pub fn show(
 
     // Hide the final unused panels
     while (i < ac.MAX_PANEL_TABLES) {
-        ac.app_context.?.panel_tables[i].visible = .hidden;
+        self.app.panel_tables[i].visible = .hidden;
         i += 1;
     }
 
