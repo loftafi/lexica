@@ -1,9 +1,10 @@
-This project is licensed under the MIT License (see below). This project links
-to SDL and SDL_ttf, and uses the NotoSans and NotoSansTC fonts. 
+This code is licensed under the MIT License (see below). This project
+depends on third party licences. See also the `licenses` folder and to
+the projects repostory for each imported `build.zig.zon` module.
 
 ## MIT License
 
-Copyright (c) 2022-2025. Jay Rhoden.
+Copyright (c) 2022-2026. Jay Rhoden.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
