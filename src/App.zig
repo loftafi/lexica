@@ -211,75 +211,75 @@ fn eventHook(self: *App, _: Allocator, e: u32) Allocator.Error!void {
 
 /// Load the display with each of the panels used in the application.
 /// This should be fast to minimise the app startup time.
-pub fn initPanels(ac: *App) !void {
+pub fn initPanels(self: *App) !void {
 
     // Load fonts after screen initialisation so that the
     // screen pixel density can be accounted for.
-    var start = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
-    _ = try ac.display.setDefaultFont("NotoSans-Regular", .unknown, .{});
-    _ = try ac.display.setDefaultFont("NotoSans-Regular", .english, .{});
-    _ = try ac.display.setDefaultFont("NotoSansKR-VF", .korean, .{});
-    _ = try ac.display.setDefaultFont("NotoSans-Regular", .greek, .{});
-    var end = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
+    var start = std.Io.Timestamp.now(self.io, .real).toMilliseconds();
+    _ = try self.display.setDefaultFont("NotoSans-Regular", .unknown, .{});
+    _ = try self.display.setDefaultFont("NotoSans-Regular", .english, .{});
+    _ = try self.display.setDefaultFont("NotoSansKR-VF", .korean, .{});
+    _ = try self.display.setDefaultFont("NotoSans-Regular", .greek, .{});
+    var end = std.Io.Timestamp.now(self.io, .real).toMilliseconds();
     info("Font load time {d}ms.", .{end - start});
 
-    start = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
-    try ac.menu_ui.init(ac);
-    errdefer ac.menu_ui.deinit();
+    start = std.Io.Timestamp.now(self.io, .real).toMilliseconds();
+    try self.menu_ui.init(self);
+    errdefer self.menu_ui.deinit();
 
-    try ac.search_screen.init(ac);
-    errdefer ac.search_screen.deinit(ac.allocator);
+    try self.search_screen.init(self);
+    errdefer self.search_screen.deinit(self.allocator);
 
-    try ac.preferences.init(ac);
-    errdefer ac.preferences.deinit();
+    try self.preferences.init(self);
+    errdefer self.preferences.deinit();
 
-    try ac.parsing_menu.init(ac);
-    errdefer ac.parsing_menu.deinit();
+    try self.parsing_menu.init(self);
+    errdefer self.parsing_menu.deinit();
 
-    try ac.privacy.init(ac);
-    errdefer ac.privacy.deinit();
+    try self.privacy.init(self);
+    errdefer self.privacy.deinit();
 
-    try ac.parsing_setup.init(ac);
-    errdefer ac.parsing_setup.deinit();
+    try self.parsing_setup.init(self);
+    errdefer self.parsing_setup.deinit();
 
-    try ac.parsing_card.init(ac);
-    errdefer ac.parsing_card.deinit();
+    try self.parsing_card.init(self);
+    errdefer self.parsing_card.deinit();
 
-    try ac.word_info.init(ac);
-    errdefer ac.word_info.deinit();
+    try self.word_info.init(self);
+    errdefer self.word_info.deinit();
 
-    try ac.license.init(ac);
-    errdefer ac.license.deinit();
+    try self.license.init(self);
+    errdefer self.license.deinit();
 
-    try ac.license_info.init(ac, ac.display);
-    errdefer ac.license_info.deinit();
+    try self.license_info.init(self, self.display);
+    errdefer self.license_info.deinit();
 
-    try ac.terms.init(ac);
-    errdefer ac.terms.deinit();
+    try self.terms.init(self);
+    errdefer self.terms.deinit();
 
-    try ac.list_new.init(ac);
-    errdefer ac.list_new.deinit();
+    try self.list_new.init(self);
+    errdefer self.list_new.deinit();
 
-    try ac.list_delete.init(ac);
-    errdefer ac.list_delete.deinit();
+    try self.list_delete.init(self);
+    errdefer self.list_delete.deinit();
 
-    try ac.list_edit.init(ac);
-    errdefer ac.list_edit.deinit(ac.display.allocator);
+    try self.list_edit.init(self);
+    errdefer self.list_edit.deinit(self.display.allocator);
 
-    try ac.byz.init(ac);
-    errdefer ac.byz.deinit();
+    try self.byz.init(self);
+    errdefer self.byz.deinit();
 
-    try ac.noto.init(ac);
-    errdefer ac.noto.deinit();
+    try self.noto.init(self);
+    errdefer self.noto.deinit();
 
-    try ac.sdl.init(ac);
-    errdefer ac.sdl.deinit();
+    try self.sdl.init(self);
+    errdefer self.sdl.deinit();
 
-    end = std.Io.Timestamp.now(ac.io, .real).toMilliseconds();
+    end = std.Io.Timestamp.now(self.io, .real).toMilliseconds();
     info("Panels initialised in {d}ms.", .{end - start});
 }
 
-pub fn enableScreens(ac: *App) !void {
+pub fn enableScreens(self: *App) !void {
     info("Enabling screens", .{});
     debug("Loading view history", .{});
     app_context.?.loadViewHistory(app_context.?.dictionary) catch |e| {
@@ -287,43 +287,43 @@ pub fn enableScreens(ac: *App) !void {
         return;
     };
     debug("loaded view history.", .{});
-    try ac.search_screen.show_search_history(ac.display);
+    try self.search_screen.show_search_history(self.display);
 
     debug("Loading word lists", .{});
-    app_context.?.lists.load(ac.display.allocator, &ac.display.config) catch |e| {
+    app_context.?.lists.load(self.display.allocator, &self.display.config) catch |e| {
         err("Error reading word lists. {any}", .{e});
         return;
     };
 
     debug("Loaded word lists.", .{});
-    try ac.search_screen.show_search_history(ac.display);
+    try self.search_screen.show_search_history(self.display);
 
     debug("Adding keybindings.", .{});
-    try ac.display.setKeybinding(.space, .{ .func = @ptrCast(&pick_search_screen), .ptr = ac });
-    try ac.display.setKeybinding(.s, .{ .func = @ptrCast(&pick_search_screen), .ptr = ac });
-    try ac.display.setKeybinding(.p, .{ .func = @ptrCast(&pick_preferences_screen), .ptr = ac });
-    try ac.display.setKeybinding(.q, .{ .func = @ptrCast(&pick_parsing_screen), .ptr = ac });
+    try self.display.setKeybinding(.space, .{ .func = @ptrCast(&pick_search_screen), .ptr = self });
+    try self.display.setKeybinding(.s, .{ .func = @ptrCast(&pick_search_screen), .ptr = self });
+    try self.display.setKeybinding(.p, .{ .func = @ptrCast(&pick_preferences_screen), .ptr = self });
+    try self.display.setKeybinding(.q, .{ .func = @ptrCast(&pick_parsing_screen), .ptr = self });
 
     if (builtin.mode == .Debug) {
-        try ac.display.setKeybinding(.m, .{ .func = @ptrCast(&toggle_menu), .ptr = ac });
-        try ac.display.setKeybinding(.@"6", .{ .func = @ptrCast(&makeAppBundle), .ptr = ac });
+        try self.display.setKeybinding(.m, .{ .func = @ptrCast(&toggle_menu), .ptr = self });
+        try self.display.setKeybinding(.@"6", .{ .func = @ptrCast(&makeAppBundle), .ptr = self });
     }
 
     if (builtin.target.os.tag != .ios and
         !builtin.target.abi.isAndroid())
     {
-        try ac.display.setKeybinding(.escape, .{ .func = @ptrCast(&escape_quit), .ptr = ac });
+        try self.display.setKeybinding(.escape, .{ .func = @ptrCast(&escape_quit), .ptr = self });
     }
-    try ac.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&android_back), .ptr = ac });
+    try self.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&android_back), .ptr = self });
 
-    if (ac.display.getPanel("menu")) |menu| {
+    if (self.display.getPanel("menu")) |menu| {
         menu.visible = .visible;
     }
-    try ac.display.choosePanel("search.screen", &.{});
-    ac.display.relayout();
+    try self.display.choosePanel("search.screen", &.{});
+    self.display.relayout();
 
-    if (ac.display.config.command == .make_bundle and builtin.mode == .Debug) {
-        try ac.makeAppBundle(ac.display, &.{ .type = .{ .panel = .{} } }, &.{});
+    if (self.display.config.command == .make_bundle and builtin.mode == .Debug) {
+        try self.makeAppBundle(self.display, &.{ .type = .{ .panel = .{} } }, &.{});
         return;
     }
 }
@@ -378,6 +378,12 @@ pub fn savePreferences(self: *App) void {
     };
 }
 
+/// Create a bundle file containing all resources that have been
+/// loaded or required, and end the main app loop.
+///
+/// This is triggered by the `make_bundle` command line argument
+/// and is used by the build process to output the resource bundle
+/// for this app.
 pub fn makeAppBundle(
     self: *App,
     _: *Display,
@@ -394,7 +400,6 @@ pub fn makeAppBundle(
         self.allocator,
         self.io,
         app_info.app_bundle,
-        //self.display.resources.used_resources.?,
         self.display.required_resource,
         &.{},
         "/tmp",
