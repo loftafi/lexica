@@ -144,7 +144,7 @@ pub fn init(
         .minimum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_button_width },
         .maximum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_button_width },
         .background = .{
-            .corner_radius = 14,
+            .corner_radius = 22,
             .image_corner_radius = 50,
         },
         .type = .{ .button = .{
@@ -265,13 +265,13 @@ pub fn resizeFeedbackBar(
         self.panel.rect.width = feedback_width;
         self.panel.minimum.width = feedback_width;
         self.panel.maximum.width = feedback_width;
-        self.rows.rect.width = feedback_width - button_width - feedback_icon_width * 2 - spacing * 5;
+        self.rows.rect.width = feedback_width - button_width - feedback_icon_width - spacing * 5;
         self.rows.minimum.width = self.rows.rect.width;
         self.rows.maximum.width = self.rows.rect.width;
-        self.text.rect.width = feedback_width - button_width - feedback_icon_width * 2 - spacing * 5;
+        self.text.rect.width = feedback_width - button_width - feedback_icon_width - spacing * 5;
         self.text.minimum.width = self.text.rect.width;
         self.text.maximum.width = self.text.rect.width;
-        self.heading.rect.width = feedback_width - button_width - feedback_icon_width * 2 - spacing * 5;
+        self.heading.rect.width = feedback_width - button_width - feedback_icon_width - spacing * 5;
         self.heading.minimum.width = self.heading.rect.width;
         self.heading.maximum.width = self.heading.rect.width;
         updated = true;

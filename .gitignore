@@ -6,6 +6,7 @@ zig-pkg
 build/
 *.swp
 app_bundle.bd
+build.sh
 
 # XCode specific ignores
 ios/BGD/libbgd-ios.a

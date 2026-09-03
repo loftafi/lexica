@@ -259,7 +259,7 @@ fn make_button_bar(
             .pad = .{ .left = 15, .right = 15, .top = 12, .bottom = 12 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .background = .{
-                .corner_radius = 14,
+                .corner_radius = 22,
                 .image_corner_radius = 50,
             },
             .type = .{ .button = .{

@@ -1,7 +1,6 @@
 pub const ParsingCardScreen = @This();
 
-const PARSING_BUTTON_X_PADDING: f32 = 7;
-const PARSING_BUTTON_Y_PADDING: f32 = 7;
+const button_pad: f32 = 5;
 
 app: *AppContext = undefined,
 panel: *Entity = undefined,
@@ -46,18 +45,18 @@ pub fn show(
     if (ac.app_context.?.preference.uk_order) {
         trace("Case buttons in UK order", .{});
         pickers.case.type.panel.children.clearRetainingCapacity();
-        try pickers.case.type.panel.children.append(allocator, buttons.nominative);
-        try pickers.case.type.panel.children.append(allocator, buttons.accusative);
-        try pickers.case.type.panel.children.append(allocator, buttons.genitive);
-        try pickers.case.type.panel.children.append(allocator, buttons.dative);
+        try pickers.case.type.panel.children.append(allocator, buttons.nominative_container);
+        try pickers.case.type.panel.children.append(allocator, buttons.accusative_container);
+        try pickers.case.type.panel.children.append(allocator, buttons.genitive_container);
+        try pickers.case.type.panel.children.append(allocator, buttons.dative_container);
         display.need_relayout = true;
     } else {
         trace("Case buttons in US order", .{});
         pickers.case.type.panel.children.clearRetainingCapacity();
-        try pickers.case.type.panel.children.append(allocator, buttons.nominative);
-        try pickers.case.type.panel.children.append(allocator, buttons.genitive);
-        try pickers.case.type.panel.children.append(allocator, buttons.dative);
-        try pickers.case.type.panel.children.append(allocator, buttons.accusative);
+        try pickers.case.type.panel.children.append(allocator, buttons.nominative_container);
+        try pickers.case.type.panel.children.append(allocator, buttons.genitive_container);
+        try pickers.case.type.panel.children.append(allocator, buttons.dative_container);
+        try pickers.case.type.panel.children.append(allocator, buttons.accusative_container);
         display.need_relayout = true;
     }
 }
@@ -133,10 +132,9 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .pad = .{ .top = button_pad / 2, .bottom = button_pad / 2 },
             .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{
-                .spacing = PARSING_BUTTON_Y_PADDING,
                 .direction = .top_to_bottom,
             } },
         }, display);
@@ -146,7 +144,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
         const tense_form_row2 = try pickers.tense_form.add(.{
@@ -154,44 +152,56 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
-        buttons.present = try tense_form_row1.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.present,
+            tense_form_row1,
             "present",
             "Present",
             @ptrCast(&tense_form_changed),
-        ), display);
+        );
 
-        buttons.future = try tense_form_row1.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.future,
+            tense_form_row1,
             "future",
             "Future",
             @ptrCast(&tense_form_changed),
-        ), display);
+        );
 
-        buttons.perfect = try tense_form_row1.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.perfect,
+            tense_form_row1,
             "perfect",
             "Perfect",
             @ptrCast(&tense_form_changed),
-        ), display);
+        );
 
-        buttons.aorist = try tense_form_row2.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.aorist,
+            tense_form_row2,
             "aorist",
             "Aorist",
             @ptrCast(&tense_form_changed),
-        ), display);
+        );
 
-        buttons.imperfect = try tense_form_row2.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.imperfect,
+            tense_form_row2,
             "imperfect",
             "Imperfect",
             @ptrCast(&tense_form_changed),
-        ), display);
+        );
 
-        buttons.pluperfect = try tense_form_row2.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.pluperfect,
+            tense_form_row2,
             "pluperfect",
             "Pluperfect",
             @ptrCast(&tense_form_changed),
-        ), display);
+        );
     }
 
     {
@@ -204,28 +214,34 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .pad = .{ .top = button_pad / 2, .bottom = button_pad / 2 },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
-        buttons.active = try pickers.voice.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.active,
+            pickers.voice,
             "active",
             "Active",
             @ptrCast(&voice_changed),
-        ), display);
+        );
 
-        buttons.middle = try pickers.voice.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.middle,
+            pickers.voice,
             "middle",
             "Middle",
             @ptrCast(&voice_changed),
-        ), display);
+        );
 
-        buttons.passive = try pickers.voice.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.passive,
+            pickers.voice,
             "passive",
             "Passive",
             @ptrCast(&voice_changed),
-        ), display);
+        );
     }
 
     {
@@ -238,9 +254,9 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .pad = .{ .top = button_pad / 2, .bottom = button_pad / 2 },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_Y_PADDING, .direction = .top_to_bottom } },
+            .type = .{ .panel = .{ .direction = .top_to_bottom } },
         }, display);
 
         const mood_row1 = try pickers.mood.add(.{
@@ -248,7 +264,7 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre, .y = .start },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
         const mood_row2 = try pickers.mood.add(.{
@@ -256,38 +272,48 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre, .y = .start },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
-        buttons.indicative = try mood_row1.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.indicative,
+            mood_row1,
             "indicative",
             "Indicative",
             @ptrCast(&mood_changed),
-        ), display);
+        );
 
-        buttons.participle = try mood_row1.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.participle,
+            mood_row1,
             "participle",
             "Participle",
             @ptrCast(&mood_changed),
-        ), display);
+        );
 
-        buttons.subjunctive = try mood_row1.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.subjunctive,
+            mood_row1,
             "subjunctive",
             "Subjunctive",
             @ptrCast(&mood_changed),
-        ), display);
+        );
 
-        buttons.imperative = try mood_row2.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.imperative,
+            mood_row2,
             "imperative",
             "Imperative",
             @ptrCast(&mood_changed),
-        ), display);
+        );
 
-        buttons.infinitive = try mood_row2.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.infinitive,
+            mood_row2,
             "infinitive",
             "Infinitive",
             @ptrCast(&mood_changed),
-        ), display);
+        );
     }
 
     {
@@ -300,31 +326,36 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .pad = .{ .top = button_pad / 2, .bottom = button_pad / 2 },
             .minimum = .{ .width = 300, .height = 30 },
             .type = .{ .panel = .{
-                .spacing = PARSING_BUTTON_X_PADDING,
                 .direction = .left_to_right,
             } },
         }, display);
 
-        buttons.first = try pickers.person.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.first,
+            pickers.person,
             "first_person",
             "1st Person",
             @ptrCast(&person_changed),
-        ), display);
+        );
 
-        buttons.second = try pickers.person.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.second,
+            pickers.person,
             "second_person",
             "2nd Person",
             @ptrCast(&person_changed),
-        ), display);
+        );
 
-        buttons.third = try pickers.person.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.third,
+            pickers.person,
             "third_person",
             "3rd Person",
             @ptrCast(&person_changed),
-        ), display);
+        );
     }
 
     {
@@ -338,34 +369,46 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
 
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .pad = .{ .top = button_pad / 2, .bottom = button_pad / 2 },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
-        buttons.nominative = try pickers.case.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.nominative,
+            pickers.case,
             "nominative",
             "Nominative",
             @ptrCast(&case_changed),
-        ), display);
+        );
+        buttons.nominative_container = pickers.case.type.panel.children.items[0];
 
-        buttons.accusative = try pickers.case.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.accusative,
+            pickers.case,
             "accusative",
             "Accusative",
             @ptrCast(&case_changed),
-        ), display);
+        );
+        buttons.accusative_container = pickers.case.type.panel.children.items[1];
 
-        buttons.genitive = try pickers.case.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.genitive,
+            pickers.case,
             "genitive",
             "Genitive",
             @ptrCast(&case_changed),
-        ), display);
+        );
+        buttons.genitive_container = pickers.case.type.panel.children.items[2];
 
-        buttons.dative = try pickers.case.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.dative,
+            pickers.case,
             "dative",
             "Dative",
             @ptrCast(&case_changed),
-        ), display);
+        );
+        buttons.dative_container = pickers.case.type.panel.children.items[3];
     }
 
     {
@@ -378,22 +421,26 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             },
             .layout = .{ .x = .grows },
             .child_align = .{ .x = .centre, .y = .start },
-            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .pad = .{ .top = button_pad / 2, .bottom = button_pad / 2 },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
-        buttons.singular = try pickers.number.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.singular,
+            pickers.number,
             "singular",
             "Singular",
             @ptrCast(&number_changed),
-        ), display);
+        );
 
-        buttons.plural = try pickers.number.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.plural,
+            pickers.number,
             "plural",
             "Plural",
             @ptrCast(&number_changed),
-        ), display);
+        );
     }
 
     {
@@ -406,28 +453,34 @@ pub fn init(self: *ParsingCardScreen, app: *AppContext) (error{
             },
             .layout = .{ .x = .grows, .y = .shrinks },
             .child_align = .{ .x = .centre },
-            .pad = .{ .top = PARSING_BUTTON_Y_PADDING, .bottom = PARSING_BUTTON_Y_PADDING },
+            .pad = .{ .top = button_pad / 2, .bottom = button_pad / 2 },
             .minimum = .{ .width = 300, .height = 30 },
-            .type = .{ .panel = .{ .spacing = PARSING_BUTTON_X_PADDING, .direction = .left_to_right } },
+            .type = .{ .panel = .{ .direction = .left_to_right } },
         }, display);
 
-        buttons.masculine = try pickers.gender.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.masculine,
+            pickers.gender,
             "masculine",
             "Masculine",
             @ptrCast(&gender_changed),
-        ), display);
+        );
 
-        buttons.feminine = try pickers.gender.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.feminine,
+            pickers.gender,
             "feminine",
             "Feminine",
             @ptrCast(&gender_changed),
-        ), display);
+        );
 
-        buttons.neuter = try pickers.gender.add(try self.initParsingButton(
+        try self.initParsingButton(
+            &buttons.neuter,
+            pickers.gender,
             "neuter",
             "Neuter",
             @ptrCast(&gender_changed),
-        ), display);
+        );
     }
 
     try self.correct_panel.init(
@@ -472,22 +525,35 @@ pub fn deinit(self: *ParsingCardScreen) void {
 
 fn initParsingButton(
     self: *ParsingCardScreen,
+    button: **Entity,
+    parent: *Entity,
     name: []const u8,
     text: []const u8,
     handler: *const fn (*anyopaque, *Display, *Entity, *const Event) Allocator.Error!void,
-) !Entity {
-    return .{
+) (Allocator.Error || Resources.Error || engine.Error)!void {
+    const container = try parent.add(.{
+        .pad = .{
+            .left = button_pad,
+            .right = button_pad,
+            .top = button_pad,
+            .bottom = button_pad,
+        },
+        .layout = .{ .y = .shrinks, .x = .shrinks },
+        .type = .{ .panel = .{} },
+    }, self.app.display);
+    button.* = try container.add(.{
         .name = name,
         .pad = .{
-            .left = PARSING_BUTTON_X_PADDING,
-            .right = PARSING_BUTTON_X_PADDING,
-            .top = PARSING_BUTTON_Y_PADDING,
-            .bottom = PARSING_BUTTON_Y_PADDING,
+            .left = button_pad,
+            .right = button_pad,
+            .top = button_pad,
+            .bottom = button_pad,
         },
         .background = .{
             .image_corner_radius = 14,
             .corner_radius = 14,
         },
+        .child_align = .{ .x = .centre, .y = .centre },
         .layout = .{ .y = .shrinks, .x = .shrinks },
         .type = .{ .button = .{
             .text = text,
@@ -499,7 +565,7 @@ fn initParsingButton(
                 .hover_name = "white rounded rect",
             },
         } },
-    };
+    }, self.app.display);
 }
 
 pub fn tapBack(
@@ -545,6 +611,10 @@ var pickers = struct {
 }{};
 
 var buttons = struct {
+    nominative_container: *Entity = undefined,
+    accusative_container: *Entity = undefined,
+    genitive_container: *Entity = undefined,
+    dative_container: *Entity = undefined,
     nominative: *Entity = undefined,
     accusative: *Entity = undefined,
     genitive: *Entity = undefined,
@@ -1061,7 +1131,7 @@ pub fn button_bounce(
             },
         } },
         .movement = .stretch,
-        .duration = 100 * 1000,
+        .duration = 70,
         .on_end = .{ .func = @ptrCast(&button_bounce_end), .ptr = self },
     };
     try display.addAnimator(animation);

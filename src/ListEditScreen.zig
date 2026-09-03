@@ -575,6 +575,7 @@ pub fn initSearchResultRow(
             .bottom = icon_pad,
         },
         .child_align = .{ .x = .start, .y = .start },
+        .background = .{ .corner_radius = 16, .image_corner_radius = 50 },
         .type = .{
             .button = .{
                 .on_pressed = .{ .func = @ptrCast(&tapAddWord), .ptr = self },
@@ -664,6 +665,7 @@ pub fn initListEntryPanel(self: *ListEditScreen, display: *Display, parent: *Ent
             .top = icon_pad,
             .bottom = icon_pad,
         },
+        .background = .{ .corner_radius = 16, .image_corner_radius = 50 },
         .child_align = .{ .x = .start, .y = .start },
         .type = .{
             .button = .{
