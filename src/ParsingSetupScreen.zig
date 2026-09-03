@@ -1,4 +1,4 @@
-//! Study a single word, or a list of words
+/// Choose which word forms to study from a `lexeme` or a `lexeme` list.
 pub const ParsingSetupScreen = @This();
 
 const ICON_PAD = 15;

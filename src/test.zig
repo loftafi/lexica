@@ -1,6 +1,4 @@
-//! This file describes which tests we want to always run.
-//! For now it is everything that hangs off the engine.
-
+/// Tests that must always be run. Triggered using `zig build test`
 const std = @import("std");
 const main = @import("main.zig");
 

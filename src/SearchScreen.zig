@@ -1,3 +1,4 @@
+/// Search the dictionary contents.
 pub const SearchScreen = @This();
 
 pub const MAX_SEARCH_RESULTS: usize = 30;

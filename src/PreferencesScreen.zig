@@ -1,3 +1,4 @@
+/// Display user configurable preferences.
 pub const PreferencesScreen = @This();
 
 app: *App,

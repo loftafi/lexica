@@ -209,5 +209,4 @@ const App = ac.App;
 const MenuUI = @import("MenuUI.zig");
 const ByzScreen = @import("ByzScreen.zig");
 const NotoScreen = @import("NotoScreen.zig");
-const SDLScreen = @import("SDLScreen.zig");
 const LicenseInfoScreen = @import("LicenseInfoScreen.zig");

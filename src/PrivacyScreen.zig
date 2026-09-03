@@ -1,4 +1,4 @@
-//! Display the privacy policy for this version of the app.
+/// Display the privacy policy for this version of the app.
 pub const PrivacyScreen = @This();
 
 panel: *Entity = undefined,

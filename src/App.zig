@@ -36,7 +36,6 @@ parsing_setup: ParsingSetupScreen = undefined,
 preferences: PreferencesScreen = undefined,
 privacy: PrivacyScreen = undefined,
 terms: TermsScreen = undefined,
-sdl: SDLScreen = undefined,
 search_screen: SearchScreen = undefined,
 word_info: WordInfoScreen = undefined,
 
@@ -179,7 +178,6 @@ pub fn destroy(self: *App) void {
     self.terms.deinit();
     self.byz.deinit();
     self.noto.deinit();
-    self.sdl.deinit();
     self.lists.deinit(self.allocator);
 
     self.dictionary.destroy();
@@ -267,9 +265,6 @@ pub fn initPanels(self: *App) !void {
 
     try self.noto.init(self);
     errdefer self.noto.deinit();
-
-    try self.sdl.init(self);
-    errdefer self.sdl.deinit();
 
     end = std.Io.Timestamp.now(self.io, .real).toMilliseconds();
     info("Panels initialised in {d}ms.", .{end - start});
@@ -760,7 +755,6 @@ const ParsingCardScreen = @import("ParsingCardScreen.zig");
 const SearchScreen = @import("SearchScreen.zig");
 const TermsScreen = @import("TermsScreen.zig");
 const WordInfoScreen = @import("WordInfoScreen.zig");
-const SDLScreen = @import("SDLScreen.zig");
 
 pub const app_info = @import("app_info");
 

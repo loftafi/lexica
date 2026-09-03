@@ -1,4 +1,4 @@
-//! Display required information about the noto font.
+/// Display required information about the noto font.
 pub const NotoScreen = @This();
 
 app: *App = undefined,
