@@ -5,6 +5,7 @@ NOUN,Noun,ὄνομα
 ADJECTIVE,Adjective,ἐπὶθετον
 ADVERB,Adverb,ἐπίρρημα
 ARTICLE,Article,ἄρθρον
+ARTICLES,Articles,ἄρθρα
 CONJUNCTION,Conjunction,σύνδεσμος
 PRONOUN,Pronoun,ἀντωνυμία
 PREPOSITION,Preposition,ἀντωνυμία
@@ -33,6 +34,7 @@ DUAL,Dual,δυϊκός
 PLURAL,Plural,πληθυντικός
 DECLINES,Declines,Declines
 PART_OF_SPEECH,Part of Speech,μέρος τοῦ λόγου
+STRONGS,Strongs,Strongs
 STRONGS_NUMBER,Strongs Number,Strongs Number
 PARSING_QUIZ,Parsing Quiz,ἀσκεῖν
 DICTIONARY,Dictionary,λεξικόν
@@ -81,3 +83,4 @@ AFFIRM7,Exactly!,Exactly!
 AFFIRM8,Right on,Right on
 AFFIRM9,Nice work,Nice work
 AFFIRM10,Correct,Correct
+THEME,Theme,Theme

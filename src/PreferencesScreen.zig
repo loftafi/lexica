@@ -37,8 +37,8 @@ pub fn init(self: *PreferencesScreen, app: *AppContext) !void {
         \\panel:panel name "preferences.screen" hidden vertical choosable
         \\  layout grows grows align centre centre
         \\  minimum width=280 height=360
-        \\  maximum width=360
-        \\  pad left=1em right=1em bottom=0.5em
+        \\  maximum width=480
+        \\  pad left=0.5em right=0.5em bottom=0.5em
         \\  spacing 8
         \\{
         \\  label:preferences_heading never_focus style tinted
@@ -137,17 +137,6 @@ pub fn init(self: *PreferencesScreen, app: *AppContext) !void {
         .type = .{ .expander = .{ .weight = 1 } },
     }, display);
 
-    _ = try self.panel.add(.{
-        .name = "choose_theme_heading",
-        .layout = .{ .x = .grows },
-        .child_align = .{ .x = .centre },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Theme",
-            .text_size = .subheading,
-        } },
-    }, display);
-
     try self.initThemeButton(display, self.panel);
 
     _ = try self.panel.add(.{
@@ -229,28 +218,47 @@ pub fn deinit(self: *PreferencesScreen) void {
     self.* = undefined;
 }
 
-fn initThemeButton(self: *PreferencesScreen, display: *Display, parent: *Entity) !void {
+fn initThemeButton(
+    self: *PreferencesScreen,
+    display: *Display,
+    parent: *Entity,
+) !void {
     var wrapper = try parent.add(.{
         .name = "theme.picker.align",
+        .background = .{
+            .image_name = "white rounded rect",
+            .corner_radius = 14,
+            .image_corner_radius = 14,
+        },
+        .style = .faded,
+        .pad = .{ .top = 10, .bottom = 10, .left = 5, .right = 5 },
         .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
-        .pad = .{ .left = 10, .right = 10 },
         .minimum = .{ .width = 250, .height = 10 },
         .maximum = .{ .width = 500 },
         .type = .{ .panel = .{
-            .direction = .left_to_right,
+            .direction = .top_to_bottom,
+        } },
+    }, display);
+
+    _ = try wrapper.add(.{
+        .name = "choose_theme_heading",
+        .layout = .{ .x = .grows },
+        .child_align = .{ .x = .centre },
+        .style = .tinted,
+        .pad = .{ .bottom = 10 },
+        .type = .{ .label = .{
+            .text = "THEME",
+            .text_size = .subheading,
         } },
     }, display);
 
     const picker = try wrapper.add(.{
         .name = "theme_menu",
-        .background = .{ .image_name = "white rounded rect" },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
+        .layout = .{ .x = .grows, .y = .shrinks },
         .child_align = .{ .x = .centre },
-        .pad = .{ .left = 15, .right = 15, .top = 10, .bottom = 10 },
         .minimum = .{ .width = 250, .height = 10 },
         .maximum = .{ .width = 500 },
-        .style = .faded,
         .type = .{ .panel = .{
             .direction = .left_to_right,
             .spacing = 20,
