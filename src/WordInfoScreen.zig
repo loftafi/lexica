@@ -1,5 +1,4 @@
-//! Setup the word information panel. This shows all information
-//! about a word.
+/// Display information about an individual lexeme.
 pub const WordInfoScreen = @This();
 
 const ICON_PAD = 15;
@@ -47,17 +46,17 @@ pub fn init(self: *WordInfoScreen, app: *App) !void {
             .layout = .{ .x = .grows, .y = .grows },
             .child_align = .{ .x = .centre },
             .visible = .hidden,
-            .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
+            .pad = .{ .left = App.APP_PAD, .right = App.APP_PAD },
             .minimum = .{
-                .width = ac.APP_MINIMUM_WIDTH,
-                .height = ac.APP_MINIMUM_HEIGHT,
+                .width = App.APP_MINIMUM_WIDTH,
+                .height = App.APP_MINIMUM_HEIGHT,
             },
             .type = .{ .panel = .{
                 .direction = .top_to_bottom,
                 .spacing = 2,
                 .choosable = .choosable,
             } },
-            .on_resized = .{ .func = @ptrCast(&handle_resize), .ptr = self },
+            .on_resized = .{ .func = @ptrCast(&resizePanel), .ptr = self },
         },
     );
 
@@ -279,7 +278,7 @@ pub fn init(self: *WordInfoScreen, app: *App) !void {
         } },
     }, display);
 
-    for (0..ac.MAX_PANEL_TABLES) |i| {
+    for (0..App.MAX_PANEL_TABLES) |i| {
         const parsing_panel = try initFormPanel(display, self.scroller);
         self.app.panel_tables[i] = parsing_panel;
     }
@@ -325,7 +324,7 @@ pub fn init(self: *WordInfoScreen, app: *App) !void {
                     .hover_name = "button hover",
                 },
                 .text = "Practice",
-                .on_pressed = .{ .func = @ptrCast(&show_parsing_setup), .ptr = self },
+                .on_pressed = .{ .func = @ptrCast(&tapPracticeButton), .ptr = self },
                 .spacing = 10,
             },
         },
@@ -346,24 +345,25 @@ pub fn deinit(self: *WordInfoScreen) void {
     self.gloss_buffer.deinit();
     self.strongs_buffer.deinit();
     self.tags_buffer.deinit();
+    self.* = undefined;
 }
 
-/// Handle tap on the "Practice" button.
-pub fn show_parsing_setup(
+/// Handle a tap on the "Practice" button.
+pub fn tapPracticeButton(
     self: *WordInfoScreen,
     display: *Display,
     _: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     try self.app.parsing_setup.study_by_form(
         display,
         self.app.word_lexeme.?,
-        ac.Screen.word_info,
+        App.Screen.word_info,
         event,
     );
 }
 
-pub fn handle_resize(
+pub fn resizePanel(
     self: *WordInfoScreen,
     display: *Display,
     _: *Entity,
@@ -580,7 +580,7 @@ pub fn show(
     const panels = try self.app.panels.panels(display.allocator);
     var i: usize = 0;
     for (panels) |*table| {
-        if (i >= ac.MAX_PANEL_TABLES) {
+        if (i >= App.MAX_PANEL_TABLES) {
             break;
         }
         var current = self.app.panel_tables[i];
@@ -711,7 +711,7 @@ pub fn show(
     }
 
     // Hide the final unused panels
-    while (i < ac.MAX_PANEL_TABLES) {
+    while (i < App.MAX_PANEL_TABLES) {
         self.app.panel_tables[i].visible = .hidden;
         i += 1;
     }
@@ -742,7 +742,6 @@ fn setTableRow(
 }
 
 const std = @import("std");
-const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const engine = @import("engine");
@@ -752,10 +751,8 @@ const Event = engine.Event;
 const warn = engine.log.warn;
 
 const praxis = @import("praxis");
-const Panels = praxis.Panels;
 const Lang = praxis.Lang;
 
-const ac = @import("App.zig");
-const App = ac.App;
+const App = @import("App.zig");
 const SearchScreen = @import("SearchScreen.zig");
 const can_practice_lexeme = @import("filter_stats.zig").can_practice_lexeme;

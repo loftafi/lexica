@@ -45,9 +45,9 @@ pub fn init(self: *SearchScreen, app: *App) !void {
         .name = "search.screen",
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .pad = .{ .left = App.APP_PAD, .right = App.APP_PAD },
+        .minimum = .{ .width = App.APP_MINIMUM_WIDTH, .height = App.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = App.APP_MAXIMUM_WIDTH },
         .visible = .hidden,
         .type = .{ .panel = .{
             .direction = .top_to_bottom,
@@ -93,7 +93,7 @@ pub fn init(self: *SearchScreen, app: *App) !void {
                 .spacing = 10,
             },
         },
-        .on_resized = .{ .func = @ptrCast(&vertical_scroller_resize), .ptr = self },
+        .on_resized = .{ .func = @ptrCast(&resizeScroller), .ptr = self },
     }, app.display);
 
     // Keep a global array of these for easy access to their position in the element tree.
@@ -104,7 +104,7 @@ pub fn init(self: *SearchScreen, app: *App) !void {
         self.search_result_form[i] = null;
         if (i < app.view_history.items.len) {
             self.search_result_form[i] = app.view_history.items[i];
-            try self.update_search_result_row(self.search_result_form[i].?, &x, &self.seen_result, "");
+            try self.updateSearchResult(self.search_result_form[i].?, &x, &self.seen_result, "");
         }
     }
 }
@@ -129,13 +129,13 @@ pub fn tapSearchResult(
     self: *SearchScreen,
     display: *Display,
     element: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     for (self.search_results, 0..) |i, x| {
         if (i == element) {
             if (self.search_result_form[x]) |form| {
                 self.remove_form_from_view_history(form);
-                if (self.app.view_history.items.len == ac.MAX_SEARCH_HISTORY) {
+                if (self.app.view_history.items.len == App.MAX_SEARCH_HISTORY) {
                     _ = self.app.view_history.pop();
                 }
                 try self.app.view_history.insert(display.allocator, 0, form);
@@ -163,7 +163,7 @@ pub fn search_query_changed(
     self: *SearchScreen,
     display: *Display,
     element: *Entity,
-    _: *Event,
+    _: *const Event,
 ) error{OutOfMemory}!void {
     const query = element.type.text_input.text.items;
 
@@ -179,8 +179,8 @@ pub fn search_query_changed(
             if (i >= MAX_SEARCH_RESULTS) {
                 break;
             }
-            const selected = select_primary_form(word.*, query);
-            try self.update_search_result_row(selected, &i, &self.seen_result, query);
+            const selected = selectPrimaryForm(word.*, query);
+            try self.updateSearchResult(selected, &i, &self.seen_result, query);
         }
     }
 
@@ -191,8 +191,8 @@ pub fn search_query_changed(
             if (i >= MAX_SEARCH_RESULTS) {
                 break;
             }
-            const selected = select_primary_form(word.*, query);
-            try self.update_search_result_row(selected, &i, &self.seen_result, query);
+            const selected = selectPrimaryForm(word.*, query);
+            try self.updateSearchResult(selected, &i, &self.seen_result, query);
         }
     }
 
@@ -203,8 +203,8 @@ pub fn search_query_changed(
             if (i >= MAX_SEARCH_RESULTS) {
                 break;
             }
-            const selected = select_primary_form(word.*, query);
-            try self.update_search_result_row(selected, &i, &self.seen_result, query);
+            const selected = selectPrimaryForm(word.*, query);
+            try self.updateSearchResult(selected, &i, &self.seen_result, query);
         }
     }
 
@@ -213,7 +213,7 @@ pub fn search_query_changed(
     if (i == 0 and query.len == 0) {
         for (self.app.view_history.items) |form| {
             self.search_result_form[i] = form;
-            try self.update_search_result_row(form, &i, &self.seen_result, query);
+            try self.updateSearchResult(form, &i, &self.seen_result, query);
         }
     }
 
@@ -236,7 +236,7 @@ pub fn show_search_history(self: *SearchScreen, display: *Display) error{OutOfMe
     for (0..MAX_SEARCH_RESULTS) |i| {
         if (i < self.app.view_history.items.len) {
             self.search_result_form[i] = self.app.view_history.items[i];
-            try self.update_search_result_row(self.search_result_form[i].?, &x, &self.seen_result, "");
+            try self.updateSearchResult(self.search_result_form[i].?, &x, &self.seen_result, "");
         } else {
             const top = self.search_results[i].type.panel.children.items[0];
             try top.type.panel.children.items[0].setText(display, "");
@@ -248,17 +248,7 @@ pub fn show_search_history(self: *SearchScreen, display: *Display) error{OutOfMe
     }
 }
 
-pub inline fn best_width(display: *Display) f32 {
-    if (display.root.rect.width > 1020) {
-        return 1000;
-    } else if (display.root.rect.width < 500) {
-        return 500;
-    } else {
-        return display.root.rect.width - 20;
-    }
-}
-
-pub fn vertical_scroller_resize(
+pub fn resizeScroller(
     _: *SearchScreen,
     display: *Display,
     scroll: *Entity,
@@ -282,7 +272,7 @@ pub fn vertical_scroller_resize(
     return updated;
 }
 
-inline fn update_search_result_row(
+inline fn updateSearchResult(
     self: *SearchScreen,
     form: *praxis.Form,
     i: *usize,
@@ -325,7 +315,7 @@ inline fn update_search_result_row(
 
 /// If the query text matches the root/primary lexeme form, use the
 /// root/primary lexeme form instead of the search result form.
-pub fn select_primary_form(word: *praxis.Form, query: []const u8) *Form {
+pub fn selectPrimaryForm(word: *praxis.Form, query: []const u8) *Form {
     if (word.lexeme == null) {
         return word;
     }
@@ -337,7 +327,7 @@ pub fn select_primary_form(word: *praxis.Form, query: []const u8) *Form {
     // Check prefix presuming Greek letters
     var normalised: praxis.Normaliser.Keywords(praxis.max_word_size + 1) = .empty;
     const k = normalised.normalise(primary.?.word) catch |e| {
-        warn("select_primary_form({s},{s}) normalise failed. {any}", .{ word.word, query, e });
+        warn("selectPrimaryForm({s},{s}) normalise failed. {any}", .{ word.word, query, e });
         return word;
     };
     if (std.mem.startsWith(u8, k.unaccented, query)) {
@@ -350,7 +340,7 @@ pub fn select_primary_form(word: *praxis.Form, query: []const u8) *Form {
     // Check prefix presuming transliterated English
     var buffer: [praxis.max_word_size * 2]u8 = undefined;
     const transliterated = praxis.transliterate(primary.?.word, false, &buffer) catch |e| {
-        warn("select_primary_form({s},{s}) transliterate failed {any}", .{ word.word, query, e });
+        warn("selectPrimaryForm({s},{s}) transliterate failed {any}", .{ word.word, query, e });
         return word;
     };
     if (std.ascii.startsWithIgnoreCase(transliterated, query)) {
@@ -428,7 +418,6 @@ pub fn initSearchResultPanel(
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
 const AutoHashMap = std.AutoHashMap;
 
 const engine = @import("engine");
@@ -444,8 +433,7 @@ const praxis = @import("praxis");
 const Lang = praxis.Lang;
 const Form = praxis.Form;
 
-const ac = @import("App.zig");
-const App = ac.App;
+const App = @import("App.zig");
 const MenuUI = @import("MenuUI.zig");
 const WordInfoScreen = @import("WordInfoScreen.zig");
 const show_word_panel = WordInfoScreen.show;

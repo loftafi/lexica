@@ -560,9 +560,6 @@ const ac = @import("App.zig");
 const App = ac.App;
 
 const MenuUI = @import("MenuUI.zig");
-const best_width = @import("ParsingMenuScreen.zig").best_width;
 const PrivacyScreen = @import("PrivacyScreen.zig");
 const TermsScreen = @import("TermsScreen.zig");
-const show_terms_screen = @import("TermsScreen.zig").show;
 const LicenseScreen = @import("LicenseScreen.zig");
-const under_menu_spacing = @import("MenuUI.zig").under_menu_spacing;

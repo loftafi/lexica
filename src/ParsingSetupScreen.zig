@@ -20,7 +20,7 @@ start_button: *Entity = undefined,
 delete_button: *Entity = undefined,
 edit_button: *Entity = undefined,
 
-called_by: ac.Screen = .unknown,
+called_by: App.Screen = .unknown,
 
 /// The list of words that we are studying (In word list study mode.)
 list: ?*WordSet = null,
@@ -36,8 +36,8 @@ pub fn study_by_form(
     self: *ParsingSetupScreen,
     display: *Display,
     called_lexeme: *praxis.Lexeme,
-    from_caller: ac.Screen,
-    event: *Event,
+    from_caller: App.Screen,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     self.called_by = from_caller;
     self.lexeme = called_lexeme;
@@ -72,7 +72,7 @@ pub fn study_by_form(
     );
     try self.help_line.setVisibility(display, .hidden);
 
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
     try display.choosePanel("parsing.setup", event);
 }
 
@@ -81,7 +81,7 @@ pub fn study_by_list(
     self: *ParsingSetupScreen,
     display: *Display,
     study_list: *WordSet,
-    from_caller: ac.Screen,
+    from_caller: App.Screen,
     event: *Event,
 ) error{OutOfMemory}!void {
     self.called_by = from_caller;
@@ -111,7 +111,7 @@ pub fn study_by_list(
     try self.heading.setText(display, study_list.name.items);
     self.help_line.visible = .hidden;
 
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
     try display.choosePanel("parsing.setup", event);
 }
 
@@ -231,7 +231,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Nominative and Accusative",
                 .on_change = .{
-                    .func = @ptrCast(&change_nominative_accusative_preference),
+                    .func = @ptrCast(&changeNominativeAccusativePreference),
                     .ptr = self,
                 },
             } },
@@ -244,7 +244,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Genitive and Dative",
                 .on_change = .{
-                    .func = @ptrCast(&change_genitive_dative_preference),
+                    .func = @ptrCast(&changeGenitiveDativePreference),
                     .ptr = self,
                 },
             } },
@@ -257,7 +257,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Third Declension",
                 .on_change = .{
-                    .func = @ptrCast(&change_third_declension_preference),
+                    .func = @ptrCast(&changeThirdDeclensionPreference),
                     .ptr = self,
                 },
             } },
@@ -293,7 +293,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Present and Future",
                 .on_change = .{
-                    .func = @ptrCast(&change_present_future_preference),
+                    .func = @ptrCast(&changePresentFuturePreference),
                     .ptr = self,
                 },
             } },
@@ -305,7 +305,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Imperfect",
                 .on_change = .{
-                    .func = @ptrCast(&change_imperfect_preference),
+                    .func = @ptrCast(&changeImperfectPreference),
                     .ptr = self,
                 },
             } },
@@ -317,7 +317,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Aorist",
                 .on_change = .{
-                    .func = @ptrCast(&change_aorist_preference),
+                    .func = @ptrCast(&changeAoristPreference),
                     .ptr = self,
                 },
             } },
@@ -329,7 +329,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Perfect and Pluperfect",
                 .on_change = .{
-                    .func = @ptrCast(&change_perfect_pluperfect_preference),
+                    .func = @ptrCast(&changePerfectPluperfectPreference),
                     .ptr = self,
                 },
             } },
@@ -348,7 +348,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Middle and Passive",
                 .on_change = .{
-                    .func = @ptrCast(&change_middle_passive_preference),
+                    .func = @ptrCast(&changeMiddlePassivePreference),
                     .ptr = self,
                 },
             } },
@@ -368,7 +368,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Indicative",
                 .on_change = .{
-                    .func = @ptrCast(&change_indicative_preference),
+                    .func = @ptrCast(&changeIndicativePreference),
                     .ptr = self,
                 },
             } },
@@ -397,7 +397,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .checkbox = .{
                 .text = "Participles",
                 .on_change = .{
-                    .func = @ptrCast(&change_participles_preference),
+                    .func = @ptrCast(&changeParticiplesPreference),
                     .ptr = self,
                 },
             } },
@@ -668,15 +668,6 @@ pub fn resizeScroller(
         updated = true;
     }
 
-    //const new_width = best_width(display);
-    //debug("parent_width={d} width={d}", .{ display.root.rect.width, new_width });
-    //if (self.panel.rect.width != new_width) {
-    //    self.panel.rect.width = new_width;
-    //    self.panel.minimum.width = new_width;
-    //    self.panel.maximum.width = new_width;
-    //    updated = true;
-    //}
-
     if (self.scroller.rect.height != display.root.rect.height - 160) {
         self.scroller.rect.height = display.root.rect.height - 160;
         self.scroller.minimum.height = self.scroller.rect.height;
@@ -744,7 +735,7 @@ pub fn updateOptionPanels(self: *ParsingSetupScreen) void {
     }
 }
 
-fn refresh_menu(self: *ParsingSetupScreen, display: *Display) !void {
+fn refreshMenu(self: *ParsingSetupScreen, display: *Display) !void {
     if (self.app.preference.present_future == false and
         self.app.preference.imperfect == false and
         self.app.preference.aorist == false and
@@ -780,7 +771,7 @@ fn refresh_menu(self: *ParsingSetupScreen, display: *Display) !void {
     try self.updateCounterText(display);
 }
 
-pub fn change_nominative_accusative_preference(
+pub fn changeNominativeAccusativePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -789,12 +780,12 @@ pub fn change_nominative_accusative_preference(
     if (element.type == .checkbox) {
         if (self.app.preference.nominative_accusative != element.type.checkbox.checked) {
             self.app.preference.nominative_accusative = element.type.checkbox.checked;
-            try self.refresh_menu(display);
+            try self.refreshMenu(display);
         }
     }
 }
 
-pub fn change_third_declension_preference(
+pub fn changeThirdDeclensionPreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -803,12 +794,12 @@ pub fn change_third_declension_preference(
     if (element.type == .checkbox) {
         if (self.app.preference.third_declension != element.type.checkbox.checked) {
             self.app.preference.third_declension = element.type.checkbox.checked;
-            try self.refresh_menu(display);
+            try self.refreshMenu(display);
         }
     }
 }
 
-pub fn change_genitive_dative_preference(
+pub fn changeGenitiveDativePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -817,10 +808,10 @@ pub fn change_genitive_dative_preference(
     if (element.type == .checkbox) {
         self.app.preference.genitive_dative = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_present_future_preference(
+pub fn changePresentFuturePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -829,10 +820,10 @@ pub fn change_present_future_preference(
     if (element.type == .checkbox) {
         self.app.preference.present_future = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_aorist_preference(
+pub fn changeAoristPreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -841,10 +832,10 @@ pub fn change_aorist_preference(
     if (element.type == .checkbox) {
         self.app.preference.aorist = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_imperfect_preference(
+pub fn changeImperfectPreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -853,10 +844,10 @@ pub fn change_imperfect_preference(
     if (element.type == .checkbox) {
         self.app.preference.imperfect = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_perfect_pluperfect_preference(
+pub fn changePerfectPluperfectPreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -865,10 +856,10 @@ pub fn change_perfect_pluperfect_preference(
     if (element.type == .checkbox) {
         self.app.preference.perfect_pluperfect = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_middle_passive_preference(
+pub fn changeMiddlePassivePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -877,10 +868,10 @@ pub fn change_middle_passive_preference(
     if (element.type == .checkbox) {
         self.app.preference.middle_passive = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_mi_preference(
+pub fn changeMiPreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -889,10 +880,10 @@ pub fn change_mi_preference(
     if (element.type == .checkbox) {
         self.app.preference.mi = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_indicative_preference(
+pub fn changeIndicativePreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -901,10 +892,10 @@ pub fn change_indicative_preference(
     if (element.type == .checkbox) {
         self.app.preference.indicative = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
-pub fn change_participles_preference(
+pub fn changeParticiplesPreference(
     self: *ParsingSetupScreen,
     display: *Display,
     element: *Entity,
@@ -913,7 +904,7 @@ pub fn change_participles_preference(
     if (element.type == .checkbox) {
         self.app.preference.participle = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
 pub fn changeInfinitivePreference(
@@ -925,7 +916,7 @@ pub fn changeInfinitivePreference(
     if (element.type == .checkbox) {
         self.app.preference.infinitive = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
 pub fn changeSubjunctivePreference(
@@ -937,7 +928,7 @@ pub fn changeSubjunctivePreference(
     if (element.type == .checkbox) {
         self.app.preference.subjunctive = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
 pub fn changeImperativePreference(
@@ -949,7 +940,7 @@ pub fn changeImperativePreference(
     if (element.type == .checkbox) {
         self.app.preference.imperative = element.type.checkbox.checked;
     }
-    try self.refresh_menu(display);
+    try self.refreshMenu(display);
 }
 
 pub fn filter_forms(
@@ -980,12 +971,10 @@ const Event = engine.Event;
 const praxis = @import("praxis");
 const Lexeme = praxis.Lexeme;
 
-const ac = @import("App.zig");
-const App = ac.App;
+const App = @import("App.zig");
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const ParsingCardScreen = @import("ParsingCardScreen.zig");
 const ListEditScreen = @import("ListEditScreen.zig");
 const ListDeleteScreen = @import("ListDeleteScreen.zig");
-const best_width = @import("SearchScreen.zig").best_width;
 const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;

@@ -1,9 +1,9 @@
-//! Present the menu that has shortcut to common words used
-//! for parsing, and any special user created parsing sets.
-//!
-//! `init` builds up the entire screen, without any word sets
-//! that may exist. `setupLists` is then used to add/update
-//! the list ofavailable word sets.
+/// Present the menu that has shortcut to common words used
+/// for parsing, and any special user created parsing sets.
+///
+/// `init` builds up the entire screen, without any word sets
+/// that may exist. `setupLists` is then used to add/update
+/// the list ofavailable word sets.
 pub const ParsingMenuScreen = @This();
 
 app: *App = undefined,
@@ -37,7 +37,7 @@ pub fn deinit(self: *ParsingMenuScreen) void {
 pub fn init(
     self: *ParsingMenuScreen,
     context: *App,
-) (engine.Error || error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || ResourcesError)!void {
+) (engine.Error || error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || Resources.Error)!void {
     var display = context.display;
     self.app = context;
 
@@ -47,9 +47,9 @@ pub fn init(
         .rect = .{ .x = 0, .y = 0 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .pad = .{ .left = App.APP_PAD, .right = App.APP_PAD },
+        .minimum = .{ .height = App.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = App.APP_MAXIMUM_WIDTH },
         .type = .{ .panel = .{
             .direction = .top_to_bottom,
             .spacing = 5,
@@ -107,19 +107,19 @@ pub fn init(
         } },
     }, display);
 
-    try self.make_button_bar(display, self.scroller, "verb.buttons", &[_][]const u8{ "λύω", "βλέπω", "περιπατέω" });
-    try self.make_button_bar(display, self.scroller, "contract.buttons", &[_][]const u8{ "ἀγαπάω", "ποιέω", "πληρόω" });
-    try self.make_button_bar(display, self.scroller, "other.buttons", &[_][]const u8{ "ῥύομαι", "δίδωμι", "ἐγώ", "εἰμί" });
+    try self.initButtonBar(display, self.scroller, "verb.buttons", &[_][]const u8{ "λύω", "βλέπω", "περιπατέω" });
+    try self.initButtonBar(display, self.scroller, "contract.buttons", &[_][]const u8{ "ἀγαπάω", "ποιέω", "πληρόω" });
+    try self.initButtonBar(display, self.scroller, "other.buttons", &[_][]const u8{ "ῥύομαι", "δίδωμι", "ἐγώ", "εἰμί" });
 
     _ = try display.add_spacer(self.scroller, 20);
 
-    try self.make_button_bar(display, self.scroller, "masculine.buttons", &[_][]const u8{ "ἄνθρωπος", "λόγος", "θεός" });
-    try self.make_button_bar(display, self.scroller, "feminine.buttons", &[_][]const u8{ "γραφή", "ἠμέρα", "δόξα" });
-    try self.make_button_bar(display, self.scroller, "neuter.buttons", &[_][]const u8{ "βιβλίον", "ἔργον", "τέκνον" });
+    try self.initButtonBar(display, self.scroller, "masculine.buttons", &[_][]const u8{ "ἄνθρωπος", "λόγος", "θεός" });
+    try self.initButtonBar(display, self.scroller, "feminine.buttons", &[_][]const u8{ "γραφή", "ἠμέρα", "δόξα" });
+    try self.initButtonBar(display, self.scroller, "neuter.buttons", &[_][]const u8{ "βιβλίον", "ἔργον", "τέκνον" });
 
     _ = try display.add_spacer(self.scroller, 20);
 
-    try self.make_button_bar(display, self.scroller, "parsing.other", &[_][]const u8{ "βασιλεύς", "πόλις", "σάρξ", "πᾶς" });
+    try self.initButtonBar(display, self.scroller, "parsing.other", &[_][]const u8{ "βασιλεύς", "πόλις", "σάρξ", "πᾶς" });
 
     _ = try self.scroller.add(.{
         .name = "bottom.expander",
@@ -193,7 +193,7 @@ pub fn init(
     self.bottom_spacer.on_resized = .{ .func = @ptrCast(&MenuUI.update_bottom_spacing), .ptr = self };
 }
 
-pub fn setupLists(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || engine.Error || ResourcesError)!void {
+pub fn setupLists(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || engine.Error || Resources.Error)!void {
     const display = self.app.display;
 
     // Remove existing list items
@@ -233,7 +233,7 @@ pub fn setupLists(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFor
     display.relayout();
 }
 
-fn make_button_bar(
+fn initButtonBar(
     self: *ParsingMenuScreen,
     display: *Display,
     parent: *Entity,
@@ -282,7 +282,7 @@ pub fn tapPracticeList(
     event: *Event,
 ) error{OutOfMemory}!void {
     if (self.app.lists.lookup(element.type.label.text)) |list| {
-        try self.app.parsing_setup.study_by_list(display, list, ac.Screen.parsing_menu, event);
+        try self.app.parsing_setup.study_by_list(display, list, App.Screen.parsing_menu, event);
         info("Picked list to study {s}", .{list.name.items});
         return;
     }
@@ -295,7 +295,7 @@ pub fn tapPracticeWord(
     element: *Entity,
     event: *Event,
 ) error{OutOfMemory}!void {
-    var found: ?*praxis.Lexeme = null;
+    var found: ?*Lexeme = null;
 
     const i = self.app.dictionary.by_form.lookup(element.type.button.text) catch {
         notice("practice word parsing for {s} not found.", .{element.type.button.text});
@@ -314,7 +314,7 @@ pub fn tapPracticeWord(
         }
     }
     if (found) |lexeme| {
-        try self.app.parsing_setup.study_by_form(display, lexeme, ac.Screen.parsing_menu, event);
+        try self.app.parsing_setup.study_by_form(display, lexeme, App.Screen.parsing_menu, event);
         return;
     }
 
@@ -370,10 +370,9 @@ const notice = engine.log.notice;
 const debug = engine.log.debug;
 
 const praxis = @import("praxis");
-const Lang = praxis.Lang;
+const Lexeme = praxis.Lexeme;
 
-const ac = @import("App.zig");
-const App = ac.App;
+const App = @import("App.zig");
 const MenuUI = @import("MenuUI.zig");
-const ResourcesError = @import("resources").Resources.Error;
+const Resources = @import("resources").Resources;
 const Lists = @import("Lists.zig");

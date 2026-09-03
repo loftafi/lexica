@@ -1,4 +1,4 @@
-//! This panel allows deleting a word set.
+/// Display an "Are you sure you want to delete this list" screen.
 pub const ListDeleteScreen = @This();
 
 const ICON_PAD = 15;
@@ -30,7 +30,7 @@ pub fn deinit(self: *ListDeleteScreen) void {
 pub fn init(
     self: *ListDeleteScreen,
     app: *App,
-) (error{ OutOfMemory, ResourceNotFound, ResourceReadError, UnknownImageFormat } || engine.Error || ResourceErrors)!void {
+) (error{ OutOfMemory, ResourceNotFound, ResourceReadError, UnknownImageFormat } || engine.Error || Resources.Error)!void {
     self.app = app;
     var display = app.display;
 
@@ -39,9 +39,9 @@ pub fn init(
         .rect = .{ .x = 0, .y = 0 },
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .centre },
-        .pad = .{ .left = ac.APP_PAD, .right = ac.APP_PAD },
-        .minimum = .{ .width = ac.APP_MINIMUM_WIDTH, .height = ac.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = ac.APP_MAXIMUM_WIDTH },
+        .pad = .{ .left = App.APP_PAD, .right = App.APP_PAD },
+        .minimum = .{ .width = App.APP_MINIMUM_WIDTH, .height = App.APP_MINIMUM_HEIGHT },
+        .maximum = .{ .width = App.APP_MAXIMUM_WIDTH },
         .type = .{ .panel = .{
             .direction = .top_to_bottom,
             .spacing = 35,
@@ -168,7 +168,6 @@ pub fn resizeList(
 }
 
 const std = @import("std");
-const App = ac.App;
 
 const engine = @import("engine");
 const Display = engine.Display;
@@ -177,7 +176,7 @@ const Event = engine.Event;
 const err = engine.log.err;
 const info = engine.log.info;
 
-const ac = @import("App.zig");
-const ResourceErrors = @import("resources").Resources.Error;
+const App = @import("App.zig");
+const Resources = @import("resources").Resources;
 
 const Lists = @import("Lists.zig");
