@@ -70,6 +70,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     self.word_title = try self.panel.add(.{
         .name = "word",
+        .focus = .accessibility_focus,
         .child_align = .{ .x = .centre },
         .layout = .{ .x = .grows },
         .style = .tinted,
@@ -82,6 +83,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     self.word_transliteration = try self.panel.add(.{
         .name = "transliteration",
+        .focus = .accessibility_focus,
         .child_align = .{ .x = .centre },
         .layout = .{ .x = .grows },
         .type = .{ .label = .{
@@ -91,6 +93,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     self.word_glosses = try self.panel.add(.{
         .name = "glosses",
+        .focus = .accessibility_focus,
         .child_align = .{ .x = .centre },
         .layout = .{ .x = .grows, .y = .shrinks },
         .type = .{ .label = .{
@@ -130,6 +133,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     self.word_pos = try self.row_pos.add(.{
         .name = "pos",
+        .focus = .accessibility_focus,
         .rect = .{ .width = FIELD_WIDTH, .height = 20 },
         .minimum = .{ .width = FIELD_WIDTH },
         .child_align = .{ .x = .start },
@@ -152,6 +156,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     _ = try self.row_strongs.add(.{
         .name = "strongs_label",
+        .focus = .accessibility_focus,
         .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 20 },
         .minimum = .{ .width = FIELD_LABEL_WIDTH },
         .child_align = .{ .x = .end },
@@ -166,6 +171,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     self.word_strongs = try self.row_strongs.add(.{
         .name = "strongs",
+        .focus = .accessibility_focus,
         .rect = .{ .width = FIELD_WIDTH, .height = 40 },
         .minimum = .{ .width = FIELD_WIDTH },
         .child_align = .{ .x = .start },
@@ -185,6 +191,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     _ = try self.row_articles.add(.{
         .name = "articles_label",
+        .focus = .accessibility_focus,
         .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 20 },
         .minimum = .{ .width = FIELD_LABEL_WIDTH },
         .child_align = .{ .x = .end },
@@ -199,6 +206,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     self.word_articles = try self.row_articles.add(.{
         .name = "articles",
+        .focus = .accessibility_focus,
         .rect = .{ .width = FIELD_WIDTH, .height = 20 },
         .minimum = .{ .width = FIELD_WIDTH },
         .child_align = .{ .x = .start },
@@ -212,6 +220,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     self.row_tags = try self.panel.add(.{
         .name = "row_tags",
+        .focus = .accessibility_focus,
         .rect = .{ .width = 10, .height = 20 },
         .minimum = .{ .width = 100, .height = 20 },
         .child_align = .{ .x = .centre },
@@ -221,6 +230,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
 
     _ = try self.row_tags.add(.{
         .name = "tags_label",
+        .focus = .accessibility_focus,
         .rect = .{ .width = FIELD_LABEL_WIDTH, .height = 20 },
         .minimum = .{ .width = FIELD_LABEL_WIDTH },
         .child_align = .{ .x = .end },
@@ -506,7 +516,6 @@ pub fn show(
 
     self.row_strongs.visible = .hidden;
     if (ac.app_context.?.preference.show_strongs and lexeme.strongs.items.len > 0) {
-        try self.word_strongs.setText(display, "");
         self.strongs_buffer.clearRetainingCapacity();
         self.row_strongs.visible = .visible;
         for (lexeme.strongs.items, 0..) |strongs, i| {
@@ -514,7 +523,7 @@ pub fn show(
                 self.strongs_buffer.writer.writeAll(", ") catch {};
             self.strongs_buffer.writer.print("{d}", .{strongs}) catch {};
         }
-        try self.word_strongs.setText(display, self.strongs_buffer.written());
+        try self.word_strongs.setText(display, self.app.bucket.add(self.strongs_buffer.written()) catch self.strongs_buffer.written());
     }
 
     self.row_tags.visible = .hidden;

@@ -131,6 +131,7 @@ pub const AppContext = struct {
             try ac.display.setLanguage(Lang.english);
         }
         ac.display.setUserScale(ac.preference.size);
+        ac.display.blind_accessibility = ac.preference.accessibility;
         _ = try ac.display.setTheme(ac.preference.theme);
         debug("Loaded preferences. Scale={d}/{s}", .{ ac.display.user_scale, @tagName(ac.preference.size) });
 
@@ -186,6 +187,7 @@ pub const AppContext = struct {
 
         ac.dictionary.destroy();
         ac.dictionary_arena.deinit();
+        ac.bucket.deinit();
 
         const allocator = ac.allocator;
         ac.* = undefined;

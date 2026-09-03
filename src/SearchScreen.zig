@@ -23,6 +23,9 @@ pub fn show(
     event: *const Event,
 ) error{OutOfMemory}!void {
     try display.choosePanel("search.screen", event);
+    if (display.root.getChildByName("menu")) |child| {
+        child.visible = .visible;
+    }
 }
 
 pub fn init(self: *SearchScreen, app: *AppContext) !void {
@@ -118,42 +121,6 @@ pub fn remove_form_from_view_history(self: *SearchScreen, form: *praxis.Form) vo
             return;
         }
     }
-}
-
-pub fn search_word_tap(
-    self: *SearchScreen,
-    display: *Display,
-    element: *Entity,
-    event: *Event,
-) error{OutOfMemory}!void {
-    if (element.type != .label) {
-        return;
-    }
-    for (self.search_results, 0..) |_, x| {
-        if (self.search_result_form[x]) |form| {
-            if (!std.mem.eql(u8, form.word, element.type.label.text)) {
-                continue;
-            }
-            self.remove_form_from_view_history(form);
-            if (ac.app_context.?.view_history.items.len == ac.MAX_SEARCH_HISTORY) {
-                _ = ac.app_context.?.view_history.pop();
-            }
-            try ac.app_context.?.view_history.insert(display.allocator, 0, form);
-            ac.app_context.?.save_view_history() catch {
-                err("Save word view history failed.", .{});
-            };
-            if (form.lexeme) |lexeme| {
-                return ac.app_context.?.word_info.show(display, lexeme, event);
-            }
-            warn("tap on search result {d} has form with no lexeme", .{x});
-            return;
-        } else {
-            warn("tap on search result {d} with no form", .{x});
-            return;
-        }
-    }
-    warn("tap on search result found no form", .{});
-    return;
 }
 
 pub fn tapSearchResult(
@@ -338,6 +305,8 @@ inline fn update_search_result_row(
 
     const transliterated = praxis.transliterate(form.word, true, self.search_transliterations[i.*][0 .. praxis.max_word_size * 2]) catch "";
 
+    search_result.aria_label = self.app.bucket.addFmt("View '{s}' details", .{form.word}) catch "View Details";
+
     const top = search_result.type.panel.children.items[0];
     const bottom = search_result.type.panel.children.items[1];
     try top.type.panel.children.items[0].setText(display, form.word);
@@ -397,7 +366,7 @@ pub fn initSearchResultPanel(
 ) !*Entity {
     var result = try parent.add(.{
         .name = "search.result",
-        .focus = .never_focus,
+        .aria_label = "Search Result Row",
         .visible = .hidden,
         .pad = .{ .left = 7 },
         .layout = .{ .x = .grows, .y = .shrinks },
@@ -422,19 +391,19 @@ pub fn initSearchResultPanel(
 
     _ = try top_row.add(.{
         .name = "word",
+        .focus = .accessibility_focus,
         .minimum = .{ .width = 30, .height = 10 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .style = .tinted,
         .type = .{ .label = .{
             .text_size = .subheading,
-            .on_pressed = .{ .func = @ptrCast(&search_word_tap), .ptr = self },
         } },
         .pad = .{ .left = 3, .right = 3, .top = 0, .bottom = 0 },
     }, display);
 
     _ = try top_row.add(.{
         .name = "transliteration",
-        .focus = .never_focus,
+        .focus = .accessibility_focus,
         .minimum = .{ .width = 30 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .style = .tinted,
@@ -444,7 +413,7 @@ pub fn initSearchResultPanel(
 
     _ = try result.add(.{
         .name = "glosses.row",
-        .focus = .never_focus,
+        .focus = .accessibility_focus,
         .rect = .{ .x = 0, .y = y_offset + 25, .width = 300, .height = 20 },
         .minimum = .{ .width = 300, .height = 10 },
         .layout = .{ .x = .grows, .y = .shrinks },

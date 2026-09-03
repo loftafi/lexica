@@ -1254,6 +1254,7 @@ fn case_changed(
             buttons.genitive,
             buttons.dative,
         });
+        display.haptic_feedback(70);
         try self.button_bounce(display, element);
     }
     try self.show_answer_if_ready(display);
@@ -1270,6 +1271,7 @@ fn number_changed(
             buttons.singular,
             buttons.plural,
         });
+        display.haptic_feedback(70);
         try self.button_bounce(display, element);
     }
     try self.show_answer_if_ready(display);
@@ -1287,6 +1289,7 @@ fn gender_changed(
             buttons.feminine,
             buttons.neuter,
         });
+        display.haptic_feedback(70);
         try self.button_bounce(display, element);
     }
     try self.show_answer_if_ready(display);
@@ -1308,6 +1311,7 @@ fn tense_form_changed(
             buttons.pluperfect,
         });
         try self.button_bounce(display, element);
+        display.haptic_feedback(70);
     }
     try self.show_answer_if_ready(display);
 }
@@ -1326,6 +1330,7 @@ fn mood_changed(
             buttons.infinitive,
             buttons.imperative,
         });
+        display.haptic_feedback(70);
         try self.button_bounce(display, element);
     }
 
@@ -1363,6 +1368,7 @@ fn voice_changed(
             buttons.middle,
             buttons.passive,
         });
+        display.haptic_feedback(70);
         try self.button_bounce(display, element);
     }
     try self.show_answer_if_ready(display);
@@ -1380,6 +1386,7 @@ fn person_changed(
             buttons.second,
             buttons.third,
         });
+        display.haptic_feedback(70);
         try self.button_bounce(display, element);
     }
     try self.show_answer_if_ready(display);

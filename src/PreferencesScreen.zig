@@ -117,6 +117,19 @@ pub fn init(self: *PreferencesScreen, app: *AppContext) !void {
     }, display);
 
     _ = try self.panel.add(.{
+        .name = "keyboard_navigation",
+        .layout = .{ .x = .grows },
+        .type = .{ .checkbox = .{
+            .text = "Full Keyboard Access",
+            .checked = ac.app_context.?.preference.accessibility,
+            .on_change = .{
+                .func = @ptrCast(&changeKeyboardAccess),
+                .ptr = self,
+            },
+        } },
+    }, display);
+
+    _ = try self.panel.add(.{
         .name = "middle.expander",
         .rect = .{ .width = 50, .height = 2 },
         .minimum = .{ .width = 50, .height = 2 },
@@ -505,6 +518,20 @@ pub fn changeStrongsPreference(
     std.debug.assert(entity.type == .checkbox);
     ac.app_context.?.preference.show_strongs = entity.type.checkbox.checked;
     ac.app_context.?.save_preferences();
+}
+
+pub fn changeKeyboardAccess(
+    _: *PreferencesScreen,
+    display: *Display,
+    entity: *Entity,
+    _: *const Event,
+) std.mem.Allocator.Error!void {
+    std.debug.assert(entity.type == .checkbox);
+    if (ac.app_context) |app| {
+        app.preference.accessibility = entity.type.checkbox.checked;
+        app.save_preferences();
+        display.blind_accessibility = app.preference.accessibility;
+    }
 }
 
 const builtin = @import("builtin");
