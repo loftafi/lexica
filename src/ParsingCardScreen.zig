@@ -483,24 +483,24 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
     }
 
     try self.correct_panel.init(
-        ac.APP_MINIMUM_WIDTH,
-        ac.APP_MAXIMUM_WIDTH - 40,
+        App.APP_MINIMUM_WIDTH,
+        App.APP_MAXIMUM_WIDTH - 40,
         &self.app.bucket,
         display,
         self.panel,
         .success,
         .{ .func = null, .ptr = self },
-        .{ .func = @ptrCast(&next_clicked), .ptr = self },
+        .{ .func = @ptrCast(&tapNext), .ptr = self },
     );
     try self.incorrect_panel.init(
-        ac.APP_MINIMUM_WIDTH,
-        ac.APP_MAXIMUM_WIDTH - 40,
+        App.APP_MINIMUM_WIDTH,
+        App.APP_MAXIMUM_WIDTH - 40,
         &self.app.bucket,
         display,
         self.panel,
         .failed,
         .{ .func = null, .ptr = self },
-        .{ .func = @ptrCast(&next_clicked), .ptr = self },
+        .{ .func = @ptrCast(&tapNext), .ptr = self },
     );
 
     _ = try self.panel.add(.{
@@ -930,7 +930,12 @@ var buttons = struct {
         }
     }
 
-    fn mark_answers(self: *Self, form: *praxis.Form, user_choice: praxis.Parsing, gpa: std.mem.Allocator) error{OutOfMemory}!bool {
+    fn mark_answers(
+        self: *Self,
+        form: *praxis.Form,
+        user_choice: praxis.Parsing,
+        gpa: std.mem.Allocator,
+    ) error{OutOfMemory}!bool {
         var expected_parsing = form.parsing;
         var clean_choice = user_choice;
 
@@ -1096,7 +1101,12 @@ pub fn resizeCard(self: *ParsingCardScreen, display: *Display, _: *Entity) bool 
     return false;
 }
 
-pub fn next_clicked(self: *ParsingCardScreen, display: *Display, element: *Entity, event: *Event) error{OutOfMemory}!void {
+pub fn tapNext(
+    self: *ParsingCardScreen,
+    display: *Display,
+    element: *Entity,
+    event: *Event,
+) error{OutOfMemory}!void {
     if (self.app.parsing_quiz.form_bank.items.len == 0) {
         try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
         try self.app.menu_ui.toolbar.setVisibility(display, .visible);
@@ -1214,7 +1224,10 @@ pub fn setupNextCard(
     return true;
 }
 
-fn show_answer_if_ready(self: *ParsingCardScreen, display: *Display) error{OutOfMemory}!void {
+fn show_answer_if_ready(
+    self: *ParsingCardScreen,
+    display: *Display,
+) error{OutOfMemory}!void {
     std.debug.assert(self.app.parsing_quiz.form_bank.items.len > 0);
     const current_form = self.app.parsing_quiz.form_bank.items[0];
     if (buttons.options_picked(current_form, &self.app.parsing_quiz)) |parsing| {
@@ -1397,7 +1410,10 @@ fn clear_other_toggles(current: *Entity, others: []const *Entity) void {
     }
 }
 
-fn formsHaveTenseForm(forms: []*praxis.Form, tense_form: praxis.Parsing.TenseForm) bool {
+fn formsHaveTenseForm(
+    forms: []*praxis.Form,
+    tense_form: praxis.Parsing.TenseForm,
+) bool {
     for (forms) |form|
         if (form.parsing.tense_form == tense_form)
             return true;
@@ -1439,7 +1455,10 @@ fn formsHaveNumber(forms: []*praxis.Form, number: praxis.Parsing.Number) bool {
     return false;
 }
 
-fn formsHaveRefNumber(forms: []*praxis.Form, number: praxis.Parsing.TenseForm) bool {
+fn formsHaveRefNumber(
+    forms: []*praxis.Form,
+    number: praxis.Parsing.TenseForm,
+) bool {
     for (forms) |form|
         if (form.parsing.tense_form == number)
             return true;
@@ -1476,8 +1495,7 @@ const Resources = resources.Resources;
 const ResourcesError = resources.Resources.Error;
 const seed = praxis.random.seed;
 
-const ac = @import("App.zig");
-const App = ac.App;
+const App = @import("App.zig");
 
 const MenuUI = @import("MenuUI.zig");
 const ParsingQuiz = @import("ParsingQuiz.zig");

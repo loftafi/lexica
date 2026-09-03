@@ -49,7 +49,7 @@ pub fn init(self: *MenuUI, app: *App) !void {
         .layout = .{ .x = .fixed, .y = .fixed, .position = .float },
         .child_align = .{ .x = .start, .y = .end },
         .type = .{ .panel = .{ .direction = .centre } },
-        .on_resized = .{ .func = @ptrCast(&fix_toolbar), .ptr = self },
+        .on_resized = .{ .func = @ptrCast(&resizeToolbar), .ptr = self },
     }, display);
 
     self.bg = try self.toolbar.add(.{
@@ -128,11 +128,6 @@ pub fn deinit(self: *MenuUI) void {
     self.* = undefined;
 }
 
-/// Handle tap on the word info menu icon
-pub fn pick_word_info_menu(display: *Display, _: *Entity, event: *Event) std.mem.Allocator.Error!void {
-    try display.choosePanel("word.info", event);
-}
-
 /// Custom code to handle positioning of the progress bar while the
 /// user is participating in a quiz.
 pub fn resizeProgressBar(self: *MenuUI, display: *Display, _: *Entity) bool {
@@ -181,7 +176,7 @@ pub inline fn menubar_height() f32 {
     return button_height + (ICON_PAD / 2);
 }
 
-pub fn fix_toolbar(self: *MenuUI, display: *Display, _: *Entity) bool {
+pub fn resizeToolbar(self: *MenuUI, display: *Display, _: *Entity) bool {
     var updated = false;
 
     const menu_height = menubar_height() + display.safe_area.bottom;
