@@ -20,9 +20,9 @@ pub fn build(b: *std.Build) !void {
     const app_id = b.option([]const u8, "app_id", "override the app id") orelse
         "org.example.lexica";
     const splash_screen = b.option([]const u8, "splash_screen", "Path to splash screen jpg") orelse
-        "assets/xcode-defaults/startup-screen.jpg";
+        "assets/generated/splash-screen.jpg";
     const ios_icon = b.option([]const u8, "ios_icon", "Path to ios icon png") orelse
-        "assets/xcode-defaults/app-icon.png";
+        "assets/generated/app-icon-1024x1024.png";
 
     const app_info = b.addOptions();
     app_info.addOption([]const u8, "app_full_name", app_name);
