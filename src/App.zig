@@ -299,10 +299,10 @@ pub fn enableScreens(self: *App) !void {
     try self.search_screen.show_search_history(self.display);
 
     debug("Adding keybindings.", .{});
-    try self.display.setKeybinding(.space, .{ .func = @ptrCast(&pick_search_screen), .ptr = self });
-    try self.display.setKeybinding(.s, .{ .func = @ptrCast(&pick_search_screen), .ptr = self });
-    try self.display.setKeybinding(.p, .{ .func = @ptrCast(&pick_preferences_screen), .ptr = self });
-    try self.display.setKeybinding(.q, .{ .func = @ptrCast(&pick_parsing_screen), .ptr = self });
+    try self.display.setKeybinding(.space, .{ .func = @ptrCast(&SearchScreen.show), .ptr = &self.search_screen });
+    try self.display.setKeybinding(.s, .{ .func = @ptrCast(&SearchScreen.show), .ptr = &self.search_screen });
+    try self.display.setKeybinding(.p, .{ .func = @ptrCast(&PreferencesScreen.show), .ptr = &self.preferences });
+    try self.display.setKeybinding(.q, .{ .func = @ptrCast(&ParsingMenuScreen.show), .ptr = &self.parsing_menu });
 
     if (builtin.mode == .Debug) {
         try self.display.setKeybinding(.m, .{ .func = @ptrCast(&toggle_menu), .ptr = self });
@@ -601,35 +601,6 @@ fn is_true(field: []const u8, value: []const u8) bool {
     warn("Expecting true or false, found {s}={s}", .{ field, value });
 
     return false;
-}
-
-fn pick_search_screen(
-    self: *App,
-    display: *Display,
-    _: *Entity,
-    event: *const Event,
-) error{OutOfMemory}!void {
-    if (display.getPanel("search.screen")) |screen| {
-        try self.search_screen.show(display, screen, event);
-    }
-}
-
-pub fn pick_preferences_screen(
-    _: *App,
-    display: *Display,
-    _: *Entity,
-    event: *const Event,
-) Allocator.Error!void {
-    try display.choosePanel("preferences.screen", event);
-}
-
-fn pick_parsing_screen(
-    _: *App,
-    display: *Display,
-    _: *Entity,
-    event: *const Event,
-) error{OutOfMemory}!void {
-    try display.choosePanel("parsing.menu", event);
 }
 
 fn toggle_menu(

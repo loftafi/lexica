@@ -18,7 +18,8 @@ pub fn show(
     _: *Entity,
     event: *Event,
 ) Allocator.Error!void {
-    try display.choosePanel("preferences.screen", event);
+    if (display.currentPanel()) |current| if (current == self.panel) return;
+    try display.choosePanel(self.panel.name, event);
     display.need_relayout = true;
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .visible;

@@ -39,11 +39,9 @@ pub fn study_by_form(
     from_caller: ac.Screen,
     event: *Event,
 ) error{OutOfMemory}!void {
-    const ctx = ac.app_context.?;
-
     self.called_by = from_caller;
     self.lexeme = called_lexeme;
-    ctx.word_lexeme = self.lexeme;
+    self.app.word_lexeme = self.lexeme;
     self.list = null;
     self.button_bar_spacer.visible = .hidden;
     self.edit_button.visible = .hidden;
@@ -57,11 +55,11 @@ pub fn study_by_form(
     });
 
     // Checkboxes should contain the default values
-    self.checkboxes.load_preferences();
+    self.checkboxes.applyPreferences(self.app);
 
     // Only show filter options that are valid for these word forms
-    try ctx.parsing_quiz.setup_with_lexeme(called_lexeme);
-    self.checkboxes.update_statistics(ctx.parsing_quiz.all_forms.items);
+    try self.app.parsing_quiz.setup_with_lexeme(called_lexeme);
+    self.checkboxes.update_statistics(self.app.parsing_quiz.all_forms.items);
 
     debug("parsing picker for {s}", .{called_lexeme.word});
     try self.heading.setText(display, "");
@@ -88,7 +86,7 @@ pub fn study_by_list(
 ) error{OutOfMemory}!void {
     self.called_by = from_caller;
     self.list = study_list;
-    ac.app_context.?.word_lexeme = null;
+    self.app.word_lexeme = null;
     self.lexeme = null;
     self.button_bar_spacer.visible = .visible;
     self.edit_button.visible = .visible;
@@ -103,7 +101,7 @@ pub fn study_by_list(
     });
 
     // Checkboxes should contain the default values
-    self.checkboxes.load_preferences();
+    self.checkboxes.applyPreferences(self.app);
 
     // Only show filter options that are valid for these word forms
     self.checkboxes.update_statistics(try study_list.study_forms(display.allocator));
@@ -133,22 +131,22 @@ pub const Checkboxes = struct {
     genitive_dative: *Entity = undefined,
     third_declension: *Entity = undefined,
 
-    pub fn load_preferences(self: *Checkboxes) void {
-        self.present_future.type.checkbox.checked = ac.app_context.?.preference.present_future;
-        self.aorist.type.checkbox.checked = ac.app_context.?.preference.aorist;
-        self.imperfect.type.checkbox.checked = ac.app_context.?.preference.imperfect;
-        self.perfect_pluperfect.type.checkbox.checked = ac.app_context.?.preference.perfect_pluperfect;
+    pub fn applyPreferences(self: *Checkboxes, app: *App) void {
+        self.present_future.type.checkbox.checked = app.preference.present_future;
+        self.aorist.type.checkbox.checked = app.preference.aorist;
+        self.imperfect.type.checkbox.checked = app.preference.imperfect;
+        self.perfect_pluperfect.type.checkbox.checked = app.preference.perfect_pluperfect;
 
-        self.middle_passive.type.checkbox.checked = ac.app_context.?.preference.middle_passive;
-        self.nominative_accusative.type.checkbox.checked = ac.app_context.?.preference.nominative_accusative;
-        self.genitive_dative.type.checkbox.checked = ac.app_context.?.preference.genitive_dative;
-        self.third_declension.type.checkbox.checked = ac.app_context.?.preference.third_declension;
+        self.middle_passive.type.checkbox.checked = app.preference.middle_passive;
+        self.nominative_accusative.type.checkbox.checked = app.preference.nominative_accusative;
+        self.genitive_dative.type.checkbox.checked = app.preference.genitive_dative;
+        self.third_declension.type.checkbox.checked = app.preference.third_declension;
 
-        self.indicative.type.checkbox.checked = ac.app_context.?.preference.indicative;
-        self.participles.type.checkbox.checked = ac.app_context.?.preference.participle;
-        self.subjunctive.type.checkbox.checked = ac.app_context.?.preference.subjunctive;
-        self.infinitive.type.checkbox.checked = ac.app_context.?.preference.infinitive;
-        self.imperative.type.checkbox.checked = ac.app_context.?.preference.imperative;
+        self.indicative.type.checkbox.checked = app.preference.indicative;
+        self.participles.type.checkbox.checked = app.preference.participle;
+        self.subjunctive.type.checkbox.checked = app.preference.subjunctive;
+        self.infinitive.type.checkbox.checked = app.preference.infinitive;
+        self.imperative.type.checkbox.checked = app.preference.imperative;
     }
 
     // Only show filter options that are valid for these word forms
@@ -637,7 +635,7 @@ pub fn resizeScroller(
 ) bool {
     var updated = false;
 
-    if (ac.app_context.?.preference.size == .large or ac.app_context.?.preference.size == .extra_large) {
+    if (self.app.preference.size == .large or self.app.preference.size == .extra_large) {
         if (self.help_line.visible != .hidden) {
             self.help_line.visible = .hidden;
             updated = true;
@@ -699,7 +697,7 @@ pub fn updateCounterText(
     self: *ParsingSetupScreen,
     display: *Display,
 ) error{OutOfMemory}!void {
-    switch (ac.app_context.?.parsing_quiz.total_cards) {
+    switch (self.app.parsing_quiz.total_cards) {
         0 => try self.counter.setText(display, "No word forms."),
         1 => try self.counter.setText(display, "1 word form."),
         else => |count| try self.counter.setText(
@@ -747,34 +745,34 @@ pub fn updateOptionPanels(self: *ParsingSetupScreen) void {
 }
 
 fn refresh_menu(self: *ParsingSetupScreen, display: *Display) !void {
-    if (ac.app_context.?.preference.present_future == false and
-        ac.app_context.?.preference.imperfect == false and
-        ac.app_context.?.preference.aorist == false and
-        ac.app_context.?.preference.perfect_pluperfect == false)
+    if (self.app.preference.present_future == false and
+        self.app.preference.imperfect == false and
+        self.app.preference.aorist == false and
+        self.app.preference.perfect_pluperfect == false)
     {
-        ac.app_context.?.preference.present_future = true;
+        self.app.preference.present_future = true;
         self.checkboxes.present_future.type.checkbox.checked = true;
     }
-    if (ac.app_context.?.preference.indicative == false and
-        ac.app_context.?.preference.participle == false and
-        ac.app_context.?.preference.subjunctive == false and
-        ac.app_context.?.preference.imperative == false and
-        ac.app_context.?.preference.infinitive == false)
+    if (self.app.preference.indicative == false and
+        self.app.preference.participle == false and
+        self.app.preference.subjunctive == false and
+        self.app.preference.imperative == false and
+        self.app.preference.infinitive == false)
     {
-        ac.app_context.?.preference.indicative = true;
+        self.app.preference.indicative = true;
         self.checkboxes.indicative.type.checkbox.checked = true;
     }
-    if (ac.app_context.?.preference.nominative_accusative == false and
-        ac.app_context.?.preference.genitive_dative == false)
+    if (self.app.preference.nominative_accusative == false and
+        self.app.preference.genitive_dative == false)
     {
-        ac.app_context.?.preference.nominative_accusative = true;
+        self.app.preference.nominative_accusative = true;
         self.checkboxes.nominative_accusative.type.checkbox.checked = true;
     }
 
     if (self.lexeme) |current_lexeme| {
-        try ac.app_context.?.parsing_quiz.setup_with_lexeme(current_lexeme);
+        try self.app.parsing_quiz.setup_with_lexeme(current_lexeme);
     } else if (self.list) |current_list| {
-        try ac.app_context.?.parsing_quiz.setup_with_word_set(current_list);
+        try self.app.parsing_quiz.setup_with_word_set(current_list);
     } else {
         err("Cant refresh menus without lexeme specified.", .{});
     }
@@ -789,8 +787,8 @@ pub fn change_nominative_accusative_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        if (ac.app_context.?.preference.nominative_accusative != element.type.checkbox.checked) {
-            ac.app_context.?.preference.nominative_accusative = element.type.checkbox.checked;
+        if (self.app.preference.nominative_accusative != element.type.checkbox.checked) {
+            self.app.preference.nominative_accusative = element.type.checkbox.checked;
             try self.refresh_menu(display);
         }
     }
@@ -803,8 +801,8 @@ pub fn change_third_declension_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        if (ac.app_context.?.preference.third_declension != element.type.checkbox.checked) {
-            ac.app_context.?.preference.third_declension = element.type.checkbox.checked;
+        if (self.app.preference.third_declension != element.type.checkbox.checked) {
+            self.app.preference.third_declension = element.type.checkbox.checked;
             try self.refresh_menu(display);
         }
     }
@@ -817,7 +815,7 @@ pub fn change_genitive_dative_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.genitive_dative = element.type.checkbox.checked;
+        self.app.preference.genitive_dative = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -829,7 +827,7 @@ pub fn change_present_future_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.present_future = element.type.checkbox.checked;
+        self.app.preference.present_future = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -841,7 +839,7 @@ pub fn change_aorist_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.aorist = element.type.checkbox.checked;
+        self.app.preference.aorist = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -853,7 +851,7 @@ pub fn change_imperfect_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.imperfect = element.type.checkbox.checked;
+        self.app.preference.imperfect = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -865,7 +863,7 @@ pub fn change_perfect_pluperfect_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.perfect_pluperfect = element.type.checkbox.checked;
+        self.app.preference.perfect_pluperfect = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -877,7 +875,7 @@ pub fn change_middle_passive_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.middle_passive = element.type.checkbox.checked;
+        self.app.preference.middle_passive = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -889,7 +887,7 @@ pub fn change_mi_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.mi = element.type.checkbox.checked;
+        self.app.preference.mi = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -901,7 +899,7 @@ pub fn change_indicative_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.indicative = element.type.checkbox.checked;
+        self.app.preference.indicative = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -913,7 +911,7 @@ pub fn change_participles_preference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.participle = element.type.checkbox.checked;
+        self.app.preference.participle = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -925,7 +923,7 @@ pub fn changeInfinitivePreference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.infinitive = element.type.checkbox.checked;
+        self.app.preference.infinitive = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -937,7 +935,7 @@ pub fn changeSubjunctivePreference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.subjunctive = element.type.checkbox.checked;
+        self.app.preference.subjunctive = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }
@@ -949,7 +947,7 @@ pub fn changeImperativePreference(
     _: *Event,
 ) std.mem.Allocator.Error!void {
     if (element.type == .checkbox) {
-        ac.app_context.?.preference.imperative = element.type.checkbox.checked;
+        self.app.preference.imperative = element.type.checkbox.checked;
     }
     try self.refresh_menu(display);
 }

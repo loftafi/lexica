@@ -21,6 +21,7 @@ pub fn show(
     _: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
+    if (display.currentPanel()) |current| if (current == self.panel) return;
     self.setupLists() catch |e| {
         if (e == error.OutOfMemory) return error.OutOfMemory;
         err("update_lists failed: {any}", .{e});

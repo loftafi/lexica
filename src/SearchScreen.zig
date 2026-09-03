@@ -17,12 +17,13 @@ string_buffers: [MAX_SEARCH_RESULTS * 2]std.Io.Writer.Allocating = undefined,
 string_buffer_index: usize = 0,
 
 pub fn show(
-    _: *SearchScreen,
+    self: *SearchScreen,
     display: *Display,
     _: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
-    try display.choosePanel("search.screen", event);
+    if (display.currentPanel()) |current| if (current == self.panel) return;
+    try display.choosePanel(self.panel.name, event);
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .visible;
     }
