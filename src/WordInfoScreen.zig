@@ -103,7 +103,6 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
     }, display);
 
     _ = try self.panel.add(.{
-        .name = "spacer",
         .minimum = .{ .width = 10, .height = 10 },
         .layout = .{ .x = .shrinks, .y = .shrinks },
         .type = .{ .panel = .{} },
@@ -123,7 +122,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
         .minimum = .{ .width = FIELD_LABEL_WIDTH },
         .child_align = .{ .x = .end },
         .layout = .{ .x = .shrinks, .y = .shrinks },
-        .style = .emphasised,
+        .style = .tinted,
         .type = .{
             .label = .{
                 .text = "Part of Speech",
@@ -161,10 +160,10 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
         .minimum = .{ .width = FIELD_LABEL_WIDTH },
         .child_align = .{ .x = .end },
         .layout = .{ .x = .shrinks, .y = .shrinks },
-        .style = .emphasised,
+        .style = .tinted,
         .type = .{
             .label = .{
-                .text = "Strongs",
+                .text = "STRONGS",
             },
         },
     }, display);
@@ -196,10 +195,10 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
         .minimum = .{ .width = FIELD_LABEL_WIDTH },
         .child_align = .{ .x = .end },
         .layout = .{ .x = .shrinks, .y = .shrinks },
-        .style = .emphasised,
+        .style = .tinted,
         .type = .{
             .label = .{
-                .text = "Articles",
+                .text = "ARTICLES",
             },
         },
     }, display);
@@ -235,7 +234,7 @@ pub fn init(self: *WordInfoScreen, app: *AppContext) !void {
         .minimum = .{ .width = FIELD_LABEL_WIDTH },
         .child_align = .{ .x = .end },
         .layout = .{ .x = .shrinks, .y = .shrinks },
-        .style = .emphasised,
+        .style = .tinted,
         .type = .{
             .label = .{
                 .text = "Tags",
