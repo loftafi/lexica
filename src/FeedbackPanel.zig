@@ -167,6 +167,7 @@ fn tapNext(
     event: *const Event,
 ) Allocator.Error!void {
     try self.beginSlideAway(display);
+    display.haptic_feedback(70);
     try self.on_next.call(display, entity, event);
 }
 
