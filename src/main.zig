@@ -19,7 +19,6 @@ pub fn startup(init: *const std.process.Init) error{ OutOfMemory, AppInitFailed 
         .app_name = app_info.app_full_name,
         .app_version = app_info.app_version,
         .app_id = app_info.app_id,
-        .app_build = app_info.app_build,
         .app_org = app_info.org,
         .app_bundle_output = app_info.app_bundle,
         .full_screen = true,

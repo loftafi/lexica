@@ -29,16 +29,11 @@ pub fn build(b: *std.Build) !void {
     app_info.addOption([]const u8, "app_version", app_version);
     app_info.addOption([]const u8, "app_id", app_id);
     app_info.addOption([]const u8, "org", org);
-    app_info.addOption([]const u8, "app_build", git.commit_hash(b) catch "");
     app_info.addOption([]const u8, "app_resources", app_resources);
     app_info.addOption([]const u8, "app_owner", app_owner);
     app_info.addOption([]const u8, "app_bundle", app_bundle);
     app_info.addOption([]const u8, "bundle_cache", bundle_cache);
     app_info.addOption(bool, "dev_mode", dev_mode);
-    app_info.addOption([]const u8, "build", git.commit_hash(b) catch |f| {
-        std.log.err("Failed to get git commit number. {t}", .{f});
-        unreachable;
-    });
     const app_info_module = app_info.createModule();
 
     //var android_config = b.allocator.create(git.UpdateAndroidConfig) catch @panic("OOM");
@@ -151,7 +146,7 @@ pub fn build(b: *std.Build) !void {
         patch_xcode_template.dependOn(copy_xcode_template);
         patch_xcode_template.dependOn(app_resource_package);
         const xcode_update = b.createModule(.{
-            .root_source_file = b.path("build/xcode_version_update.zig"),
+            .root_source_file = b.path("build/xcode_config.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &imports,
@@ -425,7 +420,4 @@ pub fn addAppleSDK(
 }
 
 const std = @import("std");
-
 const addSystemPathsToModule = @import("build/addSystemPathsToModule.zig").addSystemPathsToModule;
-const git = @import("build/git_info.zig");
-//const rs = @import("build/bundle.zig");
