@@ -10,7 +10,6 @@ pub fn build(b: *std.Build) !void {
     const app_name = b.option([]const u8, "app_name", "override the app name") orelse "Lexica";
     const app_version = @import("build.zig.zon").version;
     const org = b.option([]const u8, "org", "override the org") orelse "lexica";
-    const assets = b.option([]const u8, "assets", "override the asset folder") orelse "assets";
     const app_owner = b.option([]const u8, "app_owner", "person or company in terms and conditions") orelse "the author";
     const app_bundle = b.option([]const u8, "app_bundle", "override the app bundle filename") orelse "app_bundle.bd";
     const app_resources = b.option([]const u8, "app_resources", "override the app resource folder") orelse "resources";
@@ -35,9 +34,6 @@ pub fn build(b: *std.Build) !void {
     app_info.addOption([]const u8, "bundle_cache", bundle_cache);
     app_info.addOption(bool, "dev_mode", dev_mode);
     const app_info_module = app_info.createModule();
-
-    //var android_config = b.allocator.create(git.UpdateAndroidConfig) catch @panic("OOM");
-    //android_config.* = git.UpdateAndroidConfig.init(b, app_name, app_version, app_id, org);
 
     // Normal build/test/run uses current default target for this system.
     var target = b.standardTargetOptions(.{});
@@ -167,21 +163,11 @@ pub fn build(b: *std.Build) !void {
 
         // ios step depends on `patch_xcode_template` depends on `copy_xcode_template`
         const ios_step = b.step("ios", "Build library for ios");
-        var f1 = b.addInstallFile(b.path("app_bundle.bd"), "xcode/Dialectos/app_bundle.bd");
-        f1.step.dependOn(patch_xcode_template);
-        ios_step.dependOn(&f1.step);
-        var f2 = b.addInstallFile(b.path(splash_screen), "xcode/startup-screen.jpg");
-        f2.step.dependOn(patch_xcode_template);
-        ios_step.dependOn(&f2.step);
-        var f4 = b.addInstallFile(b.path(ios_icon), "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png");
-        f4.step.dependOn(patch_xcode_template);
-        ios_step.dependOn(&f4.step);
-        var f5 = b.addInstallFile(b.path(ios_icon), "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png");
-        f5.step.dependOn(patch_xcode_template);
-        ios_step.dependOn(&f5.step);
-        var f6 = b.addInstallFile(b.path(ios_icon), "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png");
-        f6.step.dependOn(patch_xcode_template);
-        ios_step.dependOn(&f6.step);
+        copyStep(b, ios_step, patch_xcode_template, app_bundle, "xcode/Dialectos/app_bundle.bd");
+        copyStep(b, ios_step, patch_xcode_template, splash_screen, "xcode/startup-screen.jpg");
+        copyStep(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png");
+        copyStep(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png");
+        copyStep(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png");
 
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
@@ -216,15 +202,6 @@ pub fn build(b: *std.Build) !void {
             ios_lib.bundle_ubsan_rt = true;
         }
 
-        //ios_lib.link_z_common_page_size = 16 * 1024;
-
-        // Copy library into the xcode template project
-
-        //const allocator = std.heap.smp_allocator;
-        //const ap = b.path(assets);
-        //const icon1024 = ap.join(allocator, "generated/app-icon-1024x1024.png") catch @panic("OOM");
-        //const splash = ap.join(allocator, "generated/splash-screen.jpg") catch @panic("OOM");
-
         ios_step.dependOn(&b.addInstallFile(ios_lib.getEmittedBin(), "xcode/Dialectos/libdialectos-ios.a").step);
     }
 
@@ -240,11 +217,85 @@ pub fn build(b: *std.Build) !void {
     clean_step.dependOn(&rm_clean.step);
 
     if (false) {
+        // Android
+        //
+        // copy_android_template -> patch_android_template
+
+        // Copy the android template
+        var copy_android_template = b.step("android_template_copy", "Copy android template");
+        //const template_path = b.dependency("engine", .{}).path("templates/android/");
+        const template_path = b.path("android/");
+        const do_copy = b.addInstallDirectory(.{
+            .source_dir = template_path,
+            .install_dir = .{ .custom = "android/" },
+            .install_subdir = "",
+        });
+        copy_android_template.dependOn(&do_copy.step);
+
+        // Ammend the android template with project information
+        var patch_android_template = b.step("patch_android_template", "Update the android template");
+        patch_android_template.dependOn(copy_android_template);
+        patch_android_template.dependOn(app_resource_package);
+        const android_update = b.createModule(.{
+            .root_source_file = b.path("build/android_config.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &imports,
+        });
+        const android_update_exe = b.addExecutable(.{
+            .name = "android_version_update",
+            .root_module = android_update,
+        });
+        var run_android_update = b.addRunArtifact(android_update_exe);
+        run_android_update.addFileArg(b.path("."));
+        run_android_update.addFileArg(b.path("zig-out/android/libc.txt"));
+        run_android_update.addArg(app_name);
+        run_android_update.addArg(app_version);
+        run_android_update.has_side_effects = true;
+        run_android_update.step.dependOn(copy_android_template);
+        patch_android_template.dependOn(&run_android_update.step);
+
         const android_step = b.step("android", "Build library for android");
         android_step.dependOn(app_resource_package);
-        //android_step.dependOn(&android_config.step);
+        android_step.dependOn(&run_android_update.step);
+        android_step.dependOn(&b.addInstallFile(b.path("app_bundle.bd"), "android/Dialectos/app_bundle.bd").step);
 
-        android_step.dependOn(&b.addInstallFile(b.path("app_bundle.bd"), "xcode/Dialectos/app_bundle.bd").step);
+        const copy = .{
+            .{ "generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
+            .{ "generated/app-icon-rounded-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ "generated/app-icon-round-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
+            .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
+            .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ "generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
+            .{ "generated/app-icon-rounded-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ "generated/app-icon-round-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
+            .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
+            .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap/ic_launcher_background.webp" },
+            .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap/ic_launcher_foreground.webp" },
+            .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap/icon_foreground.webp" },
+            .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap/icon_background.webp" },
+            .{ "generated/app-icon-rounded-144x144.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" },
+            .{ "generated/app-icon-round-144x144.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" },
+            .{ "generated/app-icon-foreground-324x324.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp" },
+            .{ "generated/app-icon-background-324x324.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp" },
+            .{ "generated/app-icon-rounded-96x96.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" },
+            .{ "generated/app-icon-round-96x96.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" },
+            .{ "generated/app-icon-foreground-216x216.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp" },
+            .{ "generated/app-icon-background-216x216.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp" },
+            .{ "generated/app-icon-rounded-72x72.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher.webp" },
+            .{ "generated/app-icon-round-72x72.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" },
+            .{ "generated/app-icon-foreground-162x162.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp" },
+            .{ "generated/app-icon-background-162x162.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp" },
+            .{ "generated/app-icon-rounded-48x48.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher.webp" },
+            .{ "generated/app-icon-round-48x48.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" },
+            .{ "generated/app-icon-foreground-108x108.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp" },
+            .{ "generated/app-icon-background-108x108.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher_background.webp" },
+        };
+
+        inline for (copy) |cp| {
+            copyStep(b, android_step, patch_android_template, cp[0], cp[1]);
+        }
 
         const mode: std.builtin.OptimizeMode = .ReleaseFast;
         var android_target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
@@ -265,7 +316,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = android_module,
             .linkage = .dynamic,
         });
-        //android_lib.setLibCFile(b.path(git.UpdateAndroidConfig.libc_filename));
+        android_lib.setLibCFile(b.path("zig-out/android/libc.txt"));
         android_lib.bundle_compiler_rt = true;
         if (mode != .ReleaseFast and mode != .ReleaseSafe) {
             android_lib.bundle_ubsan_rt = true;
@@ -274,65 +325,15 @@ pub fn build(b: *std.Build) !void {
         // https://developer.android.com/guide/practices/page-sizes
         android_lib.link_z_common_page_size = 16 * 1024;
 
-        const allocator = b.graph.arena;
-        const ap = b.path(assets);
-
-        const icon_512 = ap.join(allocator, "generated/app-icon-1024x1024.png") catch @panic("OOM");
-        android_step.dependOn(&b.addInstallFile(icon_512, "android/app/src/main/ic_launcher-playstore.png").step);
-
-        const icon_rounded_192 = ap.join(allocator, "generated/app-icon-rounded-192x192.webp") catch @panic("OOM");
-        const icon_round_192 = ap.join(allocator, "generated/app-icon-round-192x192.webp") catch @panic("OOM");
-        const icon_foreground_432 = ap.join(allocator, "generated/app-icon-foreground-432x432.webp") catch @panic("OOM");
-        const icon_background_432 = ap.join(allocator, "generated/app-icon-background-432x432.webp") catch @panic("OOM");
-        android_step.dependOn(&b.addInstallFile(icon_rounded_192, "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_round_192, "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_background_432, "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_foreground_432, "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp").step);
-
-        android_step.dependOn(&b.addInstallFile(icon_background_432, "../android/app/src/main/res/mipmap/ic_launcher_background.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_foreground_432, "../android/app/src/main/res/mipmap/ic_launcher_foreground.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_background_432, "../android/app/src/main/res/mipmap/icon_foreground.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_foreground_432, "../android/app/src/main/res/mipmap/icon_background.webp").step);
-
-        const icon_rounded_144 = ap.join(allocator, "generated/app-icon-rounded-144x144.webp") catch @panic("OOM");
-        const icon_round_144 = ap.join(allocator, "generated/app-icon-round-144x144.webp") catch @panic("OOM");
-        const icon_foreground_324 = ap.join(allocator, "generated/app-icon-foreground-324x324.webp") catch @panic("OOM");
-        const icon_background_324 = ap.join(allocator, "generated/app-icon-background-324x324.webp") catch @panic("OOM");
-        android_step.dependOn(&b.addInstallFile(icon_rounded_144, "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_round_144, "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_background_324, "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_foreground_324, "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp").step);
-
-        const icon_rounded_96 = ap.join(allocator, "generated/app-icon-rounded-96x96.webp") catch @panic("OOM");
-        const icon_round_96 = ap.join(allocator, "generated/app-icon-round-96x96.webp") catch @panic("OOM");
-        const icon_foreground_216 = ap.join(allocator, "generated/app-icon-foreground-216x216.webp") catch @panic("OOM");
-        const icon_background_216 = ap.join(allocator, "generated/app-icon-background-216x216.webp") catch @panic("OOM");
-        android_step.dependOn(&b.addInstallFile(icon_rounded_96, "../android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_round_96, "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_background_216, "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_foreground_216, "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp").step);
-
-        const icon_rounded_72 = ap.join(allocator, "generated/app-icon-rounded-72x72.webp") catch @panic("OOM");
-        const icon_round_72 = ap.join(allocator, "generated/app-icon-round-72x72.webp") catch @panic("OOM");
-        const icon_foreground_162 = ap.join(allocator, "generated/app-icon-foreground-162x162.webp") catch @panic("OOM");
-        const icon_background_162 = ap.join(allocator, "generated/app-icon-background-162x162.webp") catch @panic("OOM");
-        android_step.dependOn(&b.addInstallFile(icon_rounded_72, "../android/app/src/main/res/mipmap-hdpi/ic_launcher.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_round_72, "../android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_background_162, "../android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_foreground_162, "../android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp").step);
-
-        const icon_rounded_48 = ap.join(allocator, "generated/app-icon-rounded-48x48.webp") catch @panic("OOM");
-        const icon_round_48 = ap.join(allocator, "generated/app-icon-round-48x48.webp") catch @panic("OOM");
-        const icon_foreground_108 = ap.join(allocator, "generated/app-icon-foreground-108x108.webp") catch @panic("OOM");
-        const icon_background_108 = ap.join(allocator, "generated/app-icon-background-108x108.webp") catch @panic("OOM");
-        android_step.dependOn(&b.addInstallFile(icon_rounded_48, "../android/app/src/main/res/mipmap-mdpi/ic_launcher.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_round_48, "../android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_background_108, "../android/app/src/main/res/mipmap-mdpi/ic_launcher_background.webp").step);
-        android_step.dependOn(&b.addInstallFile(icon_foreground_108, "../android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp").step);
-
         const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../../android/app/jni/jniLibs/arm64-v8a/libdialectos-android.so");
         android_step.dependOn(&android_lib_install.step);
     }
+}
+
+fn copyStep(b: *std.Build, before: *std.Build.Step, after: *std.Build.Step, src: []const u8, dst: []const u8) void {
+    var cp = b.addInstallFile(b.path(src), dst);
+    cp.step.dependOn(after);
+    before.dependOn(&cp.step);
 }
 
 fn buildImports(
