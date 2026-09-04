@@ -34,26 +34,31 @@ pub fn addSystemPathsToModule(
         .linux => {
             if (target.result.abi == .android) {
                 // When building for android, we need to use the android linux headers
-                if (FindNDK.find(b.graph.io, b.graph.environ_map)) |android_ndk| {
-                    if (android_ndk) |ndk| {
-                        lib.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{
-                            ndk,
-                            "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/",
-                        }) });
-                        lib.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{
-                            ndk,
-                            "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/aarch64-linux-android/",
-                        }) });
-                    } else {
-                        std.log.err("Can't find android ndk. Set ANDROID_NDK_HOME.", .{});
-                        @panic("android/linux build requires ndk. Set ANDROID_NDK_HOME");
+                if (false) {
+                    if (FindNDK.find(b.graph.io, b.graph.environ_map)) |android_ndk| {
+                        if (android_ndk) |ndk| {
+                            lib.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{
+                                ndk,
+                                "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/",
+                            }) });
+                            const path = try std.fs.path.join(b.graph.arena.allocator(), &.{
+                                ndk,
+                                "toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/include/aarch64-linux-android/",
+                                "aarch64-linux-android",
+                                "/",
+                            });
+                            lib.addSystemIncludePath(.{ .cwd_relative = b.path(path) });
+                        } else {
+                            std.log.err("Can't find android ndk. Set ANDROID_NDK_HOME.", .{});
+                            @panic("android/linux build requires ndk. Set ANDROID_NDK_HOME");
+                        }
+                    } else |err| {
+                        std.log.err("Error searching for android ndk. Set ANDROID_NDK_HOME. {any}", .{err});
+                        @panic("Error searching for android ndk. Set ANDROID_NDK_HOME");
                     }
-                } else |err| {
-                    std.log.err("Error searching for android ndk. Set ANDROID_NDK_HOME. {any}", .{err});
-                    @panic("Error searching for android ndk. Set ANDROID_NDK_HOME");
+                } else {
+                    @panic("add_imports currently supports macos, ios, and android.");
                 }
-            } else {
-                @panic("add_imports currently supports macos, ios, and android.");
             }
         },
         else => {

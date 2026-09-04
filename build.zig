@@ -123,9 +123,12 @@ pub fn build(b: *std.Build) !void {
     }
 
     {
+        //
         // iOS
         //
-        // copy_xcode_template -> patch_xcode_template
+        const mode: std.builtin.OptimizeMode = .ReleaseFast;
+        const ios_target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64 });
+        const ios_imports = try buildImports(b, &ios_target, mode, app_info_module);
 
         // Copy the xcode template
         var copy_xcode_template = b.step("xcode_template_copy", "Copy ios template");
@@ -141,17 +144,15 @@ pub fn build(b: *std.Build) !void {
         var patch_xcode_template = b.step("patch_xcode_template", "Update the xcode template");
         patch_xcode_template.dependOn(copy_xcode_template);
         patch_xcode_template.dependOn(app_resource_package);
-        const xcode_update = b.createModule(.{
-            .root_source_file = b.path("build/xcode_config.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &imports,
+        const xcode_template_update = b.addExecutable(.{
+            .name = "xcode_template_update",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("build/xcode_template_update.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
         });
-        const xcode_update_exe = b.addExecutable(.{
-            .name = "xcode_update",
-            .root_module = xcode_update,
-        });
-        var run_xcode_update = b.addRunArtifact(xcode_update_exe);
+        var run_xcode_update = b.addRunArtifact(xcode_template_update);
         run_xcode_update.addFileArg(b.path("."));
         run_xcode_update.addFileArg(b.path("zig-out/xcode/Dialectos.xcodeproj/project.pbxproj"));
         run_xcode_update.addArg(app_name);
@@ -171,10 +172,6 @@ pub fn build(b: *std.Build) !void {
 
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
-
-        const mode: std.builtin.OptimizeMode = .ReleaseFast;
-        const ios_target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64 });
-        const ios_imports = try buildImports(b, &ios_target, mode, app_info_module);
 
         if (std.mem.eql(u8, app_id, "org.example.lexica"))
             std.log.warn("Building ios lib with default app_id=org.example.lexica", .{});
@@ -216,115 +213,115 @@ pub fn build(b: *std.Build) !void {
     });
     clean_step.dependOn(&rm_clean.step);
 
-    // Android
-    //
-    // copy_android_template -> patch_android_template
+    {
+        //
+        // Android
+        //
+        const mode: std.builtin.OptimizeMode = .ReleaseFast;
+        const android_target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
+        const android_imports = try buildImports(b, &android_target, mode, app_info_module);
 
-    // Copy the android template
-    var copy_android_template = b.step("android_template_copy", "Copy android template");
-    const template_path = b.dependency("engine", .{}).path("templates/android/");
-    const do_copy = b.addInstallDirectory(.{
-        .source_dir = template_path,
-        .install_dir = .{ .custom = "android/" },
-        .install_subdir = "",
-    });
-    copy_android_template.dependOn(&do_copy.step);
+        // Copy the android template
+        var copy_android_template = b.step("android_template_copy", "Copy android template");
+        const template_path = b.dependency("engine", .{}).path("templates/android/");
+        const do_copy = b.addInstallDirectory(.{
+            .source_dir = template_path,
+            .install_dir = .{ .custom = "android/" },
+            .install_subdir = "",
+        });
+        copy_android_template.dependOn(&do_copy.step);
 
-    // Ammend the android template with project information
-    var patch_android_template = b.step("patch_android_template", "Update the android template");
-    patch_android_template.dependOn(copy_android_template);
-    patch_android_template.dependOn(app_resource_package);
-    const android_update = b.createModule(.{
-        .root_source_file = b.path("build/android_config.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &imports,
-    });
-    const android_update_exe = b.addExecutable(.{
-        .name = "android_version_update",
-        .root_module = android_update,
-    });
-    var run_android_update = b.addRunArtifact(android_update_exe);
-    run_android_update.addFileArg(b.path("."));
-    run_android_update.addFileArg(b.path("zig-out/android/libc.txt"));
-    run_android_update.addArg(app_name);
-    run_android_update.addArg(app_version);
-    run_android_update.has_side_effects = true;
-    run_android_update.step.dependOn(copy_android_template);
-    patch_android_template.dependOn(&run_android_update.step);
+        // Ammend the android template with project information
+        var patch_android_template = b.step("patch_android_template", "Update the android template");
+        patch_android_template.dependOn(copy_android_template);
+        patch_android_template.dependOn(app_resource_package);
+        const android_update_exe = b.addExecutable(.{
+            .name = "android_template_update",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("build/android_template_update.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        var run_android_update = b.addRunArtifact(android_update_exe);
+        run_android_update.addFileArg(b.path("."));
+        run_android_update.addFileArg(b.path("zig-out/android/libc.txt"));
+        run_android_update.addArg(app_name);
+        run_android_update.addArg(app_version);
+        run_android_update.has_side_effects = true;
+        run_android_update.step.dependOn(copy_android_template);
+        patch_android_template.dependOn(&run_android_update.step);
 
-    const android_step = b.step("android", "Build library for android");
-    android_step.dependOn(app_resource_package);
-    android_step.dependOn(&run_android_update.step);
-    android_step.dependOn(&b.addInstallFile(b.path("app_bundle.bd"), "android/Dialectos/app_bundle.bd").step);
+        const android_step = b.step("android", "Build library for android");
+        android_step.dependOn(app_resource_package);
+        android_step.dependOn(&run_android_update.step);
+        android_step.dependOn(&b.addInstallFile(b.path("app_bundle.bd"), "android/Dialectos/app_bundle.bd").step);
 
-    const copy = .{
-        .{ "generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
-        .{ "generated/app-icon-rounded-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
-        .{ "generated/app-icon-round-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
-        .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
-        .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
-        .{ "generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
-        .{ "generated/app-icon-rounded-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
-        .{ "generated/app-icon-round-192x192.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
-        .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
-        .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
-        .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap/ic_launcher_background.webp" },
-        .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap/ic_launcher_foreground.webp" },
-        .{ "generated/app-icon-foreground-432x432.webp", "../android/app/src/main/res/mipmap/icon_foreground.webp" },
-        .{ "generated/app-icon-background-432x432.webp", "../android/app/src/main/res/mipmap/icon_background.webp" },
-        .{ "generated/app-icon-rounded-144x144.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" },
-        .{ "generated/app-icon-round-144x144.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" },
-        .{ "generated/app-icon-foreground-324x324.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp" },
-        .{ "generated/app-icon-background-324x324.webp", "../android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp" },
-        .{ "generated/app-icon-rounded-96x96.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" },
-        .{ "generated/app-icon-round-96x96.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" },
-        .{ "generated/app-icon-foreground-216x216.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp" },
-        .{ "generated/app-icon-background-216x216.webp", "../android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp" },
-        .{ "generated/app-icon-rounded-72x72.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher.webp" },
-        .{ "generated/app-icon-round-72x72.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" },
-        .{ "generated/app-icon-foreground-162x162.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp" },
-        .{ "generated/app-icon-background-162x162.webp", "../android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp" },
-        .{ "generated/app-icon-rounded-48x48.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher.webp" },
-        .{ "generated/app-icon-round-48x48.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" },
-        .{ "generated/app-icon-foreground-108x108.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp" },
-        .{ "generated/app-icon-background-108x108.webp", "../android/app/src/main/res/mipmap-mdpi/ic_launcher_background.webp" },
-    };
+        const copy = .{
+            .{ "assets/generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
+            .{ "assets/generated/app-icon-rounded-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-round-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
+            .{ "assets/generated/app-icon-rounded-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-round-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap/icon_foreground.webp" },
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/icon_background.webp" },
+            .{ "assets/generated/app-icon-rounded-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-round-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-foreground-324x324.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-background-324x324.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-rounded-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-round-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-foreground-216x216.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-background-216x216.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-rounded-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-round-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-foreground-162x162.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-background-162x162.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-rounded-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-round-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-foreground-108x108.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-background-108x108.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.webp" },
+        };
 
-    inline for (copy) |cp| {
-        copyStep(b, android_step, patch_android_template, cp[0], cp[1]);
+        inline for (copy) |cp| {
+            copyStep(b, android_step, patch_android_template, cp[0], cp[1]);
+        }
+
+        if (std.mem.eql(u8, app_id, "org.example.lexica"))
+            std.log.warn("Building android lib with default app_id=org.example.lexica", .{});
+
+        const android_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = android_target,
+            .optimize = mode,
+            .imports = &android_imports,
+        });
+
+        const android_lib = b.addLibrary(.{
+            .name = "lexica-android",
+            .root_module = android_module,
+            .linkage = .dynamic,
+        });
+        android_lib.setLibCFile(b.path("android_libc.txt"));
+        //android_lib.setLibCFile(b.path("zig-out/android/libc.txt"));
+        android_lib.bundle_compiler_rt = true;
+        if (mode != .ReleaseFast and mode != .ReleaseSafe) {
+            android_lib.bundle_ubsan_rt = true;
+        }
+
+        // https://developer.android.com/guide/practices/page-sizes
+        android_lib.link_z_common_page_size = 16 * 1024;
+
+        const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../../android/app/jni/jniLibs/arm64-v8a/libdialectos-android.so");
+        android_step.dependOn(&android_lib_install.step);
     }
-
-    const mode: std.builtin.OptimizeMode = .ReleaseFast;
-    var android_target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
-    const android_imports = buildImports(b, &android_target, mode, app_info_module) catch unreachable;
-
-    if (std.mem.eql(u8, app_id, "org.example.lexica"))
-        std.log.warn("Building android lib with default app_id=org.example.lexica", .{});
-
-    const android_module = b.createModule(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = android_target,
-        .optimize = mode,
-        .imports = &android_imports,
-    });
-
-    const android_lib = b.addLibrary(.{
-        .name = "lexica-android",
-        .root_module = android_module,
-        .linkage = .dynamic,
-    });
-    android_lib.setLibCFile(b.path("zig-out/android/libc.txt"));
-    android_lib.bundle_compiler_rt = true;
-    if (mode != .ReleaseFast and mode != .ReleaseSafe) {
-        android_lib.bundle_ubsan_rt = true;
-    }
-
-    // https://developer.android.com/guide/practices/page-sizes
-    android_lib.link_z_common_page_size = 16 * 1024;
-
-    const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../../android/app/jni/jniLibs/arm64-v8a/libdialectos-android.so");
-    android_step.dependOn(&android_lib_install.step);
 }
 
 fn copyStep(b: *std.Build, before: *std.Build.Step, after: *std.Build.Step, src: []const u8, dst: []const u8) void {
@@ -425,3 +422,4 @@ pub fn addAppleSDK(
 
 const std = @import("std");
 const addSystemPathsToModule = @import("build/addSystemPathsToModule.zig").addSystemPathsToModule;
+const androidTriple = @import("build/android_template_update.zig").androidTriple;

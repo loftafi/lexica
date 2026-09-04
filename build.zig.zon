@@ -25,8 +25,10 @@
         "resources",
         "README.md",
         "LICENSE.md",
-        "LICENSE-NotoSans.md",
-        "libs/LICENSE-SDL.md",
-        "libs/LICENSE-SDL_ttf.md",
+        "licenses/LICENSE-NotoSans.md",
+        "licenses/LICENSE-ogg.txt",
+        "licenses/LICENSE-SDL3_mixer.txt",
+        "licenses/LICENSE-SDL3.txt",
+        "licenses/LICENSE-vorbis.txt",
     },
 }
