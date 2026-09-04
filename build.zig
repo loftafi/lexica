@@ -18,10 +18,10 @@ pub fn build(b: *std.Build) !void {
 
     const app_id = b.option([]const u8, "app_id", "override the app id") orelse
         "org.example.lexica";
-    const splash_screen = b.option([]const u8, "splash_screen", "Path to splash screen jpg") orelse
-        "assets/generated/splash-screen.jpg";
-    const ios_icon = b.option([]const u8, "ios_icon", "Path to ios icon png") orelse
-        "assets/generated/app-icon-1024x1024.png";
+    const splash_screen = b.option(std.Build.LazyPath, "splash_screen", "Path to splash screen jpg") orelse
+        b.path("assets/generated/splash-screen.jpg");
+    const ios_icon = b.option(std.Build.LazyPath, "ios_icon", "Path to ios icon png") orelse
+        b.path("assets/generated/app-icon-1024x1024.png");
 
     const app_info = b.addOptions();
     app_info.addOption([]const u8, "app_full_name", app_name);
@@ -164,10 +164,10 @@ pub fn build(b: *std.Build) !void {
         // ios step depends on `patch_xcode_template` depends on `copy_xcode_template`
         const ios_step = b.step("ios", "Build library for ios");
         copyStep(b, ios_step, patch_xcode_template, app_bundle, "xcode/Dialectos/app_bundle.bd");
-        copyStep(b, ios_step, patch_xcode_template, splash_screen, "xcode/startup-screen.jpg");
-        copyStep(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png");
-        copyStep(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png");
-        copyStep(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png");
+        copyStepP(b, ios_step, patch_xcode_template, splash_screen, "xcode/startup-screen.jpg");
+        copyStepP(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png");
+        copyStepP(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png");
+        copyStepP(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png");
 
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
@@ -332,6 +332,12 @@ pub fn build(b: *std.Build) !void {
 
 fn copyStep(b: *std.Build, before: *std.Build.Step, after: *std.Build.Step, src: []const u8, dst: []const u8) void {
     var cp = b.addInstallFile(b.path(src), dst);
+    cp.step.dependOn(after);
+    before.dependOn(&cp.step);
+}
+
+fn copyStepP(b: *std.Build, before: *std.Build.Step, after: *std.Build.Step, src: std.Build.LazyPath, dst: []const u8) void {
+    var cp = b.addInstallFile(src, dst);
     cp.step.dependOn(after);
     before.dependOn(&cp.step);
 }
