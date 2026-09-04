@@ -162,13 +162,17 @@ pub fn build(b: *std.Build) !void {
         run_xcode_update.step.dependOn(copy_xcode_template);
         patch_xcode_template.dependOn(&run_xcode_update.step);
 
+        copyStep(b, patch_xcode_template, copy_xcode_template, app_bundle, "xcode/Dialectos/app_bundle.bd");
+        copyStepP(b, patch_xcode_template, copy_xcode_template, splash_screen, "xcode/startup-screen.jpg");
+        copyStepP(b, patch_xcode_template, copy_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png");
+        copyStepP(b, patch_xcode_template, copy_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png");
+        copyStepP(b, patch_xcode_template, copy_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png");
+        const export_xcode_template = b.step("export_xcode_template", "Build xcode for ios");
+        export_xcode_template.dependOn(&run_xcode_update.step);
+
         // ios step depends on `patch_xcode_template` depends on `copy_xcode_template`
         const ios_step = b.step("ios", "Build library for ios");
-        copyStep(b, ios_step, patch_xcode_template, app_bundle, "xcode/Dialectos/app_bundle.bd");
-        copyStepP(b, ios_step, patch_xcode_template, splash_screen, "xcode/startup-screen.jpg");
-        copyStepP(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png");
-        copyStepP(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png");
-        copyStepP(b, ios_step, patch_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png");
+        ios_step.dependOn(export_xcode_template);
 
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
@@ -248,6 +252,7 @@ pub fn build(b: *std.Build) !void {
         run_android_update.addFileArg(b.path("zig-out/android/libc.txt"));
         run_android_update.addArg(app_name);
         run_android_update.addArg(app_version);
+        run_android_update.addArg(try androidTriple(&android_target.result));
         run_android_update.has_side_effects = true;
         run_android_update.step.dependOn(copy_android_template);
         patch_android_template.dependOn(&run_android_update.step);
@@ -259,34 +264,38 @@ pub fn build(b: *std.Build) !void {
 
         const copy = .{
             .{ "assets/generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
-            .{ "assets/generated/app-icon-rounded-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-round-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
-            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
             .{ "assets/generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
+
             .{ "assets/generated/app-icon-rounded-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-rounded-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-rounded-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-rounded-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-rounded-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp" },
+            .{ "assets/generated/app-icon-rounded-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp" },
+
+            .{ "assets/generated/app-icon-round-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-round-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-round-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" },
             .{ "assets/generated/app-icon-round-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-round-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-round-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" },
+
             .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap/ic_launcher_foreground.webp" },
             .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap/icon_foreground.webp" },
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/icon_background.webp" },
-            .{ "assets/generated/app-icon-rounded-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-round-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" },
+            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
             .{ "assets/generated/app-icon-foreground-324x324.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-background-324x324.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-rounded-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-round-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" },
             .{ "assets/generated/app-icon-foreground-216x216.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-background-216x216.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-rounded-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-round-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" },
             .{ "assets/generated/app-icon-foreground-162x162.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-background-162x162.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-rounded-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-round-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" },
             .{ "assets/generated/app-icon-foreground-108x108.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp" },
+
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/icon_background.webp" },
+            .{ "assets/generated/app-icon-background-324x324.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-background-216x216.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp" },
+            .{ "assets/generated/app-icon-background-162x162.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp" },
             .{ "assets/generated/app-icon-background-108x108.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.webp" },
         };
 
