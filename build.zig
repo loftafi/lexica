@@ -130,49 +130,16 @@ pub fn build(b: *std.Build) !void {
         const ios_target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64 });
         const ios_imports = try buildImports(b, &ios_target, mode, app_info_module);
 
-        // Copy the xcode template
-        var copy_xcode_template = b.step("xcode_template_copy", "Copy ios template");
-        const template_path = b.dependency("engine", .{}).path("templates/xcode/");
-        const do_copy = b.addInstallDirectory(.{
-            .source_dir = template_path,
-            .install_dir = .{ .custom = "xcode/" },
-            .install_subdir = "",
-        });
-        copy_xcode_template.dependOn(&do_copy.step);
-
-        // Ammend the xcode template with project information
-        var patch_xcode_template = b.step("patch_xcode_template", "Update the xcode template");
-        patch_xcode_template.dependOn(copy_xcode_template);
-        patch_xcode_template.dependOn(app_resource_package);
-        const xcode_template_update = b.addExecutable(.{
-            .name = "xcode_template_update",
-            .root_module = b.createModule(.{
-                .root_source_file = b.path("build/xcode_template_update.zig"),
-                .target = target,
-                .optimize = optimize,
-            }),
-        });
-        var run_xcode_update = b.addRunArtifact(xcode_template_update);
-        run_xcode_update.addFileArg(b.path("."));
-        run_xcode_update.addFileArg(b.path("zig-out/xcode/Dialectos.xcodeproj/project.pbxproj"));
-        run_xcode_update.addArg(app_name);
-        run_xcode_update.addArg(app_version);
-        run_xcode_update.addArg(app_id);
-        run_xcode_update.has_side_effects = true;
-        run_xcode_update.step.dependOn(copy_xcode_template);
-        patch_xcode_template.dependOn(&run_xcode_update.step);
-
-        copyStep(b, patch_xcode_template, copy_xcode_template, app_bundle, "xcode/Dialectos/app_bundle.bd");
-        copyStepP(b, patch_xcode_template, copy_xcode_template, splash_screen, "xcode/startup-screen.jpg");
-        copyStepP(b, patch_xcode_template, copy_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full.png");
-        copyStepP(b, patch_xcode_template, copy_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 1.png");
-        copyStepP(b, patch_xcode_template, copy_xcode_template, ios_icon, "xcode/Dialectos/Assets.xcassets/AppIcon.appiconset/app-icon-3-full 2.png");
-        const export_xcode_template = b.step("export_xcode_template", "Build xcode for ios");
-        export_xcode_template.dependOn(&run_xcode_update.step);
-
         // ios step depends on `patch_xcode_template` depends on `copy_xcode_template`
         const ios_step = b.step("ios", "Build library for ios");
-        ios_step.dependOn(export_xcode_template);
+        ios_step.dependOn(app_resource_package);
+        ios_step.dependOn(&(b.dependency("engine", .{
+            .app_name = app_name,
+            .app_id = app_id,
+            .app_version = app_version,
+            .splash_screen = splash_screen,
+            .ios_icon = ios_icon,
+        }).builder.top_level_steps.get("export_xcode_template") orelse @panic("export step missing")).step);
 
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
@@ -248,8 +215,8 @@ pub fn build(b: *std.Build) !void {
             }),
         });
         var run_android_update = b.addRunArtifact(android_update_exe);
-        run_android_update.addFileArg(b.path("."));
-        run_android_update.addFileArg(b.path("zig-out/android/libc.txt"));
+        run_android_update.addFileArg(b.graph.path(.install_prefix, "android/"));
+        run_android_update.addFileArg(b.path("libc.txt"));
         run_android_update.addArg(app_name);
         run_android_update.addArg(app_version);
         run_android_update.addArg(try androidTriple(&android_target.result));
@@ -318,8 +285,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = android_module,
             .linkage = .dynamic,
         });
-        android_lib.setLibCFile(b.path("android_libc.txt"));
-        //android_lib.setLibCFile(b.path("zig-out/android/libc.txt"));
+        android_lib.setLibCFile(b.graph.path(.install_prefix, "android/libc.txt"));
         android_lib.bundle_compiler_rt = true;
         if (mode != .ReleaseFast and mode != .ReleaseSafe) {
             android_lib.bundle_ubsan_rt = true;
