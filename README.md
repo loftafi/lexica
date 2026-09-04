@@ -34,7 +34,7 @@ android folder:
 
 To build for android, also set the ndk environemnt variable, i.e:
 
-    export ANDROID_NDK_HOME=/Users/user/Library/Android/sdk/ndk/27.3.13750724
+    export ANDROID_NDK_HOME=/Users/user/Library/Android/sdk/ndk/30.0.16138531
 
 And update android_libc.txt to point to the same ndk.
 
