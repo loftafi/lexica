@@ -1,13 +1,19 @@
 /// On startup, register the startp and shutdown handler functions.
 pub fn main(init: std.process.Init) !void {
-    engine.start(&init, &startup, &shutdown);
+    try engine.start.start(&startup, &shutdown, init.minimal.args);
 }
 
 var app: ?*App = null;
 
 /// Creates an engine `Display` object, and loads it with all required
 /// resources and screen layouts.
-pub fn startup(init: *const std.process.Init) error{ OutOfMemory, AppInitFailed }!*engine.Display {
+pub fn startup(
+    gpa: std.mem.Allocator,
+    arena: std.mem.Allocator,
+    io: std.Io,
+    args: []const [*:0]const u8, //args: std.process.Args,
+) error{ OutOfMemory, AppInitFailed }!*engine.Display {
+    info("Startup function started.", .{});
 
     // Display configuration defaults to iPhone 16 dimensions for testing.
     // iPhone 16 uses 393x852 logical pixels (1179x2556 physical pixels)
@@ -18,7 +24,6 @@ pub fn startup(init: *const std.process.Init) error{ OutOfMemory, AppInitFailed 
     var config: engine.Config = .{
         .app_name = app_info.app_full_name,
         .app_version = app_info.app_version,
-        .app_id = app_info.app_id,
         .app_org = app_info.org,
         .app_bundle_output = app_info.app_bundle,
         .full_screen = true,
@@ -43,48 +48,54 @@ pub fn startup(init: *const std.process.Init) error{ OutOfMemory, AppInitFailed 
     // Command line options may override the location to load app resources
     // and `make_bundle` requests that an app bundle is created.
     var bundle_info: std.ArrayListUnmanaged(engine.BundleInfo) = .empty;
-    defer bundle_info.deinit(init.arena.allocator());
+    defer bundle_info.deinit(arena);
 
-    var ai = init.minimal.args.iterate();
-    if (ai.skip()) {
-        while (ai.next()) |value| {
-            if (std.ascii.eqlIgnoreCase(value, "make_bundle")) {
-                // Request that the app is initialised, and any required
-                // resource (image, audio, font, etc...) is placed into
-                // a bundle file. The app must then exit.
-                config.command = .make_bundle;
-                continue;
-            }
-            if (std.ascii.endsWithIgnoreCase(value, ".bd")) {
-                // A parameter with a `.bd` extension is an app bundle to load.
-                try bundle_info.append(init.arena.allocator(), .{
-                    .filename = try init.arena.allocator().dupe(u8, value),
-                });
-                continue;
-            }
-            if (value.len > 0) {
-                // A parameter without a `.bd` extension is a resource folder.
-                try bundle_info.append(init.arena.allocator(), .{
-                    .folder = try init.arena.allocator().dupe(u8, value),
-                });
-            }
+    for (args, 0..) |arg, i| {
+        const value = std.mem.span(arg);
+        std.log.warn("arg {d}: '{s}'", .{ i, value });
+        if (i == 0) continue;
+        if (std.ascii.eqlIgnoreCase(value, "make_bundle")) {
+            // Request that the app is initialised, and any required
+            // resource (image, audio, font, etc...) is placed into
+            // a bundle file. The app must then exit.
+            config.command = .make_bundle;
+            continue;
+        }
+        if (std.ascii.endsWithIgnoreCase(value, ".bd")) {
+            // A parameter with a `.bd` extension is an app bundle to load.
+            try bundle_info.append(arena, .{
+                .filename = try arena.dupe(u8, value),
+            });
+            continue;
+        }
+        if (value.len > 0) {
+            // A parameter without a `.bd` extension is a resource folder.
+            try bundle_info.append(arena, .{
+                .folder = try arena.dupe(u8, value),
+            });
         }
     }
     if (bundle_info.items.len > 0)
         config.bundles = bundle_info.items;
 
-    app = App.create(init.gpa, init.io, &config) catch |f| {
+    app = App.create(gpa, io, &config) catch |f| {
         err("App.create() failed: {t}", .{f});
         return error.AppInitFailed;
     };
     errdefer app.?.destroy();
+
+    info("Startup function complete.", .{});
 
     return app.?.display;
 }
 
 /// After the display (window) is closed, this is an opportunity
 /// to release memory and file handles.
-pub fn shutdown(_: *const std.process.Init) void {
+pub fn shutdown(
+    _: std.mem.Allocator,
+    _: std.mem.Allocator,
+    _: std.Io,
+) void {
     if (app) |a| {
         a.destroy();
     }
@@ -106,3 +117,23 @@ const info = engine.log.info;
 
 const App = @import("App.zig");
 const app_info = @import("app_info");
+
+//pub export const AppInitC = engine.AppInitC;
+//pub export const AppQuitC = engine.AppQuitC;
+//pub export const AppEventC = engine.AppEventC;
+//pub export const AppIterateC = engine.AppIterateC;
+
+//pub export const SDL_AppInit = engine.AppInitC;
+pub export const SDL_AppQuit = engine.AppQuitC;
+pub export const SDL_AppEvent = engine.AppEventC;
+pub export const SDL_AppIterate = engine.AppIterateC;
+
+pub export fn SDL_AppInit(
+    appstate: [*c]?*anyopaque,
+    argc: c_int,
+    argv: [*c][*c]u8, // [*:null]?[*:0]u8
+) callconv(.c) engine.sdl.SDL_AppResult {
+    engine.start.startup_handler = startup;
+    engine.start.shutdown_handler = shutdown;
+    return engine.AppInitC(appstate, argc, argv);
+}

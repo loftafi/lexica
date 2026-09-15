@@ -7,32 +7,25 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const test_filters = b.option([]const []const u8, "test-filter", "Skip tests that do not match any filter") orelse &[0][]const u8{};
 
-    const app_name = b.option([]const u8, "app_name", "override the app name") orelse "Lexica";
-    const app_version = @import("build.zig.zon").version;
-    const org = b.option([]const u8, "org", "override the org") orelse "lexica";
-    const app_owner = b.option([]const u8, "app_owner", "person or company in terms and conditions") orelse "the author";
-    const app_bundle = b.option([]const u8, "app_bundle", "override the app bundle filename") orelse "app_bundle.bd";
-    const app_resources = b.option([]const u8, "app_resources", "override the app resource folder") orelse "resources";
-    const bundle_cache = b.option([]const u8, "bundle_cache", "override the bundle cache") orelse "/tmp/";
-    const dev_mode = b.option(bool, "dev_mode", "include developer mode functions") orelse true;
-
-    const app_id = b.option([]const u8, "app_id", "override the app id") orelse
-        "org.example.lexica";
-    const splash_screen = b.option(std.Build.LazyPath, "splash_screen", "Path to splash screen jpg") orelse
-        b.path("assets/generated/splash-screen.jpg");
-    const ios_icon = b.option(std.Build.LazyPath, "ios_icon", "Path to ios icon png") orelse
-        b.path("assets/generated/app-icon-1024x1024.png");
+    const app_name = b.option([]const u8, "app_name", "App name string.");
+    const app_version = b.option([]const u8, "app_version", "App version string.");
+    const app_id = b.option([]const u8, "app_id", "override the app id") orelse "org.example.app";
+    const app_owner = b.option([]const u8, "app_owner", "App person or company string");
+    const org = b.option([]const u8, "org", "App org name string.");
+    const app_bundle = b.option([]const u8, "app_bundle", "Default app bundle name.");
+    const app_resources = b.option([]const u8, "app_resources", "Default app resources folder.");
+    const bundle_cache = b.option([]const u8, "bundle_cache", "Default app resource bundle cache.");
+    const dev_mode = b.option(bool, "dev_mode", "Include debug symbols and trace log messages.");
 
     const app_info = b.addOptions();
-    app_info.addOption([]const u8, "app_full_name", app_name);
-    app_info.addOption([]const u8, "app_version", app_version);
-    app_info.addOption([]const u8, "app_id", app_id);
-    app_info.addOption([]const u8, "org", org);
-    app_info.addOption([]const u8, "app_resources", app_resources);
-    app_info.addOption([]const u8, "app_owner", app_owner);
-    app_info.addOption([]const u8, "app_bundle", app_bundle);
-    app_info.addOption([]const u8, "bundle_cache", bundle_cache);
-    app_info.addOption(bool, "dev_mode", dev_mode);
+    app_info.addOption([]const u8, "app_full_name", app_name orelse "Lexica");
+    app_info.addOption([]const u8, "app_version", app_version orelse @import("build.zig.zon").version);
+    app_info.addOption([]const u8, "app_owner", (app_owner orelse "the author"));
+    app_info.addOption([]const u8, "org", (org orelse "lexica"));
+    app_info.addOption([]const u8, "app_resources", app_resources orelse "resources");
+    app_info.addOption([]const u8, "app_bundle", app_bundle orelse "app_bundle.bd");
+    app_info.addOption([]const u8, "bundle_cache", bundle_cache orelse "/tmp/");
+    app_info.addOption(bool, "dev_mode", dev_mode orelse true);
     const app_info_module = app_info.createModule();
 
     // Normal build/test/run uses current default target for this system.
@@ -83,74 +76,54 @@ pub fn build(b: *std.Build) !void {
 
     const app_resource_package = b.step("package", "Create the app bundle file");
     app_resource_package.dependOn(pre_app_resource_package);
-    var make_bundle = b.addRunArtifact(exe);
-    make_bundle.has_side_effects = true;
-    make_bundle.addArg("make_bundle");
-    make_bundle.addDirectoryArg(b.path(app_resources));
-    app_resource_package.dependOn(&make_bundle.step);
-
-    {
-        const simulator_step = b.step("simulator", "Build library for simulator");
-        //simulator_step.dependOn(&xcode_config.step);
-        const simulator_target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64, .abi = .simulator });
-        const simulator_imports = try buildImports(b, &simulator_target, optimize, app_info_module);
-
-        const simulator_mod = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
-            .target = simulator_target,
-            .optimize = optimize,
-            .imports = &simulator_imports,
-        });
-
-        simulator_mod.linkSystemLibrary("objc", .{});
-        simulator_mod.linkFramework("Foundation", .{});
-        simulator_mod.linkFramework("CoreFoundation", .{}); // needed?
-        simulator_mod.linkFramework("UserNotifications", .{});
-        //try addAppleSDK(b, simulator_mod, &simulator_target);
-
-        const simulator_lib = b.addLibrary(.{
-            .name = "lexica-ios-simulator",
-            .root_module = simulator_mod,
-            .linkage = .static,
-        });
-        simulator_lib.bundle_compiler_rt = true;
-        if (optimize != .ReleaseFast and optimize != .ReleaseSafe) {
-            simulator_lib.bundle_ubsan_rt = true;
-        }
-
-        var simulator_lib_install = b.addInstallLibFile(simulator_lib.getEmittedBin(), "../xcode/Dialectos/libdialectos-ios-simulator.so");
-        simulator_step.dependOn(&simulator_lib_install.step);
+    if (app_resources) |folder| {
+        var make_bundle = b.addRunArtifact(exe);
+        make_bundle.has_side_effects = true;
+        make_bundle.addArg("make_bundle");
+        make_bundle.addDirectoryArg(b.path(folder));
+        app_resource_package.dependOn(&make_bundle.step);
+    } else {
+        app_resource_package.dependOn(&b.addFail("Specify -Dapp_resources to build a pacakge.").step);
     }
 
     {
         //
         // iOS
         //
-        const mode: std.builtin.OptimizeMode = .ReleaseFast;
+        const ios_optimize_mode: std.builtin.OptimizeMode = .ReleaseFast;
         const ios_target = b.resolveTargetQuery(.{ .os_tag = .ios, .cpu_arch = .aarch64 });
-        const ios_imports = try buildImports(b, &ios_target, mode, app_info_module);
+        const ios_imports = try buildImports(b, &ios_target, ios_optimize_mode, app_info_module);
+        const ios_app_name = b.option([]const u8, "ios_app_name", "iOS app name.");
+        const ios_app_version = b.option([]const u8, "ios_app_version", "iOS app version.");
+        const ios_app_bundle = b.option([]const u8, "ios_app_bundle", "Default app resource bundle filename.");
+        const ios_app_id = b.option([]const u8, "ios_app_id", "iOS the app id.");
+        const ios_splash_screen = b.option(std.Build.LazyPath, "ios_splash_screen", "iOS app startup splash screen jpg.");
+        const ios_icon = b.option(std.Build.LazyPath, "ios_icon", "The iOS icon png.");
+        const ios_icon_light = b.option(std.Build.LazyPath, "ios_icon_light", "The light iOS icon png.");
+        const ios_icon_dark = b.option(std.Build.LazyPath, "ios_icon_dark", "The dark iOS icon png.");
 
-        // ios step depends on `patch_xcode_template` depends on `copy_xcode_template`
         const ios_step = b.step("ios", "Build library for ios");
         ios_step.dependOn(app_resource_package);
-        ios_step.dependOn(&(b.dependency("engine", .{
-            .app_name = app_name,
-            .app_id = app_id,
-            .app_version = app_version,
-            .splash_screen = splash_screen,
+
+        const ios_export_step = b.dependency("engine", .{
+            .ios_app_name = ios_app_name orelse app_name orelse "Lexica",
+            .ios_app_id = ios_app_id orelse app_id,
+            .ios_app_version = ios_app_version orelse app_version orelse @import("build.zig.zon").version,
+            .ios_splash_screen = ios_splash_screen,
+            .ios_app_bundle = ios_app_bundle,
             .ios_icon = ios_icon,
-        }).builder.top_level_steps.get("export_xcode_template") orelse @panic("export step missing")).step);
+            .ios_icon_light = ios_icon_light,
+            .ios_icon_dark = ios_icon_dark,
+        }).builder.top_level_steps.get("export_xcode_template") orelse @panic("export step missing").step;
+        ios_step.dependOn(&ios_export_step.step);
 
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
 
-        if (std.mem.eql(u8, app_id, "org.example.lexica"))
-            std.log.warn("Building ios lib with default app_id=org.example.lexica", .{});
-
         const ios_mod = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = ios_target,
-            .optimize = mode,
+            .optimize = ios_optimize_mode,
             .imports = &ios_imports,
         });
 
@@ -166,11 +139,15 @@ pub fn build(b: *std.Build) !void {
         });
         ios_lib.bundle_compiler_rt = true;
 
-        if (mode != .ReleaseFast and mode != .ReleaseSafe) {
+        if (ios_optimize_mode == .Debug) {
             ios_lib.bundle_ubsan_rt = true;
         }
 
-        ios_step.dependOn(&b.addInstallFile(ios_lib.getEmittedBin(), "xcode/Dialectos/libdialectos-ios.a").step);
+        //var install_ios_lib = b.addInstallFile(ios_lib.getEmittedBin(), "xcode/Dialectos/libdialectos-ios.a");
+        const install_ios_lib = b.addInstallLibFile(ios_lib.getEmittedBin(), "../xcode/Dialectos/libdialectos-ios.a");
+        install_ios_lib.step.dependOn(&ios_export_step.step);
+        install_ios_lib.step.dependOn(&ios_lib.step);
+        ios_step.dependOn(&install_ios_lib.step);
     }
 
     const clean_step = b.step("clean", "Clean temporary files");
@@ -190,7 +167,33 @@ pub fn build(b: *std.Build) !void {
         //
         const mode: std.builtin.OptimizeMode = .ReleaseFast;
         const android_target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
-        const android_imports = try buildImports(b, &android_target, mode, app_info_module);
+        const android_imports = try buildImports(b, &android_target, android_optimize_mode, app_info_module);
+        const android_app_name = b.option([]const u8, "android_app_name", "Android app name.");
+        const android_app_id = b.option([]const u8, "android_app_id", "Android app id.");
+        const android_app_version = b.option([]const u8, "android_app_version", "Android app version.");
+        const android_icon = b.option(std.Build.LazyPath, "android_icon", "The android icon png.");
+        const android_app_bundle = b.option([]const u8, "android_app_bundle", "Default app resource bundle filename.");
+
+        const android_icon_circle_192 = b.option(std.Build.LazyPath, "android_icon_circle_192", "Circle 192px android icon png.");
+        const android_icon_circle_144 = b.option(std.Build.LazyPath, "android_icon_circle_144", "Circle 144px android icon png.");
+        const android_icon_circle_96 = b.option(std.Build.LazyPath, "android_icon_circle_96", "Circle 96px android icon png.");
+        const android_icon_circle_72 = b.option(std.Build.LazyPath, "android_icon_circle_72", "Circle 72px android icon png.");
+        const android_icon_circle_48 = b.option(std.Build.LazyPath, "android_icon_circle_48", "Circle 48px android icon png.");
+        const android_icon_rounded_192 = b.option(std.Build.LazyPath, "android_icon_rounded_192", "Rounded 192px android icon png.");
+        const android_icon_rounded_144 = b.option(std.Build.LazyPath, "android_icon_rounded_144", "Rounded 144px android icon png.");
+        const android_icon_rounded_96 = b.option(std.Build.LazyPath, "android_icon_rounded_96", "Rounded 96px android icon png.");
+        const android_icon_rounded_72 = b.option(std.Build.LazyPath, "android_icon_rounded_72", "Rounded 72px android icon png.");
+        const android_icon_rounded_48 = b.option(std.Build.LazyPath, "android_icon_rounded_48", "Rounded 48px android icon png.");
+        const android_icon_foreground_432 = b.option(std.Build.LazyPath, "android_icon_foreground_192", "Foreground 192px android icon png.");
+        const android_icon_foreground_324 = b.option(std.Build.LazyPath, "android_icon_foreground_48", "Foreground 48px android icon png.");
+        const android_icon_foreground_216 = b.option(std.Build.LazyPath, "android_icon_foreground_144", "Foreground 144px android icon png.");
+        const android_icon_foreground_162 = b.option(std.Build.LazyPath, "android_icon_foreground_96", "Foreground 96px android icon png.");
+        const android_icon_foreground_108 = b.option(std.Build.LazyPath, "android_icon_foreground_72", "Foreground 72px android icon png.");
+        const android_icon_background_432 = b.option(std.Build.LazyPath, "android_icon_background_432", "Foreground 192px android icon png.");
+        const android_icon_background_324 = b.option(std.Build.LazyPath, "android_icon_background_324", "Foreground 144px android icon png.");
+        const android_icon_background_216 = b.option(std.Build.LazyPath, "android_icon_background_216", "Foreground 96px android icon png.");
+        const android_icon_background_162 = b.option(std.Build.LazyPath, "android_icon_background_162", "Foreground 72px android icon png.");
+        const android_icon_background_108 = b.option(std.Build.LazyPath, "android_icon_background_108", "Foreground 48px android icon png.");
 
         // Copy the android template
         var copy_android_template = b.step("android_template_copy", "Copy android template");
@@ -217,66 +220,70 @@ pub fn build(b: *std.Build) !void {
         var run_android_update = b.addRunArtifact(android_update_exe);
         run_android_update.addFileArg(b.graph.path(.install_prefix, "android/"));
         run_android_update.addFileArg(b.path("libc.txt"));
-        run_android_update.addArg(app_name);
-        run_android_update.addArg(app_version);
+        run_android_update.addArg(android_app_name orelse app_name orelse "Example");
+        run_android_update.addArg(android_app_version orelse app_version orelse "1");
+        run_android_update.addArg(android_app_id orelse app_id);
         run_android_update.addArg(try androidTriple(&android_target.result));
         run_android_update.has_side_effects = true;
         run_android_update.step.dependOn(copy_android_template);
         patch_android_template.dependOn(&run_android_update.step);
 
         const android_step = b.step("android", "Build library for android");
+        if (!b.graph.environ_map.contains("ANDROID_NDK_HOME") and !b.graph.environ_map.contains("ANDROID_SDK_ROOT")) {
+            app_resource_package.dependOn(&b.addFail("The `android` build step requires ANDROID_NDK_HOME or ANDROID_SDK_ROOT to be set.").step);
+        }
         android_step.dependOn(app_resource_package);
-        android_step.dependOn(&run_android_update.step);
-        android_step.dependOn(&b.addInstallFile(b.path("app_bundle.bd"), "android/Dialectos/app_bundle.bd").step);
+        android_step.dependOn(patch_android_template);
+
+        if (android_app_bundle) |name| {
+            copyStep(b, patch_android_template, copy_android_template, name, "android/app/src/main/assets/app_bundle.bd");
+        } else {
+            //std.log.warn("No ios_app_bundle set", .{});
+        }
 
         const copy = .{
-            .{ "assets/generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
-            .{ "assets/generated/app-icon-1024x1024.png", "android/app/src/main/ic_launcher-playstore.png" },
-
-            .{ "assets/generated/app-icon-rounded-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-rounded-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-rounded-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-rounded-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-rounded-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp" },
-            .{ "assets/generated/app-icon-rounded-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp" },
-
-            .{ "assets/generated/app-icon-round-48x48.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" },
-            .{ "assets/generated/app-icon-round-96x96.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" },
-            .{ "assets/generated/app-icon-round-72x72.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" },
-            .{ "assets/generated/app-icon-round-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
-            .{ "assets/generated/app-icon-round-192x192.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
-            .{ "assets/generated/app-icon-round-144x144.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" },
-
-            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap/icon_foreground.webp" },
-            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-foreground-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-foreground-324x324.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-foreground-216x216.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-foreground-162x162.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-foreground-108x108.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp" },
-
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-background-432x432.webp", "android/app/src/main/res/mipmap/icon_background.webp" },
-            .{ "assets/generated/app-icon-background-324x324.webp", "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-background-216x216.webp", "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-background-162x162.webp", "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp" },
-            .{ "assets/generated/app-icon-background-108x108.webp", "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.webp" },
+            .{ android_icon, "android/app/src/main/ic_launcher-playstore.png" },
+            .{ android_icon, "android/app/src/main/ic_launcher-playstore.png" },
+            .{ android_icon_rounded_192, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ android_icon_rounded_192, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp" },
+            .{ android_icon_rounded_144, "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp" },
+            .{ android_icon_rounded_96, "android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp" },
+            .{ android_icon_rounded_72, "android/app/src/main/res/mipmap-hdpi/ic_launcher.webp" },
+            .{ android_icon_rounded_48, "android/app/src/main/res/mipmap-mdpi/ic_launcher.webp" },
+            .{ android_icon_circle_48, "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp" },
+            .{ android_icon_circle_96, "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp" },
+            .{ android_icon_circle_72, "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp" },
+            .{ android_icon_circle_192, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
+            .{ android_icon_circle_192, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp" },
+            .{ android_icon_circle_144, "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp" },
+            .{ android_icon_foreground_432, "android/app/src/main/res/mipmap/ic_launcher_foreground.webp" },
+            .{ android_icon_foreground_432, "android/app/src/main/res/mipmap/icon_foreground.webp" },
+            .{ android_icon_foreground_432, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ android_icon_foreground_432, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
+            .{ android_icon_foreground_324, "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.webp" },
+            .{ android_icon_foreground_216, "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.webp" },
+            .{ android_icon_foreground_162, "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.webp" },
+            .{ android_icon_foreground_108, "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.webp" },
+            .{ android_icon_background_432, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.webp" },
+            .{ android_icon_background_432, "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.webp" },
+            .{ android_icon_background_432, "android/app/src/main/res/mipmap/ic_launcher_background.webp" },
+            .{ android_icon_background_432, "android/app/src/main/res/mipmap/icon_background.webp" },
+            .{ android_icon_background_324, "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.webp" },
+            .{ android_icon_background_216, "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.webp" },
+            .{ android_icon_background_162, "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.webp" },
+            .{ android_icon_background_108, "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.webp" },
         };
 
         inline for (copy) |cp| {
-            copyStep(b, android_step, patch_android_template, cp[0], cp[1]);
+            if (cp[0]) |src| {
+                copyStepP(b, android_step, patch_android_template, src, cp[1]);
+            }
         }
-
-        if (std.mem.eql(u8, app_id, "org.example.lexica"))
-            std.log.warn("Building android lib with default app_id=org.example.lexica", .{});
 
         const android_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = android_target,
-            .optimize = mode,
+            .optimize = android_optimize_mode,
             .imports = &android_imports,
         });
 
@@ -285,16 +292,18 @@ pub fn build(b: *std.Build) !void {
             .root_module = android_module,
             .linkage = .dynamic,
         });
+        android_lib.step.dependOn(patch_android_template);
         android_lib.setLibCFile(b.graph.path(.install_prefix, "android/libc.txt"));
         android_lib.bundle_compiler_rt = true;
-        if (mode != .ReleaseFast and mode != .ReleaseSafe) {
-            android_lib.bundle_ubsan_rt = true;
-        }
+        //if (android_optimize_mode == .Debug)
+        //    android_lib.bundle_ubsan_rt = true;
+        //android_lib.bundle_ubsan_rt = true;
 
         // https://developer.android.com/guide/practices/page-sizes
         android_lib.link_z_common_page_size = 16 * 1024;
 
-        const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../../android/app/jni/jniLibs/arm64-v8a/libdialectos-android.so");
+        const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../android/app/jni/jniLibs/arm64-v8a/liblexica-android.so");
+        android_lib_install.step.dependOn(patch_android_template);
         android_step.dependOn(&android_lib_install.step);
     }
 }
@@ -331,7 +340,6 @@ fn buildImports(
     if (target.*.result.os.tag == .ios or target.*.result.os.tag == .macos) {
         const objc = b.dependency("zig_objc", .{ .target = target.*, .optimize = optimize });
         const objc_module = objc.module("objc");
-        //addSystemPathsToModule(b, target, objc_module);
         return .{
             .{ .name = "app_info", .module = app_info },
             .{ .name = "praxis", .module = praxis_module },
@@ -396,5 +404,4 @@ pub fn addAppleSDK(
 }
 
 const std = @import("std");
-const addSystemPathsToModule = @import("build/addSystemPathsToModule.zig").addSystemPathsToModule;
 const androidTriple = @import("build/android_template_update.zig").androidTriple;
