@@ -362,4 +362,3 @@ pub fn addAppleSDK(
 }
 
 const std = @import("std");
-const androidTriple = @import("build/android_template_update.zig").androidTriple;
