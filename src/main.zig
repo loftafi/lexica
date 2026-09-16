@@ -50,17 +50,17 @@ pub fn startup(
     var bundle_info: std.ArrayListUnmanaged(engine.BundleInfo) = .empty;
     defer bundle_info.deinit(arena);
 
-    for (args, 0..) |arg, i| {
+    var cmd_args = args;
+    if (args.len > 1 and std.ascii.eqlIgnoreCase(std.mem.span(args[1]), "make_bundle")) {
+        config.command = .make_bundle;
+        config.app_bundle_output = try arena.dupe(u8, std.mem.span(args[2]));
+        cmd_args = args[2..];
+    }
+
+    for (cmd_args, 0..) |arg, i| {
         const value = std.mem.span(arg);
         std.log.warn("arg {d}: '{s}'", .{ i, value });
         if (i == 0) continue;
-        if (std.ascii.eqlIgnoreCase(value, "make_bundle")) {
-            // Request that the app is initialised, and any required
-            // resource (image, audio, font, etc...) is placed into
-            // a bundle file. The app must then exit.
-            config.command = .make_bundle;
-            continue;
-        }
         if (std.ascii.endsWithIgnoreCase(value, ".bd")) {
             // A parameter with a `.bd` extension is an app bundle to load.
             try bundle_info.append(arena, .{
@@ -75,6 +75,7 @@ pub fn startup(
             });
         }
     }
+
     if (bundle_info.items.len > 0)
         config.bundles = bundle_info.items;
 

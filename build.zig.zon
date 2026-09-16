@@ -13,8 +13,9 @@
             .hash = "zig_objc-0.0.0-Ir_Sp_4tAQDXtPi51nW_jD9LOEzBvU9lofwO9Pzi6IB4",
         },
         .engine = .{
-            .url = "git+https://github.com/loftafi/engine#4519aa5a792a83cd832bcb342fd7f18edf41e04a",
-            .hash = "engine-0.40.3-1VilChQz9QttmtvhI3eoQGz5UkNsSTYIy7myi05tpbTz",
+            //.url = "git+https://github.com/loftafi/engine#4519aa5a792a83cd832bcb342fd7f18edf41e04a",
+            //.hash = "engine-0.40.3-1VilChQz9QttmtvhI3eoQGz5UkNsSTYIy7myi05tpbTz",
+            .path = "../engine/",
         },
     },
 

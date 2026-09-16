@@ -386,11 +386,15 @@ pub fn makeAppBundle(
         err("Abort makeAppBundle. No manifest was built.", .{});
         return;
     }
-    notice("Make app bundle {s}", .{app_info.app_bundle});
+    if (self.display.config.app_bundle_output == null) {
+        err("Abort makeAppBundle. No output app bundle was specified.", .{});
+        return;
+    }
+    notice("Make app bundle {s}", .{self.display.config.app_bundle_output.?});
     self.display.resources.saveBundle(
         self.allocator,
         self.io,
-        app_info.app_bundle,
+        self.display.config.app_bundle_output.?,
         self.display.required_resource,
         &.{},
         "/tmp",
