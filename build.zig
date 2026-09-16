@@ -165,7 +165,7 @@ pub fn build(b: *std.Build) !void {
         //
         // Android
         //
-        const mode: std.builtin.OptimizeMode = .ReleaseFast;
+        const android_optimize_mode: std.builtin.OptimizeMode = .ReleaseFast;
         const android_target = b.resolveTargetQuery(.{ .os_tag = .linux, .cpu_arch = .aarch64, .abi = .android });
         const android_imports = try buildImports(b, &android_target, android_optimize_mode, app_info_module);
         const android_app_name = b.option([]const u8, "android_app_name", "Android app name.");
@@ -198,16 +198,55 @@ pub fn build(b: *std.Build) !void {
         // Copy the android template
         var copy_android_template = b.step("android_template_copy", "Copy android template");
         const template_path = b.dependency("engine", .{}).path("templates/android/");
-        const do_copy = b.addInstallDirectory(.{
+        const do_copy_template = b.addInstallDirectory(.{
             .source_dir = template_path,
             .install_dir = .{ .custom = "android/" },
             .install_subdir = "",
         });
-        copy_android_template.dependOn(&do_copy.step);
+        copy_android_template.dependOn(&do_copy_template.step);
+
+        // Copy SDL into the android template
+        //const sdl_pkg = b.dependency("engine", .{}).builder.dependency("sdl", .{});
+        //const do_copy_sdl = b.addInstallDirectory(.{
+        //    .source_dir = sdl_pkg.path(""),
+        //    .install_dir = .{ .custom = "android/app/jni/SDL" },
+        //    .install_subdir = "",
+        //});
+        //copy_android_template.dependOn(&do_copy_sdl.step);
+
+        // Copy SDL mixer into the android template
+        const sdl_mixer_pkg = b.dependency("engine", .{}).builder.dependency("sdl_mixer", .{});
+        const do_copy_sdl_mixer = b.addInstallDirectory(.{
+            .source_dir = sdl_mixer_pkg.path(""),
+            .install_dir = .{ .custom = "android/app/jni/SDL_mixer" },
+            .install_subdir = "",
+        });
+        copy_android_template.dependOn(&do_copy_sdl_mixer.step);
+
+        const text_replace_util = b.addExecutable(.{
+            .name = "text_replacement",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("build/text_replace.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        var run_sdl_mixer_patch = b.addRunArtifact(text_replace_util);
+        run_sdl_mixer_patch.addFileArg(b.graph.path(.install_prefix, "android/app/jni/SDL_mixer/Android.mk"));
+        run_sdl_mixer_patch.addArg("SUPPORT_FLAC_DRFLAC ?= true");
+        run_sdl_mixer_patch.addArg("SUPPORT_FLAC_DRFLAC ?= false");
+        run_sdl_mixer_patch.addArg("SUPPORT_WAVPACK ?= true");
+        run_sdl_mixer_patch.addArg("SUPPORT_WAVPACK ?= false");
+        run_sdl_mixer_patch.addArg("SUPPORT_MP3_DRMP3 ?= true");
+        run_sdl_mixer_patch.addArg("SUPPORT_MP3_DRMP3 ?= false");
+
+        run_sdl_mixer_patch.has_side_effects = true;
+        run_sdl_mixer_patch.step.dependOn(&do_copy_sdl_mixer.step);
 
         // Ammend the android template with project information
         var patch_android_template = b.step("patch_android_template", "Update the android template");
         patch_android_template.dependOn(copy_android_template);
+        patch_android_template.dependOn(&run_sdl_mixer_patch.step);
         patch_android_template.dependOn(app_resource_package);
         const android_update_exe = b.addExecutable(.{
             .name = "android_template_update",
