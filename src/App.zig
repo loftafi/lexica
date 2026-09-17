@@ -49,30 +49,7 @@ parsing_quiz: ParsingQuiz = undefined,
 bucket: StringBucket,
 lists: Lists,
 
-preference: struct {
-    uk_order: bool = true,
-    use_koine: bool = false,
-    show_strongs: bool = false,
-    accessibility: bool = false,
-    size: Scale = .normal,
-    theme: []const u8 = "",
-
-    present_future: bool = true,
-    imperfect: bool = false,
-    perfect_pluperfect: bool = false,
-    aorist: bool = false,
-    nominative_accusative: bool = true,
-    genitive_dative: bool = false,
-    mi: bool = false,
-    third_declension: bool = false,
-    middle_passive: bool = false,
-    indicative: bool = true,
-    imperative: bool = false,
-    participle: bool = false,
-    subjunctive: bool = false,
-    optative: bool = false,
-    infinitive: bool = false,
-},
+preference: Preferences = .empty,
 
 /// Words that were tapped to be viewed
 view_history: std.ArrayListUnmanaged(*praxis.Form),
@@ -118,20 +95,7 @@ pub fn create(
     errdefer self.display.destroy();
 
     debug("Loading preferences", .{});
-    try self.loadPreferences();
-    debug("Apply preferences", .{});
-    if (self.preference.use_koine) {
-        try self.display.setLanguage(Lang.greek);
-    } else {
-        try self.display.setLanguage(Lang.english);
-    }
-    self.display.setUserScale(self.preference.size);
-    self.display.blind_accessibility = self.preference.accessibility;
-    _ = try self.display.setTheme(self.preference.theme);
-    debug("Loaded preferences. Scale={d}/{s}", .{
-        self.display.user_scale,
-        @tagName(self.preference.size),
-    });
+    try self.preference.load(gpa, self.display, &self.display.config, io);
 
     // Placeholder for the dictionary in case this object is destroyed later
     self.dictionary_arena = std.heap.ArenaAllocator.init(gpa);
@@ -319,56 +283,6 @@ pub fn enableScreens(self: *App) !void {
     }
 }
 
-pub fn savePreferences(self: *App) void {
-    var data = std.ArrayList(u8).initCapacity(self.allocator, 5000) catch {
-        warn("Save preferences out of memory.", .{});
-        return;
-    };
-    defer data.deinit(self.allocator);
-
-    data.appendSliceAssumeCapacity("show_strongs=");
-    if (self.preference.show_strongs) {
-        data.appendSliceAssumeCapacity("true\n");
-    } else {
-        data.appendSliceAssumeCapacity("false\n");
-    }
-
-    data.appendSliceAssumeCapacity("use_koine=");
-    if (self.preference.use_koine) {
-        data.appendSliceAssumeCapacity("true\n");
-    } else {
-        data.appendSliceAssumeCapacity("false\n");
-    }
-
-    data.appendSliceAssumeCapacity("uk_order=");
-    if (self.preference.uk_order) {
-        data.appendSliceAssumeCapacity("true\n");
-    } else {
-        data.appendSliceAssumeCapacity("false\n");
-    }
-
-    data.appendSliceAssumeCapacity("theme=");
-    data.appendSliceAssumeCapacity(self.preference.theme);
-    data.appendSliceAssumeCapacity("\nscale=");
-    data.appendSliceAssumeCapacity(@tagName(self.preference.size));
-    data.appendSliceAssumeCapacity("\naccessibility=");
-    if (self.preference.accessibility) {
-        data.appendSliceAssumeCapacity("true");
-    } else {
-        data.appendSliceAssumeCapacity("false");
-    }
-
-    engine.savePreferenceData(
-        self.allocator,
-        self.io,
-        &self.display.config,
-        settings_file,
-        data.items,
-    ) catch |e| {
-        err("Failed to save preference data. {t}", .{e});
-    };
-}
-
 /// Create a bundle file containing all resources that have been
 /// loaded or required, and end the main app loop.
 ///
@@ -492,110 +406,6 @@ pub fn add_back_button(
         } },
         .on_resized = .{ .func = @ptrCast(&back_button_resize), .ptr = self },
     }, self.display);
-}
-
-pub fn loadPreferences(self: *App) error{OutOfMemory}!void {
-    // Start with basic defaults
-    self.preference.use_koine = false;
-    self.preference.show_strongs = false;
-    self.preference.accessibility = false;
-    self.preference.theme = "default";
-    self.preference.size = .normal;
-    self.preference.uk_order = true;
-
-    self.preference.present_future = true;
-    self.preference.imperfect = false;
-    self.preference.aorist = false;
-    self.preference.mi = false;
-    self.preference.imperative = false;
-    self.preference.infinitive = false;
-    self.preference.subjunctive = false;
-    self.preference.optative = false;
-    self.preference.indicative = true;
-    self.preference.participle = false;
-    self.preference.middle_passive = false;
-    self.preference.third_declension = false;
-    self.preference.perfect_pluperfect = false;
-    self.preference.middle_passive = false;
-    self.preference.nominative_accusative = true;
-    self.preference.genitive_dative = false;
-
-    const data = engine.loadPreferenceData(
-        self.allocator,
-        &self.display.config,
-        settings_file,
-    ) catch |f| switch (f) {
-        error.OutOfMemory => return error.OutOfMemory,
-        else => |e| {
-            err("loadPreferences() failed. file={q} error={t}", .{
-                settings_file,
-                e,
-            });
-            return;
-        },
-    } orelse {
-        notice("loadPreferences() no preferences file exists yet.", .{});
-        return;
-    };
-    defer self.allocator.free(data);
-
-    var iter = std.mem.tokenizeAny(u8, data, "\n\r\t= ");
-
-    while (true) {
-        if (iter.next()) |field| {
-            if (iter.next()) |value| {
-                debug("preference {s}={s}", .{ field, value });
-                if (std.mem.eql(u8, "use_koine", field)) {
-                    self.preference.use_koine = is_true(field, value);
-                } else if (std.mem.eql(u8, "show_strongs", field)) {
-                    self.preference.show_strongs = is_true(field, value);
-                } else if (std.mem.eql(u8, "accessibility", field)) {
-                    self.preference.accessibility = is_true(field, value);
-                } else if (std.mem.eql(u8, "theme", field)) {
-                    self.preference.theme = self.display.validate_theme(value);
-                } else if (std.mem.eql(u8, "scale", field)) {
-                    self.preference.size = Scale.parse(value);
-                } else if (std.mem.eql(u8, "uk_order", field)) {
-                    self.preference.uk_order = is_true(field, value);
-                } else {
-                    warn("Unrecognised preference {s}={s}", .{ field, value });
-                }
-                continue;
-            }
-        }
-        break;
-    }
-}
-
-fn is_true(field: []const u8, value: []const u8) bool {
-    if (std.ascii.eqlIgnoreCase("true", value)) {
-        return true;
-    }
-    if (std.ascii.eqlIgnoreCase("t", value)) {
-        return true;
-    }
-    if (std.ascii.eqlIgnoreCase("yes", value)) {
-        return true;
-    }
-    if (std.ascii.eqlIgnoreCase("y", value)) {
-        return true;
-    }
-    if (std.ascii.eqlIgnoreCase("false", value)) {
-        return false;
-    }
-    if (std.ascii.eqlIgnoreCase("f", value)) {
-        return false;
-    }
-    if (std.ascii.eqlIgnoreCase("no", value)) {
-        return false;
-    }
-    if (std.ascii.eqlIgnoreCase("n", value)) {
-        return false;
-    }
-
-    warn("Expecting true or false, found {s}={s}", .{ field, value });
-
-    return false;
 }
 
 fn toggle_menu(
@@ -742,6 +552,7 @@ const sdl3 = engine.sdl;
 const Lists = @import("Lists.zig");
 const WordSet = Lists.WordSet;
 const ParsingQuiz = @import("ParsingQuiz.zig");
+const Preferences = @import("Preferences.zig");
 
 const ByzScreen = @import("ByzScreen.zig");
 const LicenseScreen = @import("LicenseScreen.zig");

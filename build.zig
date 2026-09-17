@@ -123,7 +123,6 @@ pub fn build(b: *std.Build) !void {
         }).builder.top_level_steps.get("export_xcode_template") orelse @panic("export step missing").step;
         ios_step.dependOn(&ios_export_step.step);
 
-        //ios_step.dependOn(&b.addFail(ios_icon.?.getDisplayName()).step);
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
 

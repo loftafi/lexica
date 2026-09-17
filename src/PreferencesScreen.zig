@@ -369,7 +369,7 @@ pub fn tapHeading(
     _: *Display,
     _: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     self.tap_counter += 1;
     if (self.tap_counter > 10) {
         self.tap_counter = 0;
@@ -383,11 +383,11 @@ pub fn tapThemeButton(
     display: *Display,
     event: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     const theme = display.validate_theme(event.name);
     _ = try display.setTheme(theme);
     self.app.preference.theme = theme;
-    self.app.savePreferences();
+    try self.app.preference.save();
 }
 
 pub fn initPickerTable(
@@ -468,12 +468,12 @@ pub fn chooseUKOrder(
     _: *Display,
     entity: *Entity,
     _: *const Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     debug("Choose UK order.", .{});
     std.debug.assert(entity.type == .panel);
     self.app.preference.uk_order = true;
     self.updateRing();
-    self.app.savePreferences();
+    try self.app.preference.save();
 }
 
 pub fn chooseUSOrder(
@@ -481,24 +481,12 @@ pub fn chooseUSOrder(
     _: *Display,
     entity: *Entity,
     _: *const Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     debug("Choose US order.", .{});
     std.debug.assert(entity.type == .panel);
     self.app.preference.uk_order = false;
     self.updateRing();
-    self.app.savePreferences();
-}
-
-pub fn updateRing(self: *PreferencesScreen) void {
-    self.us_panel_ring.background.colour = .transparent;
-    self.uk_panel_ring.background.colour = .transparent;
-    self.uk_panel_ring.style = .custom;
-    self.us_panel_ring.style = .custom;
-    if (self.app.preference.uk_order) {
-        self.uk_panel_ring.style = .emphasised;
-    } else {
-        self.us_panel_ring.style = .emphasised;
-    }
+    try self.app.preference.save();
 }
 
 pub fn changeKoinePreference(
@@ -506,10 +494,10 @@ pub fn changeKoinePreference(
     display: *Display,
     entity: *Entity,
     _: *const Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     std.debug.assert(entity.type == .checkbox);
     self.app.preference.use_koine = entity.type.checkbox.checked;
-    self.app.savePreferences();
+    try self.app.preference.save();
     if (self.app.preference.use_koine) {
         try display.setLanguage(Lang.greek);
     } else {
@@ -522,10 +510,10 @@ pub fn changeStrongsPreference(
     _: *Display,
     entity: *Entity,
     _: *const Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     std.debug.assert(entity.type == .checkbox);
     self.app.preference.show_strongs = entity.type.checkbox.checked;
-    self.app.savePreferences();
+    try self.app.preference.save();
 }
 
 pub fn changeKeyboardAccess(
@@ -533,11 +521,23 @@ pub fn changeKeyboardAccess(
     display: *Display,
     entity: *Entity,
     _: *const Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     std.debug.assert(entity.type == .checkbox);
     self.app.preference.accessibility = entity.type.checkbox.checked;
-    self.app.savePreferences();
+    try self.app.preference.save();
     display.blind_accessibility = self.app.preference.accessibility;
+}
+
+pub fn updateRing(self: *PreferencesScreen) void {
+    self.us_panel_ring.background.colour = .transparent;
+    self.uk_panel_ring.background.colour = .transparent;
+    self.uk_panel_ring.style = .custom;
+    self.us_panel_ring.style = .custom;
+    if (self.app.preference.uk_order) {
+        self.uk_panel_ring.style = .emphasised;
+    } else {
+        self.us_panel_ring.style = .emphasised;
+    }
 }
 
 const builtin = @import("builtin");
