@@ -50,6 +50,11 @@ pub fn startup(
     var bundle_info: std.ArrayListUnmanaged(engine.BundleInfo) = .empty;
     defer bundle_info.deinit(arena);
 
+    //for (args, 0..) |arg, i| {
+    //    const value = std.mem.span(arg);
+    //    std.log.warn("input arg {d}: '{s}'", .{ i, value });
+    //}
+
     var cmd_args = args;
     if (args.len > 1 and std.ascii.eqlIgnoreCase(std.mem.span(args[1]), "make_bundle")) {
         config.command = .make_bundle;
@@ -59,7 +64,7 @@ pub fn startup(
 
     for (cmd_args, 0..) |arg, i| {
         const value = std.mem.span(arg);
-        std.log.warn("arg {d}: '{s}'", .{ i, value });
+        //std.log.warn("arg {d}: '{s}'", .{ i, value });
         if (i == 0) continue;
         if (std.ascii.endsWithIgnoreCase(value, ".bd")) {
             // A parameter with a `.bd` extension is an app bundle to load.

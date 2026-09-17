@@ -4,6 +4,9 @@ pub fn build(b: *std.Build) !void {
         @import("build/zig_version.zig").requireVersion(minimum_zig_version);
     }
 
+    const default_app_bundle = "app_bundle.bd";
+    const default_app_resources_folder = "resources";
+
     const optimize = b.standardOptimizeOption(.{});
     const test_filters = b.option([]const []const u8, "test-filter", "Skip tests that do not match any filter") orelse &[0][]const u8{};
 
@@ -22,8 +25,8 @@ pub fn build(b: *std.Build) !void {
     app_info.addOption([]const u8, "app_version", app_version orelse @import("build.zig.zon").version);
     app_info.addOption([]const u8, "app_owner", (app_owner orelse "the author"));
     app_info.addOption([]const u8, "org", (org orelse "lexica"));
-    app_info.addOption([]const u8, "app_resources", app_resources orelse "resources");
-    app_info.addOption([]const u8, "app_bundle", app_bundle orelse "app_bundle.bd");
+    app_info.addOption([]const u8, "app_resources", app_resources orelse default_app_resources_folder);
+    app_info.addOption([]const u8, "app_bundle", app_bundle orelse default_app_bundle);
     app_info.addOption([]const u8, "bundle_cache", bundle_cache orelse "/tmp/");
     app_info.addOption(bool, "dev_mode", dev_mode orelse true);
     const app_info_module = app_info.createModule();
@@ -76,20 +79,18 @@ pub fn build(b: *std.Build) !void {
 
     const app_resource_package = b.step("package", "Create the app bundle file");
     app_resource_package.dependOn(pre_app_resource_package);
-    if (app_bundle) |app_bundle_name| {
-        if (app_resources) |folder| {
-            var make_bundle = b.addRunArtifact(exe);
-            make_bundle.has_side_effects = true;
-            make_bundle.addArg("make_bundle");
-            make_bundle.addDirectoryArg(b.graph.path(.install_prefix, app_bundle_name));
-            make_bundle.addDirectoryArg(b.path(folder));
-            app_resource_package.dependOn(&make_bundle.step);
-        } else {
-            app_resource_package.dependOn(&b.addFail("Specify -Dapp_resources to build a pacakge.").step);
-        }
-    } else {
-        app_resource_package.dependOn(&b.addFail("Specify -Dapp_bundle to build a package").step);
-    }
+
+    const app_bundle_name = app_bundle orelse default_app_bundle;
+    const app_resource_folder = app_resources orelse default_app_resources_folder;
+
+    var make_bundle = b.addRunArtifact(exe);
+    make_bundle.has_side_effects = true;
+    make_bundle.addArg("make_bundle");
+    // Write bundle file to install folder using the specified bundle name.
+    make_bundle.addDirectoryArg(b.graph.path(.install_prefix, app_bundle_name));
+    // Load app resoruces from the specified resources folder.
+    make_bundle.addDirectoryArg(b.path(app_resource_folder));
+    app_resource_package.dependOn(&make_bundle.step);
 
     {
         //
@@ -122,6 +123,7 @@ pub fn build(b: *std.Build) !void {
         }).builder.top_level_steps.get("export_xcode_template") orelse @panic("export step missing").step;
         ios_step.dependOn(&ios_export_step.step);
 
+        //ios_step.dependOn(&b.addFail(ios_icon.?.getDisplayName()).step);
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
 
@@ -207,7 +209,6 @@ pub fn build(b: *std.Build) !void {
             .android_app_name = android_app_name orelse app_name orelse "Lexica",
             .android_app_id = android_app_id orelse app_id,
             .android_app_version = android_app_version orelse app_version orelse @import("build.zig.zon").version,
-            //.android_splash_screen = android_splash_screen,
             .android_app_bundle = android_app_bundle,
             .android_icon = android_icon,
             .android_icon_circle_192 = android_icon_circle_192,
@@ -264,18 +265,6 @@ pub fn build(b: *std.Build) !void {
         android_lib_install.step.dependOn(&android_lib.step);
         android_step.dependOn(&android_lib_install.step);
     }
-}
-
-fn copyStep(b: *std.Build, before: *std.Build.Step, after: *std.Build.Step, src: []const u8, dst: []const u8) void {
-    var cp = b.addInstallFile(b.path(src), dst);
-    cp.step.dependOn(after);
-    before.dependOn(&cp.step);
-}
-
-fn copyStepP(b: *std.Build, before: *std.Build.Step, after: *std.Build.Step, src: std.Build.LazyPath, dst: []const u8) void {
-    var cp = b.addInstallFile(src, dst);
-    cp.step.dependOn(after);
-    before.dependOn(&cp.step);
 }
 
 fn buildImports(
