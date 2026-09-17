@@ -1,6 +1,4 @@
-//! Build the menu item panels. The main menu buttons
-//! that float on the bottom of the screen. The progress bar
-//! that floats on the top of a quiz.
+/// Display menu overlays.
 pub const MenuUI = @This();
 
 app: *App = undefined,

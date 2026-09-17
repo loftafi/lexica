@@ -42,7 +42,7 @@ pub fn init(self: *LicenseScreen, app: *App) !void {
         \\}
     , LicenseScreen, self);
 
-    self.back_button = try app.add_back_button(self.panel, .{
+    self.back_button = try app.addBackButton(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });

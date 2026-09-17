@@ -88,7 +88,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
         \\  on_resized resizeCard
     , ParsingCardScreen, self);
 
-    _ = try app.add_back_button(self.panel, .{
+    _ = try app.addBackButton(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });
@@ -934,7 +934,7 @@ var buttons = struct {
         self: *Self,
         form: *praxis.Form,
         user_choice: praxis.Parsing,
-        gpa: std.mem.Allocator,
+        gpa: Allocator,
     ) error{OutOfMemory}!bool {
         var expected_parsing = form.parsing;
         var clean_choice = user_choice;

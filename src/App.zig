@@ -1,4 +1,4 @@
-/// Initialises all screens used by the application, and handles
+/// Initialises all screens used by the application, and handle
 /// events that are not related to individual screens.
 pub const App = @This();
 
@@ -8,16 +8,13 @@ pub const APP_MINIMUM_HEIGHT = 600;
 pub const APP_MAXIMUM_WIDTH = 1000;
 pub const MAX_SEARCH_HISTORY = @import("SearchScreen.zig").MAX_SEARCH_RESULTS;
 pub const MAX_PANEL_TABLES: usize = 20;
-
 pub const study_optative = false;
-
 pub var writing_enabled = true;
 
 // Global app variables
 allocator: Allocator,
 io: std.Io,
 display: *Display = undefined,
-theme: []const u8 = "",
 
 dictionary: *Dictionary = undefined,
 dictionary_arena: std.heap.ArenaAllocator = undefined,
@@ -258,18 +255,8 @@ pub fn enableScreens(self: *App) !void {
     try self.display.setKeybinding(.s, .{ .func = @ptrCast(&SearchScreen.show), .ptr = &self.search_screen });
     try self.display.setKeybinding(.p, .{ .func = @ptrCast(&PreferencesScreen.show), .ptr = &self.preferences });
     try self.display.setKeybinding(.q, .{ .func = @ptrCast(&ParsingMenuScreen.show), .ptr = &self.parsing_menu });
-
-    if (builtin.mode == .Debug) {
-        try self.display.setKeybinding(.m, .{ .func = @ptrCast(&toggle_menu), .ptr = self });
-        try self.display.setKeybinding(.@"6", .{ .func = @ptrCast(&makeAppBundle), .ptr = self });
-    }
-
-    if (builtin.target.os.tag != .ios and
-        !builtin.target.abi.isAndroid())
-    {
-        try self.display.setKeybinding(.escape, .{ .func = @ptrCast(&escape_quit), .ptr = self });
-    }
-    try self.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&android_back), .ptr = self });
+    try self.display.setKeybinding(.escape, .{ .func = @ptrCast(&keypressEscape), .ptr = self });
+    try self.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&keypressAndroidBack), .ptr = self });
 
     if (self.display.getPanel("menu")) |menu| {
         menu.visible = .visible;
@@ -319,7 +306,6 @@ pub fn makeAppBundle(
 }
 
 pub const view_history_file = "view_history.txt";
-pub const settings_file = "settings.txt";
 
 pub fn loadViewHistory(self: *App, dictionary: *Dictionary) !void {
     const data = engine.loadPreferenceData(self.allocator, &self.display.config, view_history_file) catch |f| switch (f) {
@@ -384,7 +370,7 @@ pub fn saveSearchHistory(self: *App) error{WriteFailed}!void {
 
 /// Provides a standardised way to place a back button in the top left
 /// corner of the screen.
-pub fn add_back_button(
+pub fn addBackButton(
     self: *App,
     parent: *Entity,
     close_fn: Entity.Callback,
@@ -404,26 +390,12 @@ pub fn add_back_button(
             },
             .on_pressed = close_fn,
         } },
-        .on_resized = .{ .func = @ptrCast(&back_button_resize), .ptr = self },
+        .on_resized = .{ .func = @ptrCast(&resizeBackButton), .ptr = self },
     }, self.display);
 }
 
-fn toggle_menu(
-    self: *App,
-    display: *Display,
-    _: *Entity,
-    _: *const Event,
-) error{OutOfMemory}!void {
-    if (self.menu_ui.panel.visible == .hidden) {
-        try self.menu_ui.panel.setVisibility(display, .visible);
-        info("menu show", .{});
-    } else {
-        try self.menu_ui.panel.setVisibility(display, .hidden);
-        info("menu hide", .{});
-    }
-}
-
-fn escape_quit(
+/// Handle the escape key on devices with a keyboard.
+fn keypressEscape(
     _: *App,
     display: *Display,
     _: *Entity,
@@ -433,12 +405,13 @@ fn escape_quit(
     display.endMainLoop();
 }
 
-fn android_back(
+/// Handle the Andoroid hardware back button.
+fn keypressAndroidBack(
     self: *App,
     display: *Display,
     _: *Entity,
     event: *const Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     info("Android back button pressed", .{});
     if (display.currentPanel()) |screen| {
         if (std.mem.eql(u8, screen.name, "word.info")) {
@@ -455,7 +428,7 @@ fn android_back(
 
 /// This event handler repositions a back button into the top left corner
 /// when the screen is resized or rotated.
-pub fn back_button_resize(
+pub fn resizeBackButton(
     _: *App,
     display: *Display,
     entity: *Entity,

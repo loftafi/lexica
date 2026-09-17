@@ -45,7 +45,7 @@ pub fn init(
         \\}
     , LicenseInfoScreen, self);
 
-    self.back_button = try app.add_back_button(self.panel, .{
+    self.back_button = try app.addBackButton(self.panel, .{
         .func = @ptrCast(&LicenseScreen.show),
         .ptr = &app.license,
     });

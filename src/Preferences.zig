@@ -1,3 +1,4 @@
+/// Load and save application preferences.
 pub const Preferences = @This();
 
 pub const settings_file = "settings.txt";
@@ -55,6 +56,8 @@ pub const empty = Preferences{
     .genitive_dative = false,
 };
 
+/// Load the user preferences file if one exists, and update the `display`
+/// as appropriate.
 pub fn load(
     self: *Preferences,
     gpa: Allocator,
@@ -93,17 +96,17 @@ pub fn load(
             if (iter.next()) |value| {
                 debug("preference {s}={s}", .{ field, value });
                 if (std.mem.eql(u8, "use_koine", field)) {
-                    self.use_koine = is_true(field, value);
+                    self.use_koine = isTrue(field, value);
                 } else if (std.mem.eql(u8, "show_strongs", field)) {
-                    self.show_strongs = is_true(field, value);
+                    self.show_strongs = isTrue(field, value);
                 } else if (std.mem.eql(u8, "accessibility", field)) {
-                    self.accessibility = is_true(field, value);
+                    self.accessibility = isTrue(field, value);
                 } else if (std.mem.eql(u8, "theme", field)) {
                     self.theme = display.validate_theme(value);
                 } else if (std.mem.eql(u8, "scale", field)) {
                     self.size = Scale.parse(value);
                 } else if (std.mem.eql(u8, "uk_order", field)) {
-                    self.uk_order = is_true(field, value);
+                    self.uk_order = isTrue(field, value);
                 } else {
                     warn("Unrecognised preference {s}={s}", .{ field, value });
                 }
@@ -124,6 +127,7 @@ pub fn load(
     });
 }
 
+/// Save user preferences.
 pub fn save(self: *const Preferences) error{OutOfMemory}!void {
     var data = std.ArrayList(u8).initCapacity(self.gpa, 5000) catch {
         warn("Save preferences out of memory.", .{});
@@ -174,7 +178,10 @@ pub fn save(self: *const Preferences) error{OutOfMemory}!void {
     };
 }
 
-pub fn is_true(field: []const u8, value: []const u8) bool {
+/// Return true if a keyword/token describes a true value. Otherwise
+/// returns false. Returns false and logs a warning if the value is
+/// an unrecognised true or false string value.
+fn isTrue(field: []const u8, value: []const u8) bool {
     if (std.ascii.eqlIgnoreCase("true", value)) return true;
     if (std.ascii.eqlIgnoreCase("false", value)) return false;
     if (std.ascii.eqlIgnoreCase("t", value)) return true;

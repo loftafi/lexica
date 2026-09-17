@@ -60,7 +60,7 @@ pub fn init(self: *WordInfoScreen, app: *App) !void {
         },
     );
 
-    self.back_button = try app.add_back_button(self.panel, .{
+    self.back_button = try app.addBackButton(self.panel, .{
         .func = @ptrCast(&SearchScreen.show),
         .ptr = &app.search_screen,
     });

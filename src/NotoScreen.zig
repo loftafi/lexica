@@ -12,7 +12,7 @@ pub fn show(
     display: *Display,
     _: *Entity,
     event: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     try display.choosePanel(self.panel.name, event);
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .hidden;
@@ -40,7 +40,7 @@ pub fn init(self: *NotoScreen, app: *App) !void {
         } },
     });
 
-    back_button = try app.add_back_button(self.panel, .{
+    back_button = try app.addBackButton(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });

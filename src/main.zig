@@ -8,8 +8,8 @@ var app: ?*App = null;
 /// Creates an engine `Display` object, and loads it with all required
 /// resources and screen layouts.
 pub fn startup(
-    gpa: std.mem.Allocator,
-    arena: std.mem.Allocator,
+    gpa: Allocator,
+    arena: Allocator,
     io: std.Io,
     args: []const [*:0]const u8, //args: std.process.Args,
 ) error{ OutOfMemory, AppInitFailed }!*engine.Display {
@@ -50,11 +50,6 @@ pub fn startup(
     var bundle_info: std.ArrayListUnmanaged(engine.BundleInfo) = .empty;
     defer bundle_info.deinit(arena);
 
-    //for (args, 0..) |arg, i| {
-    //    const value = std.mem.span(arg);
-    //    std.log.warn("input arg {d}: '{s}'", .{ i, value });
-    //}
-
     var cmd_args = args;
     if (args.len > 1 and std.ascii.eqlIgnoreCase(std.mem.span(args[1]), "make_bundle")) {
         config.command = .make_bundle;
@@ -64,7 +59,6 @@ pub fn startup(
 
     for (cmd_args, 0..) |arg, i| {
         const value = std.mem.span(arg);
-        //std.log.warn("arg {d}: '{s}'", .{ i, value });
         if (i == 0) continue;
         if (std.ascii.endsWithIgnoreCase(value, ".bd")) {
             // A parameter with a `.bd` extension is an app bundle to load.
@@ -98,8 +92,8 @@ pub fn startup(
 /// After the display (window) is closed, this is an opportunity
 /// to release memory and file handles.
 pub fn shutdown(
-    _: std.mem.Allocator,
-    _: std.mem.Allocator,
+    _: Allocator,
+    _: Allocator,
     _: std.Io,
 ) void {
     if (app) |a| {
@@ -124,12 +118,6 @@ const info = engine.log.info;
 const App = @import("App.zig");
 const app_info = @import("app_info");
 
-//pub export const AppInitC = engine.AppInitC;
-//pub export const AppQuitC = engine.AppQuitC;
-//pub export const AppEventC = engine.AppEventC;
-//pub export const AppIterateC = engine.AppIterateC;
-
-//pub export const SDL_AppInit = engine.AppInitC;
 pub export const SDL_AppQuit = engine.AppQuitC;
 pub export const SDL_AppEvent = engine.AppEventC;
 pub export const SDL_AppIterate = engine.AppIterateC;

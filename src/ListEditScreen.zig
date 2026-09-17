@@ -90,7 +90,7 @@ pub fn init(
         } },
         .on_resized = .{ .func = @ptrCast(&resizeList), .ptr = self },
     });
-    _ = try app.add_back_button(self.panel, .{
+    _ = try app.addBackButton(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });

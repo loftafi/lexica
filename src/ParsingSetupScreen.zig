@@ -184,7 +184,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
         \\  hidden pad left=1em right=1em spacing=10 
     , ParsingSetupScreen, self);
 
-    self.back_button = try self.app.add_back_button(self.panel, .{
+    self.back_button = try self.app.addBackButton(self.panel, .{
         .func = @ptrCast(&tapBack),
         .ptr = self,
     });
@@ -776,7 +776,7 @@ pub fn changeNominativeAccusativePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         if (self.app.preference.nominative_accusative != element.type.checkbox.checked) {
             self.app.preference.nominative_accusative = element.type.checkbox.checked;
@@ -790,7 +790,7 @@ pub fn changeThirdDeclensionPreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         if (self.app.preference.third_declension != element.type.checkbox.checked) {
             self.app.preference.third_declension = element.type.checkbox.checked;
@@ -804,7 +804,7 @@ pub fn changeGenitiveDativePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.genitive_dative = element.type.checkbox.checked;
     }
@@ -816,7 +816,7 @@ pub fn changePresentFuturePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.present_future = element.type.checkbox.checked;
     }
@@ -828,7 +828,7 @@ pub fn changeAoristPreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.aorist = element.type.checkbox.checked;
     }
@@ -840,7 +840,7 @@ pub fn changeImperfectPreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.imperfect = element.type.checkbox.checked;
     }
@@ -852,7 +852,7 @@ pub fn changePerfectPluperfectPreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.perfect_pluperfect = element.type.checkbox.checked;
     }
@@ -864,7 +864,7 @@ pub fn changeMiddlePassivePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.middle_passive = element.type.checkbox.checked;
     }
@@ -876,7 +876,7 @@ pub fn changeMiPreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.mi = element.type.checkbox.checked;
     }
@@ -888,7 +888,7 @@ pub fn changeIndicativePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.indicative = element.type.checkbox.checked;
     }
@@ -900,7 +900,7 @@ pub fn changeParticiplesPreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.participle = element.type.checkbox.checked;
     }
@@ -912,7 +912,7 @@ pub fn changeInfinitivePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.infinitive = element.type.checkbox.checked;
     }
@@ -924,7 +924,7 @@ pub fn changeSubjunctivePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.subjunctive = element.type.checkbox.checked;
     }
@@ -936,7 +936,7 @@ pub fn changeImperativePreference(
     display: *Display,
     element: *Entity,
     _: *Event,
-) std.mem.Allocator.Error!void {
+) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.imperative = element.type.checkbox.checked;
     }
