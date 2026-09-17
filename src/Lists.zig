@@ -80,7 +80,11 @@ pub fn prefill(self: *Lists, gpa: Allocator, dictionary: *Dictionary) error{OutO
 
 /// Load word list data. What is the correct behaviour for when the
 /// word list file cannot be read?
-pub fn load(self: *Lists, gpa: Allocator, config: *engine.Config) error{ OutOfMemory, InvalidListFile }!void {
+pub fn load(
+    self: *Lists,
+    gpa: Allocator,
+    config: *engine.Config,
+) error{ OutOfMemory, InvalidListFile }!void {
     const data = engine.loadPreferenceData(gpa, config, FILENAME) catch |f| switch (f) {
         error.OutOfMemory => return error.OutOfMemory,
         else => |e| {
@@ -193,7 +197,12 @@ pub fn remove_list(
 }
 
 /// Save the complete set of word sets to the data store.
-pub fn save(self: *Lists, gpa: Allocator, io: std.Io, config: *engine.Config) error{OutOfMemory}!void {
+pub fn save(
+    self: *Lists,
+    gpa: Allocator,
+    io: std.Io,
+    config: *engine.Config,
+) error{OutOfMemory}!void {
     const data = writeListData(gpa, self.sets.items) catch |e| {
         err("generate list file data failed. {t}", .{e});
         return;

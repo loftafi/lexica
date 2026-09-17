@@ -73,7 +73,11 @@ pub fn deinit(self: *LicenseInfoScreen) void {
     self.* = undefined;
 }
 
-fn setup(self: *LicenseInfoScreen, display: *Display, license: *const engine.License) (Allocator.Error || Resources.Error || engine.Error)!void {
+fn setup(
+    self: *LicenseInfoScreen,
+    display: *Display,
+    license: *const engine.License,
+) (Allocator.Error || Resources.Error || engine.Error)!void {
     try self.heading.setText(display, self.license.library);
     try self.subheading.setText(display, self.license.contents);
 

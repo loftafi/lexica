@@ -1,3 +1,5 @@
+/// Generate a Correct/Incorrect type panel to display on screen feedback
+/// during a quiz.
 pub const FeedbackPanel = @This();
 
 const feedback_panel_height = 85;

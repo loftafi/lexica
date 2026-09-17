@@ -1,3 +1,7 @@
+//! This file provides two possible entry points. It provides a `main` function
+//! for launching this app as a standard app. It also provides `SDL_AppInit`
+//! as an entry point for Android applications.
+
 /// On startup, register the startp and shutdown handler functions.
 pub fn main(init: std.process.Init) !void {
     try engine.start.start(&startup, &shutdown, init.minimal.args);
