@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) !void {
         @import("build/zig_version.zig").requireVersion(minimum_zig_version);
     }
 
-    const default_app_bundle = "app_bundle.bd";
+    const default_app_bundle_name = "app_bundle.bd";
     const default_app_resources_folder = "resources";
 
     const optimize = b.standardOptimizeOption(.{});
@@ -15,7 +15,7 @@ pub fn build(b: *std.Build) !void {
     const app_id = b.option([]const u8, "app_id", "override the app id") orelse "org.example.app";
     const app_owner = b.option([]const u8, "app_owner", "App person or company string");
     const org = b.option([]const u8, "org", "App org name string.");
-    const app_bundle = b.option([]const u8, "app_bundle", "Default app bundle name.");
+    const app_bundle_name = b.option([]const u8, "app_bundle_name", "Default filename to use for app bundle name.");
     const app_resources = b.option([]const u8, "app_resources", "Default app resources folder.");
     const bundle_cache = b.option([]const u8, "bundle_cache", "Default app resource bundle cache.");
     const dev_mode = b.option(bool, "dev_mode", "Include debug symbols and trace log messages.");
@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) !void {
     app_info.addOption([]const u8, "app_owner", (app_owner orelse "the author"));
     app_info.addOption([]const u8, "org", (org orelse "lexica"));
     app_info.addOption([]const u8, "app_resources", app_resources orelse default_app_resources_folder);
-    app_info.addOption([]const u8, "app_bundle", app_bundle orelse default_app_bundle);
+    app_info.addOption([]const u8, "app_bundle_name", app_bundle_name orelse default_app_bundle_name);
     app_info.addOption([]const u8, "bundle_cache", bundle_cache orelse "/tmp/");
     app_info.addOption(bool, "dev_mode", dev_mode orelse true);
     const app_info_module = app_info.createModule();
@@ -80,17 +80,18 @@ pub fn build(b: *std.Build) !void {
     const app_resource_package = b.step("package", "Create the app bundle file");
     app_resource_package.dependOn(pre_app_resource_package);
 
-    const app_bundle_name = app_bundle orelse default_app_bundle;
+    const app_bundle_filename = app_bundle_name orelse default_app_bundle_name;
     const app_resource_folder = app_resources orelse default_app_resources_folder;
 
     var make_bundle = b.addRunArtifact(exe);
     make_bundle.has_side_effects = true;
     make_bundle.addArg("make_bundle");
-    // Write bundle file to install folder using the specified bundle name.
-    make_bundle.addDirectoryArg(b.graph.path(.install_prefix, app_bundle_name));
+    // First parameter is to a temporary folder/file. Build process waits for it.
+    const generated_bundle = make_bundle.addOutputFileArg2(app_bundle_filename, .{});
     // Load app resoruces from the specified resources folder.
     make_bundle.addDirectoryArg(b.path(app_resource_folder));
     app_resource_package.dependOn(&make_bundle.step);
+    make_bundle.step.dependOn(b.getInstallStep());
 
     {
         //
@@ -101,14 +102,13 @@ pub fn build(b: *std.Build) !void {
         const ios_imports = try buildImports(b, &ios_target, ios_optimize_mode, app_info_module);
         const ios_app_name = b.option([]const u8, "ios_app_name", "iOS app name.");
         const ios_app_version = b.option([]const u8, "ios_app_version", "iOS app version.");
-        const ios_app_bundle = b.option([]const u8, "ios_app_bundle", "Default app resource bundle filename.");
         const ios_app_id = b.option([]const u8, "ios_app_id", "iOS the app id.");
         const ios_splash_screen = b.option(std.Build.LazyPath, "ios_splash_screen", "iOS app startup splash screen jpg.");
         const ios_icon = b.option(std.Build.LazyPath, "ios_icon", "The iOS icon png.");
         const ios_icon_light = b.option(std.Build.LazyPath, "ios_icon_light", "The light iOS icon png.");
         const ios_icon_dark = b.option(std.Build.LazyPath, "ios_icon_dark", "The dark iOS icon png.");
 
-        const ios_step = b.step("ios", "Build package for iOS");
+        var ios_step = b.step("ios", "Build package for iOS");
         ios_step.dependOn(app_resource_package);
 
         const ios_export_step = b.dependency("engine", .{
@@ -116,12 +116,15 @@ pub fn build(b: *std.Build) !void {
             .ios_app_id = ios_app_id orelse app_id,
             .ios_app_version = ios_app_version orelse app_version orelse @import("build.zig.zon").version,
             .ios_splash_screen = ios_splash_screen,
-            .ios_app_bundle = ios_app_bundle,
+            .ios_app_bundle = generated_bundle,
             .ios_icon = ios_icon,
             .ios_icon_light = ios_icon_light,
             .ios_icon_dark = ios_icon_dark,
         }).builder.top_level_steps.get("export_xcode_template") orelse @panic("export step missing").step;
         ios_step.dependOn(&ios_export_step.step);
+        ios_export_step.step.dependOn(app_resource_package);
+        ios_export_step.step.dependOn(&make_bundle.step);
+        ios_export_step.step.dependOn(b.getInstallStep());
 
         //var r = b.run("xcodebuild -project MyApp.xcodeproj -scheme MyApp -destination 'platform=iOS Simulator,name=iPhone 14' build");
         //var r2 = b.rum("xcodebuild archive -workspace App.xcworkspace -scheme YourScheme -archivePath App.xcarchive");
@@ -178,7 +181,6 @@ pub fn build(b: *std.Build) !void {
         const android_app_id = b.option([]const u8, "android_app_id", "Android app id.");
         const android_app_version = b.option([]const u8, "android_app_version", "Android app version.");
         const android_icon = b.option(std.Build.LazyPath, "android_icon", "The android icon png.");
-        const android_app_bundle = b.option([]const u8, "android_app_bundle", "Default app resource bundle filename.");
 
         const android_icon_circle_192 = b.option(std.Build.LazyPath, "android_icon_circle_192", "Circle 192px android icon png.");
         const android_icon_circle_144 = b.option(std.Build.LazyPath, "android_icon_circle_144", "Circle 144px android icon png.");
@@ -208,7 +210,7 @@ pub fn build(b: *std.Build) !void {
             .android_app_name = android_app_name orelse app_name orelse "Lexica",
             .android_app_id = android_app_id orelse app_id,
             .android_app_version = android_app_version orelse app_version orelse @import("build.zig.zon").version,
-            .android_app_bundle = android_app_bundle,
+            .android_app_bundle = b.graph.path(.install_prefix, app_bundle_filename),
             .android_icon = android_icon,
             .android_icon_circle_192 = android_icon_circle_192,
             .android_icon_circle_144 = android_icon_circle_144,
@@ -233,6 +235,7 @@ pub fn build(b: *std.Build) !void {
         }).builder.top_level_steps.get("export_android_template") orelse @panic("export android step missing").step;
         android_step.dependOn(&android_export_step.step);
         android_export_step.step.dependOn(app_resource_package);
+        android_export_step.step.dependOn(&make_bundle.step);
 
         if (!b.graph.environ_map.contains("ANDROID_NDK_HOME") and !b.graph.environ_map.contains("ANDROID_SDK_ROOT")) {
             app_resource_package.dependOn(&b.addFail("The `android` build step requires ANDROID_NDK_HOME or ANDROID_SDK_ROOT to be set.").step);

@@ -29,12 +29,12 @@ pub fn startup(
         .app_name = app_info.app_full_name,
         .app_version = app_info.app_version,
         .app_org = app_info.org,
-        .app_bundle_output = app_info.app_bundle,
+        .app_bundle_output = app_info.app_bundle_name,
         .full_screen = true,
         .bundles = &.{
             // By default, resources are loaded from a bundle file named
             // in the `build.zig` file.
-            .{ .filename = app_info.app_bundle },
+            .{ .filename = app_info.app_bundle_name },
         },
         .width = 393,
         .height = 852 - 59,
