@@ -264,7 +264,7 @@ pub fn enableScreens(self: *App) !void {
     try self.display.choosePanel("search.screen", &.{});
     self.display.relayout();
 
-    if (self.display.config.command == .make_bundle and builtin.mode == .Debug) {
+    if (self.display.config.command == .make_bundle and builtin.mode == .debug) {
         try self.makeAppBundle(self.display, &.{ .type = .{ .panel = .{} } }, &.{});
         return;
     }
@@ -282,7 +282,7 @@ pub fn makeAppBundle(
     _: *const Entity,
     _: *const Event,
 ) Allocator.Error!void {
-    if (builtin.mode != .Debug) return;
+    if (builtin.mode != .debug) return;
     if (self.display.resources.used_resources == null) {
         err("Abort makeAppBundle. No manifest was built.", .{});
         return;

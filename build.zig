@@ -88,7 +88,7 @@ pub fn build(b: *std.Build) !void {
     make_bundle.addArg("make_bundle");
     // First parameter is to a temporary folder/file. Build process waits for it.
     const generated_bundle = make_bundle.addOutputFileArg2(app_bundle_filename, .{});
-    // Load app resoruces from the specified resources folder.
+    // Load app resources from the specified resources folder.
     make_bundle.addDirectoryArg(b.path(app_resource_folder));
     app_resource_package.dependOn(&make_bundle.step);
     make_bundle.step.dependOn(b.getInstallStep());
@@ -148,7 +148,7 @@ pub fn build(b: *std.Build) !void {
         });
         ios_lib.bundle_compiler_rt = true;
 
-        if (ios_optimize_mode == .Debug) {
+        if (ios_optimize_mode == .debug) {
             ios_lib.bundle_ubsan_rt = true;
         }
 
