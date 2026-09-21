@@ -180,7 +180,7 @@ pub fn build(b: *std.Build) !void {
         const android_app_name = b.option([]const u8, "android_app_name", "Android app name.");
         const android_app_id = b.option([]const u8, "android_app_id", "Android app id.");
         const android_app_version = b.option([]const u8, "android_app_version", "Android app version.");
-        const android_icon = b.option(std.Build.LazyPath, "android_icon", "The android icon png.");
+        const android_icon_playstore = b.option(std.Build.LazyPath, "android_icon_playstore", "png file for the android app store.");
 
         const android_icon_circle_192 = b.option(std.Build.LazyPath, "android_icon_circle_192", "Circle 192px android icon png.");
         const android_icon_circle_144 = b.option(std.Build.LazyPath, "android_icon_circle_144", "Circle 144px android icon png.");
@@ -211,7 +211,7 @@ pub fn build(b: *std.Build) !void {
             .android_app_id = android_app_id orelse app_id,
             .android_app_version = android_app_version orelse app_version orelse @import("build.zig.zon").version,
             .android_app_bundle = b.graph.path(.install_prefix, app_bundle_filename),
-            .android_icon = android_icon,
+            .android_icon_playstore = android_icon_playstore,
             .android_icon_circle_192 = android_icon_circle_192,
             .android_icon_circle_144 = android_icon_circle_144,
             .android_icon_circle_96 = android_icon_circle_96,
