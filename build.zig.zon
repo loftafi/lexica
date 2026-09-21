@@ -1,8 +1,8 @@
 .{
     .name = .lexica,
-    .version = "8.0.5",
+    .version = "8.0.6",
     .fingerprint = 0x2ce87c922558d28,
-    .minimum_zig_version = "0.17.0-dev.1398+cb5635714",
+    .minimum_zig_version = "0.17.0-dev.1426+58a94eaae",
     .dependencies = .{
         .zeit = .{
             .url = "git+https://github.com/rockorager/zeit#ed64c36035fe44d6372c20cbcd447b0090687167",
@@ -21,6 +21,7 @@
     .paths = .{
         "build.zig",
         "build.zig.zon",
+        "build/zig_version.zig",
         "src",
         "resources",
         "README.md",
