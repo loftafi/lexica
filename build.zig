@@ -203,14 +203,11 @@ pub fn build(b: *std.Build) !void {
         const android_icon_background_162 = b.option(std.Build.LazyPath, "android_icon_background_162", "Android background icon 162px android icon png.");
         const android_icon_background_108 = b.option(std.Build.LazyPath, "android_icon_background_108", "Android background icon 108px android icon png.");
 
-        const android_step = b.step("android", "Build package for android");
-        android_step.dependOn(app_resource_package);
-
         const android_export_step = b.dependency("engine", .{
             .android_app_name = android_app_name orelse app_name orelse "Lexica",
             .android_app_id = android_app_id orelse app_id,
             .android_app_version = android_app_version orelse app_version orelse @import("build.zig.zon").version,
-            .android_app_bundle = b.graph.path(.install_prefix, app_bundle_filename),
+            .android_app_bundle = generated_bundle,
             .android_icon_playstore = android_icon_playstore,
             .android_icon_circle_192 = android_icon_circle_192,
             .android_icon_circle_144 = android_icon_circle_144,
@@ -233,19 +230,14 @@ pub fn build(b: *std.Build) !void {
             .android_icon_background_162 = android_icon_background_162,
             .android_icon_background_108 = android_icon_background_108,
         }).builder.top_level_steps.get("export_android_template") orelse @panic("export android step missing").step;
-        android_step.dependOn(&android_export_step.step);
-        android_export_step.step.dependOn(app_resource_package);
         android_export_step.step.dependOn(&make_bundle.step);
-
-        if (!b.graph.environ_map.contains("ANDROID_NDK_HOME") and !b.graph.environ_map.contains("ANDROID_SDK_ROOT")) {
-            app_resource_package.dependOn(&b.addFail("The `android` build step requires ANDROID_NDK_HOME or ANDROID_SDK_ROOT to be set.").step);
-        }
 
         const android_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = android_target,
             .optimize = android_optimize_mode,
             .imports = &android_imports,
+            .link_libc = true,
         });
 
         const android_lib = b.addLibrary(.{
@@ -253,19 +245,20 @@ pub fn build(b: *std.Build) !void {
             .root_module = android_module,
             .linkage = .dynamic,
         });
-        android_lib.step.dependOn(&android_export_step.step);
         android_lib.setLibCFile(b.graph.path(.install_prefix, "android/libc.txt"));
         android_lib.bundle_compiler_rt = true;
-        //if (android_optimize_mode == .Debug)
-        //    android_lib.bundle_ubsan_rt = true;
-        //android_lib.bundle_ubsan_rt = true;
-
-        // https://developer.android.com/guide/practices/page-sizes
-        android_lib.link_z_common_page_size = 16 * 1024;
+        android_lib.link_z_common_page_size = 16 * 1024; // https://developer.android.com/guide/practices/page-sizes
+        android_lib.step.dependOn(&android_export_step.step);
 
         const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../android/app/jni/jniLibs/arm64-v8a/liblexica-android.so");
         android_lib_install.step.dependOn(&android_lib.step);
+
+        const android_step = b.step("android", "Build package for android");
         android_step.dependOn(&android_lib_install.step);
+
+        if (!b.graph.environ_map.contains("ANDROID_NDK_HOME") and !b.graph.environ_map.contains("ANDROID_SDK_ROOT")) {
+            android_step.dependOn(&b.addFail("The `android` build step requires ANDROID_NDK_HOME or ANDROID_SDK_ROOT to be set.").step);
+        }
     }
 }
 
