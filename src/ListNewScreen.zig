@@ -117,7 +117,7 @@ pub fn deinit(self: *ListNewScreen) void {
     self.* = undefined;
 }
 
-fn tapBack(
+pub fn tapBack(
     self: *ListNewScreen,
     display: *Display,
     element: *Entity,

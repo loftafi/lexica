@@ -571,7 +571,7 @@ pub fn tapBack(
     self: *ParsingCardScreen,
     display: *Display,
     element: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     try self.app.menu_ui.progress_bar.setVisibility(display, .hidden);
     try self.app.menu_ui.toolbar.setVisibility(display, .visible);

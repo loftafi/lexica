@@ -256,7 +256,7 @@ pub fn enableScreens(self: *App) !void {
     try self.display.setKeybinding(.p, .{ .func = @ptrCast(&PreferencesScreen.show), .ptr = &self.preferences });
     try self.display.setKeybinding(.q, .{ .func = @ptrCast(&ParsingMenuScreen.show), .ptr = &self.parsing_menu });
     try self.display.setKeybinding(.escape, .{ .func = @ptrCast(&keypressEscape), .ptr = self });
-    try self.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&keypressAndroidBack), .ptr = self });
+    try self.display.setKeybinding(.ac_back, .{ .func = @ptrCast(&keypressEscape), .ptr = self });
 
     if (self.display.getPanel("menu")) |menu| {
         menu.visible = .visible;
@@ -396,34 +396,79 @@ pub fn addBackButton(
 
 /// Handle the escape key on devices with a keyboard.
 fn keypressEscape(
-    _: *App,
-    display: *Display,
-    _: *Entity,
-    _: *const Event,
-) error{OutOfMemory}!void {
-    info("Escape key for quit.", .{});
-    display.endMainLoop();
-}
-
-/// Handle the Andoroid hardware back button.
-fn keypressAndroidBack(
     self: *App,
     display: *Display,
     _: *Entity,
     event: *const Event,
-) Allocator.Error!void {
-    info("Android back button pressed", .{});
+) error{OutOfMemory}!void {
+    info("Escape or Android back pressed", .{});
     if (display.currentPanel()) |screen| {
-        if (std.mem.eql(u8, screen.name, "word.info")) {
+        if (std.mem.eql(u8, screen.name, self.word_info.panel.name)) {
             try self.search_screen.show(display, screen, event);
+            return;
         }
-        if (std.mem.eql(u8, screen.name, "parsing.setup")) {
-            try self.parsing_menu.show(display, screen, event);
+        if (std.mem.eql(u8, screen.name, self.parsing_setup.panel.name)) {
+            try self.parsing_setup.tapBack(display, screen, event);
+            return;
         }
-        if (std.mem.eql(u8, screen.name, "parsing.quiz")) {
-            try self.parsing_menu.show(display, screen, event);
+        if (std.mem.eql(u8, screen.name, self.parsing_card.panel.name)) {
+            try self.parsing_card.tapBack(display, screen, event);
+            return;
         }
+        if (std.mem.eql(u8, screen.name, self.parsing_menu.panel.name)) {
+            try self.search_screen.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.preferences.panel.name)) {
+            try self.search_screen.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.license.panel.name)) {
+            try self.preferences.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.privacy.panel.name)) {
+            try self.preferences.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.terms.panel.name)) {
+            try self.preferences.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.license_info.panel.name)) {
+            try self.license.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.byz.panel.name)) {
+            try self.license.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.noto.panel.name)) {
+            try self.license.show(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.search_screen.panel.name)) {
+            info("Escape from search screen quit.", .{});
+            display.endMainLoop();
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.list_new.panel.name)) {
+            try self.list_new.tapBack(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.list_delete.panel.name)) {
+            try self.list_delete.tapBack(display, screen, event);
+            return;
+        }
+        if (std.mem.eql(u8, screen.name, self.list_edit.panel.name)) {
+            try self.list_edit.tapBack(display, screen, event);
+            return;
+        }
+        info("Escape key on screen={s}.", .{screen.name});
     }
+
+    info("Escape key for quit.", .{});
+    display.endMainLoop();
 }
 
 /// This event handler repositions a back button into the top left corner

@@ -17,7 +17,7 @@ pub fn show(
     self: *PreferencesScreen,
     display: *Display,
     _: *Entity,
-    event: *Event,
+    event: *const Event,
 ) Allocator.Error!void {
     if (display.currentPanel()) |current| if (current == self.panel) return;
     try display.choosePanel(self.panel.name, event);

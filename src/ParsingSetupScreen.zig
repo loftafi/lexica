@@ -82,7 +82,7 @@ pub fn study_by_list(
     display: *Display,
     study_list: *WordSet,
     from_caller: App.Screen,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     self.called_by = from_caller;
     self.list = study_list;

@@ -117,11 +117,11 @@ pub fn init(
     }, display);
 }
 
-fn tapBack(
+pub fn tapBack(
     self: *ListDeleteScreen,
     display: *Display,
     element: *Entity,
-    event: *Event,
+    event: *const Event,
 ) error{OutOfMemory}!void {
     try self.app.parsing_menu.show(display, element, event);
 }

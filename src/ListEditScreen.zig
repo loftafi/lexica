@@ -68,6 +68,7 @@ pub fn init(
     app: *App,
 ) (error{OutOfMemory} || engine.Error || Resources.Error)!void {
     const display = app.display;
+    self.app = app;
 
     seen_result = std.AutoHashMap(u24, *Form).init(display.allocator);
     for (0..string_buffers.len) |i| {
@@ -193,7 +194,11 @@ pub fn tapBack(
     _: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
-    try self.app.parsing_quiz.setupWithWordSet(self.app.allocator, self.list.?, self.app);
+    if (self.list == null) {
+        err("list edit screen tapBack() called while self.list is null", .{});
+    } else {
+        try self.app.parsing_quiz.setupWithWordSet(self.app.allocator, self.list.?, self.app);
+    }
     try display.choosePanel(self.app.parsing_setup.panel.name, event);
 }
 

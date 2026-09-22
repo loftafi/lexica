@@ -7,7 +7,12 @@ scroller: *Entity = undefined,
 
 debug_tap_count: u8 = 0,
 
-pub fn show(self: *LicenseScreen, display: *Display, _: *Entity, event: *Event) Allocator.Error!void {
+pub fn show(
+    self: *LicenseScreen,
+    display: *Display,
+    _: *Entity,
+    event: *const Event,
+) Allocator.Error!void {
     try display.choosePanel("license.screen", event);
     if (display.root.getChildByName("menu")) |child| {
         child.visible = .hidden;
