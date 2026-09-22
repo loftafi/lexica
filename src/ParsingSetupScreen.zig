@@ -180,7 +180,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
 
     _ = try display.appendPanel(
         \\panel:panel name "parsing.setup" choosable vertical avoid_safe_area
-        \\  align centre start layout grows grows maximum width=1000
+        \\  align centre start layout grows grows maximum width=450
         \\  hidden pad left=1em right=1em spacing=10 
     , ParsingSetupScreen, self);
 

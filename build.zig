@@ -240,11 +240,10 @@ pub fn build(b: *std.Build) !void {
             .target = android_target,
             .optimize = android_optimize_mode,
             .imports = &android_imports,
-            .link_libc = true,
         });
 
         const android_lib = b.addLibrary(.{
-            .name = "lexica-android",
+            .name = "engine",
             .root_module = android_module,
             .linkage = .dynamic,
         });
@@ -253,7 +252,7 @@ pub fn build(b: *std.Build) !void {
         android_lib.link_z_common_page_size = 16 * 1024; // https://developer.android.com/guide/practices/page-sizes
         android_lib.step.dependOn(&android_export_step.step);
 
-        const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../android/app/jni/jniLibs/arm64-v8a/liblexica-android.so");
+        const android_lib_install = b.addInstallLibFile(android_lib.getEmittedBin(), "../android/app/jni/jniLibs/arm64-v8a/libengine.so");
         android_lib_install.step.dependOn(&android_lib.step);
 
         const android_step = b.step("android", "Build package for android");

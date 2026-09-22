@@ -46,8 +46,8 @@ pub fn init(self: *SearchScreen, app: *App) !void {
         .layout = .{ .x = .grows, .y = .grows },
         .child_align = .{ .x = .centre, .y = .start },
         .pad = .{ .left = App.APP_PAD, .right = App.APP_PAD },
-        .minimum = .{ .width = App.APP_MINIMUM_WIDTH, .height = App.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = App.APP_MAXIMUM_WIDTH },
+        .minimum = .{ .width = 300, .height = 300 },
+        .maximum = .{ .width = 450 },
         .visible = .hidden,
         .type = .{ .panel = .{
             .direction = .top_to_bottom,
