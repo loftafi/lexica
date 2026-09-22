@@ -103,6 +103,7 @@ pub fn build(b: *std.Build) !void {
         const ios_app_name = b.option([]const u8, "ios_app_name", "iOS app name.");
         const ios_app_version = b.option([]const u8, "ios_app_version", "iOS app version.");
         const ios_app_id = b.option([]const u8, "ios_app_id", "iOS the app id.");
+        const ios_resources_required = b.option(bool, "ios_resources_required", "If true, build aborts if template resource is missing.");
         const ios_splash_screen = b.option(std.Build.LazyPath, "ios_splash_screen", "iOS app startup splash screen jpg.");
         const ios_icon = b.option(std.Build.LazyPath, "ios_icon", "The iOS icon png.");
         const ios_icon_light = b.option(std.Build.LazyPath, "ios_icon_light", "The light iOS icon png.");
@@ -115,6 +116,7 @@ pub fn build(b: *std.Build) !void {
             .ios_app_name = ios_app_name orelse app_name orelse "Lexica",
             .ios_app_id = ios_app_id orelse app_id,
             .ios_app_version = ios_app_version orelse app_version orelse @import("build.zig.zon").version,
+            .ios_resources_required = ios_resources_required,
             .ios_splash_screen = ios_splash_screen,
             .ios_app_bundle = generated_bundle,
             .ios_icon = ios_icon,
@@ -180,8 +182,8 @@ pub fn build(b: *std.Build) !void {
         const android_app_name = b.option([]const u8, "android_app_name", "Android app name.");
         const android_app_id = b.option([]const u8, "android_app_id", "Android app id.");
         const android_app_version = b.option([]const u8, "android_app_version", "Android app version.");
+        const android_resources_required = b.option(bool, "android_resources_required", "If true, missing android resource causes build fail.");
         const android_icon_playstore = b.option(std.Build.LazyPath, "android_icon_playstore", "png file for the android app store.");
-
         const android_icon_circle_192 = b.option(std.Build.LazyPath, "android_icon_circle_192", "Circle 192px android icon png.");
         const android_icon_circle_144 = b.option(std.Build.LazyPath, "android_icon_circle_144", "Circle 144px android icon png.");
         const android_icon_circle_96 = b.option(std.Build.LazyPath, "android_icon_circle_96", "Circle 96px android icon png.");
@@ -229,6 +231,7 @@ pub fn build(b: *std.Build) !void {
             .android_icon_background_216 = android_icon_background_216,
             .android_icon_background_162 = android_icon_background_162,
             .android_icon_background_108 = android_icon_background_108,
+            .android_resources_required = android_resources_required,
         }).builder.top_level_steps.get("export_android_template") orelse @panic("export android step missing").step;
         android_export_step.step.dependOn(&make_bundle.step);
 
