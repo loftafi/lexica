@@ -42,7 +42,7 @@ pub fn startup(
         .min_height = 700,
         .command = .default,
         .translation_filename = "lexica translation",
-        .desktop_icon = if (builtin.os.tag == .macos) "desktop icon" else null,
+        .desktop_icon = if (builtin.os.tag != .macos) null else "desktop icon",
     };
 
     if (builtin.os.tag == .macos) {
