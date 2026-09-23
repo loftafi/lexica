@@ -29,6 +29,37 @@ pub fn clear(self: *ParsingQuiz, _: Allocator) void {
     self.lexeme = null;
 }
 
+pub const prs = praxis.Byzantine.parse;
+const duplicate_forms: []const []const praxis.Parsing = &.{
+    &.{ prs("V-PPI-1S") catch unreachable, prs("V-PMI-1S") catch unreachable, prs("V-PEI-1S") catch unreachable },
+    &.{ prs("V-PPI-2S") catch unreachable, prs("V-PMI-2S") catch unreachable, prs("V-PEI-2S") catch unreachable },
+    &.{ prs("V-PPI-3S") catch unreachable, prs("V-PMI-3S") catch unreachable, prs("V-PEI-3S") catch unreachable },
+    &.{ prs("V-PPI-1P") catch unreachable, prs("V-PMI-1P") catch unreachable, prs("V-PEI-1P") catch unreachable },
+    &.{ prs("V-PPI-2P") catch unreachable, prs("V-PMI-2P") catch unreachable, prs("V-PEI-2P") catch unreachable },
+    &.{ prs("V-PPI-3P") catch unreachable, prs("V-PMI-1P") catch unreachable, prs("V-PEI-3P") catch unreachable },
+};
+
+/// Returns true if this form is considered a uplicate
+pub fn deduplicate(form: *praxis.Form, seen: *[duplicate_forms.len]bool) bool {
+    // Don't count present middle+passive+middle_passive as three
+    // different forms.
+
+    for (duplicate_forms, 0..) |matches, row| {
+        for (matches) |match| {
+            if (form.parsing == match) {
+                if (seen[row]) {
+                    //info("deduplicate {s}", .{form.word});
+                    return true;
+                }
+                seen[row] = true;
+                return false;
+            }
+        }
+    }
+
+    return false;
+}
+
 /// Rebuild this deck with the forms from a specific `lexeme`.
 pub fn setupWithLexeme(
     self: *ParsingQuiz,
@@ -41,7 +72,9 @@ pub fn setupWithLexeme(
     self.form_bank.clearRetainingCapacity();
     self.all_forms.clearRetainingCapacity();
 
+    var seen: [duplicate_forms.len]bool = @splat(false);
     for (lexeme.forms.items) |form| {
+        if (deduplicate(form, &seen)) continue;
         try self.includeForm(form, app);
     }
 
@@ -76,7 +109,9 @@ pub fn setupWithWordSet(
 
     for (word_set.forms.items) |form| {
         if (form.lexeme) |lexeme| {
+            var seen: [duplicate_forms.len]bool = @splat(false);
             for (lexeme.forms.items) |item| {
+                if (deduplicate(form, &seen)) continue;
                 try self.includeForm(item, app);
             }
         }
@@ -142,17 +177,16 @@ fn includeForm(
                 return;
             }
         }
-        if (!app.preference.middle_passive) {
-            if (form.parsing.voice == .middle or
-                form.parsing.voice == .middle_or_passive or
-                form.parsing.voice == .passive or
-                form.parsing.voice == .middle_deponent or
-                form.parsing.voice == .middle_or_passive_deponent or
-                form.parsing.voice == .passive_deponent)
-            {
-                return;
-            }
-        }
+        if (!app.preference.middle_passive and (form.parsing.voice == .middle or
+            form.parsing.voice == .middle_or_passive or
+            form.parsing.voice == .passive or
+            form.parsing.voice == .middle_deponent or
+            form.parsing.voice == .middle_or_passive_deponent or
+            form.parsing.voice == .passive_deponent))
+            return;
+        if (!app.preference.active and form.parsing.voice == .active)
+            return;
+
         if (!app.preference.indicative and form.parsing.mood == .indicative) {
             return;
         }

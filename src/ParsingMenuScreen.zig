@@ -13,7 +13,7 @@ info2: *Entity = undefined,
 new_list_button: *Entity = undefined,
 bottom_spacer: *Entity = undefined,
 
-const ICON_PAD = 15;
+const ICON_PAD = 12;
 
 pub fn show(
     self: *ParsingMenuScreen,
@@ -41,101 +41,63 @@ pub fn init(
     var display = context.display;
     self.app = context;
 
-    self.panel = try display.addPanel(.{
-        .name = "parsing.menu",
-        .visible = .hidden,
-        .rect = .{ .x = 0, .y = 0 },
-        .layout = .{ .x = .grows, .y = .grows },
-        .child_align = .{ .x = .centre, .y = .start },
-        .pad = .{ .left = App.APP_PAD, .right = App.APP_PAD },
-        .minimum = .{ .height = App.APP_MINIMUM_HEIGHT },
-        .maximum = .{ .width = App.APP_MAXIMUM_WIDTH },
-        .type = .{ .panel = .{
-            .direction = .top_to_bottom,
-            .spacing = 5,
-            .choosable = .choosable,
-        } },
-    });
-
-    _ = try self.panel.add(.{
-        .name = "parsing.heading",
-        .minimum = .{ .height = 10 },
-        .child_align = .{ .x = .centre },
-        .layout = .{ .y = .shrinks, .x = .grows },
-        .pad = .{ .top = 10, .bottom = 10 },
-        .style = .tinted,
-        .type = .{ .label = .{
-            .text = "Parsing Quiz",
-            .text_size = .heading,
-        } },
-    }, display);
-
-    self.scroller = try self.panel.add(.{
-        .name = "scroll.panel",
-        .rect = .{ .x = 0, .y = 0 },
-        .layout = .{ .x = .grows, .y = .shrinks },
-        .child_align = .{ .x = .centre },
-        .minimum = .{ .height = 600 },
-        .type = .{
-            .panel = .{
-                .scrollable = .{
-                    .scroll = .{ .x = false, .y = true },
-                    .size = .{ .width = 600, .height = 600 },
-                },
-                .direction = .top_to_bottom,
-                .spacing = 10,
-            },
-        },
-        .on_resized = .{ .func = @ptrCast(&resizeVerticalScroller), .ptr = self },
-    }, display);
-
-    _ = try self.scroller.add(.{
-        .name = "top.expander",
-        .rect = .{ .width = 100, .height = 20 },
-        .minimum = .{ .width = 100, .height = 0 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 1 } },
-    }, display);
-
-    _ = try self.scroller.add(.{
-        .name = "parsing instructions",
-        .layout = .{ .x = .grows, .y = .shrinks },
-        .minimum = .{ .height = 10 },
-        .child_align = .{ .x = .centre },
-        .type = .{ .label = .{
-            .text = "Practice parsing one of the following words.",
-        } },
-    }, display);
+    _ = try display.appendPanel(
+        \\panel:panel name "parsing.menu" spacing 5 vertical hidden
+        \\  choosable avoid_safe_area
+        \\  layout grows grows
+        \\  align centre start
+        \\  minimum 100 100
+        \\  maximum width=420
+        \\  pad left=1em right=1em pad top=0.5em
+        \\  on_resized resizeVerticalScroller
+        \\{
+        \\  panel horizontal
+        \\    layout grows shrinks align centre centre
+        \\    spacing 0.6em pad bottom=1em
+        \\  {
+        \\    button name "heading_icon" icon_default "icon-parsing-check" never_focus
+        \\      rect width=1.5em height=1.5em
+        \\      layout fixed fixed
+        \\      align centre centre
+        \\      icon_size width=1.5em height=1.5em
+        \\
+        \\    label name "heading_text" text "Parsing Quiz"
+        \\      style tinted accessibility_focus
+        \\      layout shrinks shrinks align centre centre
+        \\      text_size heading
+        \\      pad top=0em bottom=0em
+        \\  }
+        \\  panel:scroller name "scroll.panel" vertical spacing 0.5em
+        \\    layout grows shrinks align centre start
+        \\    minimum height=600 scroll vertical
+        \\  {
+        \\  }
+        \\  panel:bottom_spacer name "bottom.spacer" horizontal
+        \\    layout fixed fixed rect 2em 2em
+        \\}
+    , ParsingMenuScreen, self);
 
     try self.initButtonBar(display, self.scroller, "verb.buttons", &[_][]const u8{ "λύω", "βλέπω", "περιπατέω" });
     try self.initButtonBar(display, self.scroller, "contract.buttons", &[_][]const u8{ "ἀγαπάω", "ποιέω", "πληρόω" });
     try self.initButtonBar(display, self.scroller, "other.buttons", &[_][]const u8{ "ῥύομαι", "δίδωμι", "ἐγώ", "εἰμί" });
 
-    _ = try display.add_spacer(self.scroller, 20);
+    _ = try display.add_spacer(self.scroller, 15);
 
     try self.initButtonBar(display, self.scroller, "masculine.buttons", &[_][]const u8{ "ἄνθρωπος", "λόγος", "θεός" });
     try self.initButtonBar(display, self.scroller, "feminine.buttons", &[_][]const u8{ "γραφή", "ἠμέρα", "δόξα" });
     try self.initButtonBar(display, self.scroller, "neuter.buttons", &[_][]const u8{ "βιβλίον", "ἔργον", "τέκνον" });
 
-    _ = try display.add_spacer(self.scroller, 20);
+    _ = try display.add_spacer(self.scroller, 15);
 
     try self.initButtonBar(display, self.scroller, "parsing.other", &[_][]const u8{ "βασιλεύς", "πόλις", "σάρξ", "πᾶς" });
 
-    _ = try self.scroller.add(.{
-        .name = "bottom.expander",
-        .rect = .{ .width = 100, .height = 20 },
-        .minimum = .{ .width = 100, .height = 20 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 1.2 } },
-    }, display);
-
-    _ = try self.scroller.add(.{
-        .name = "bottom.pad",
-        .rect = .{ .width = 70, .height = 120 },
-        .minimum = .{ .width = 70, .height = 20 },
-        .layout = .{ .x = .shrinks, .y = .shrinks },
-        .type = .{ .expander = .{ .weight = 0 } },
-    }, display);
+    //_ = try self.scroller.add(.{
+    //    .name = "bottom.pad",
+    //    .rect = .{ .width = 70, .height = 120 },
+    //    .minimum = .{ .width = 70, .height = 20 },
+    //    .layout = .{ .x = .shrinks, .y = .shrinks },
+    //    .type = .{ .expander = .{ .weight = 0 } },
+    //}, display);
 
     self.info2 = try self.scroller.add(.{
         .name = "list.instructions",
@@ -188,9 +150,6 @@ pub fn init(
             .spacing = 8,
         } },
     }, display);
-
-    self.bottom_spacer = try context.display.add_spacer(self.panel, 80);
-    self.bottom_spacer.on_resized = .{ .func = @ptrCast(&MenuUI.update_bottom_spacing), .ptr = self };
 }
 
 pub fn setupLists(self: *ParsingMenuScreen) (error{ OutOfMemory, UnknownImageFormat, ResourceNotFound, ResourceReadError } || engine.Error || Resources.Error)!void {
@@ -255,7 +214,6 @@ fn initButtonBar(
     for (words) |word| {
         _ = try button_bar.add(.{
             .name = word,
-            .minimum = .{ .width = 10, .height = 15 },
             .pad = .{ .left = 15, .right = 15, .top = 12, .bottom = 12 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .background = .{
@@ -331,26 +289,28 @@ pub fn tapNewWordList(
 }
 
 pub fn resizeVerticalScroller(
-    _: *ParsingMenuScreen,
+    self: *ParsingMenuScreen,
     display: *Display,
-    scroll: *Entity,
+    _: *Entity,
 ) bool {
     var updated = false;
+
     const menu_area = MenuUI.menubar_height();
     debug("handle resize. menu_height={d} root.height={d} scroller.top={d}, safe.top={d}, safe.bottom={d}", .{
         menu_area,
         display.root.rect.height,
-        scroll.rect.y,
+        self.scroller.rect.y,
         display.safe_area.top,
         display.safe_area.bottom,
     });
-    const want_scroller_height = display.root.rect.height -
-        scroll.rect.y - menu_area - display.safe_area.bottom -
-        display.safe_area.top - 30;
-    if (scroll.rect.height != want_scroller_height) {
-        scroll.rect.height = want_scroller_height;
-        scroll.minimum.height = scroll.rect.height;
-        scroll.maximum.height = scroll.rect.height;
+    //const want_scroller_height = display.root.rect.height -
+    //    self.scroller.rect.y - menu_area - display.safe_area.bottom -
+    //    display.safe_area.top - 30;
+    const want_scroller_height = self.panel.rect.height - 60 - self.scroller.rect.y;
+    if (self.scroller.rect.height != want_scroller_height) {
+        self.scroller.rect.height = want_scroller_height;
+        self.scroller.minimum.height = self.scroller.rect.height;
+        self.scroller.maximum.height = self.scroller.rect.height;
         updated = true;
     }
     return updated;

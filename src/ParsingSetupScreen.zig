@@ -120,6 +120,7 @@ pub const Checkboxes = struct {
     imperfect: *Entity = undefined,
     aorist: *Entity = undefined,
     perfect_pluperfect: *Entity = undefined,
+    active: *Entity = undefined,
     middle_passive: *Entity = undefined,
     middle_passive_spacer: *Entity = undefined,
     indicative: *Entity = undefined,
@@ -137,6 +138,7 @@ pub const Checkboxes = struct {
         self.imperfect.type.checkbox.checked = app.preference.imperfect;
         self.perfect_pluperfect.type.checkbox.checked = app.preference.perfect_pluperfect;
 
+        self.active.type.checkbox.checked = app.preference.active;
         self.middle_passive.type.checkbox.checked = app.preference.middle_passive;
         self.nominative_accusative.type.checkbox.checked = app.preference.nominative_accusative;
         self.genitive_dative.type.checkbox.checked = app.preference.genitive_dative;
@@ -164,6 +166,7 @@ pub const Checkboxes = struct {
         self.imperative.visible = isVisible(stats.imperative.match > 0);
         self.infinitive.visible = isVisible(stats.infinitive.match > 0);
         self.subjunctive.visible = isVisible(stats.subjunctive.match > 0);
+        self.active.visible = isVisible(stats.active.match > 0);
         self.middle_passive.visible = isVisible(stats.middle_passive.match > 0);
         self.participles.visible = isVisible(stats.participle.match > 0);
     }
@@ -337,9 +340,21 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
 
         self.checkboxes.middle_passive_spacer = try self.verb_panel.add(.{
             .name = "mp_spacer",
-            .minimum = .{ .width = 20, .height = 20 },
+            .minimum = .{ .width = 5, .height = 5 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{ .panel = .{} },
+        }, display);
+
+        self.checkboxes.active = try self.verb_panel.add(.{
+            .name = "include.active",
+            .layout = .{ .y = .shrinks, .x = .grows },
+            .type = .{ .checkbox = .{
+                .text = "Active",
+                .on_change = .{
+                    .func = @ptrCast(&changeActivePreference),
+                    .ptr = self,
+                },
+            } },
         }, display);
 
         self.checkboxes.middle_passive = try self.verb_panel.add(.{
@@ -703,7 +718,7 @@ pub fn updateOptionPanels(self: *ParsingSetupScreen) void {
         if (word.pos.part_of_speech == .verb) {
             self.noun_panel.visible = .hidden;
             self.verb_panel.visible = .visible;
-            if (word.hasMiddlePassiveForm() and word.hasActiveForm())
+            if (word.hasMiddlePassiveForm() or word.hasActiveForm())
                 self.checkboxes.middle_passive_spacer.visible = .visible
             else
                 self.checkboxes.middle_passive_spacer.visible = .hidden;
@@ -859,6 +874,23 @@ pub fn changePerfectPluperfectPreference(
     try self.refreshMenu(display);
 }
 
+pub fn changeActivePreference(
+    self: *ParsingSetupScreen,
+    display: *Display,
+    element: *Entity,
+    _: *Event,
+) Allocator.Error!void {
+    if (element.type == .checkbox) {
+        self.app.preference.active = element.type.checkbox.checked;
+
+        if (!self.app.preference.active and !self.app.preference.middle_passive) {
+            self.app.preference.middle_passive = true;
+            self.checkboxes.middle_passive.type.checkbox.checked = true;
+        }
+    }
+    try self.refreshMenu(display);
+}
+
 pub fn changeMiddlePassivePreference(
     self: *ParsingSetupScreen,
     display: *Display,
@@ -867,6 +899,11 @@ pub fn changeMiddlePassivePreference(
 ) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.middle_passive = element.type.checkbox.checked;
+
+        if (!self.app.preference.active and !self.app.preference.middle_passive) {
+            self.app.preference.active = true;
+            self.checkboxes.active.type.checkbox.checked = true;
+        }
     }
     try self.refreshMenu(display);
 }

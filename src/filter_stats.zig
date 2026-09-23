@@ -37,6 +37,7 @@ pub const Stats = struct {
             if (!ac.study_optative and part_of_speech == .verb and form.parsing.mood == .optative) {
                 continue;
             }
+
             switch (part_of_speech) {
                 .verb => {
                     self.present.update(form.parsing.tense_form == .present);
