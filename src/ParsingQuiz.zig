@@ -161,10 +161,11 @@ fn includeForm(
             return;
         }
         try self.all_forms.append(app.allocator, form);
-        if (!app.preference.present_future) {
-            if (form.parsing.tense_form == .future or form.parsing.tense_form == .present) {
-                return;
-            }
+        if (!app.preference.present and form.parsing.tense_form == .present) {
+            return;
+        }
+        if (!app.preference.future and form.parsing.tense_form == .future) {
+            return;
         }
         if (!app.preference.aorist and form.parsing.tense_form == .aorist) {
             return;
@@ -172,10 +173,11 @@ fn includeForm(
         if (!app.preference.imperfect and form.parsing.tense_form == .imperfect) {
             return;
         }
-        if (!app.preference.perfect_pluperfect) {
-            if (form.parsing.tense_form == .perfect or form.parsing.tense_form == .pluperfect) {
-                return;
-            }
+        if (!app.preference.perfect and form.parsing.tense_form == .perfect) {
+            return;
+        }
+        if (!app.preference.pluperfect and form.parsing.tense_form == .pluperfect) {
+            return;
         }
         if (!app.preference.middle_passive and (form.parsing.voice == .middle or
             form.parsing.voice == .middle_or_passive or

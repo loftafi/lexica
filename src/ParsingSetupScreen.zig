@@ -116,10 +116,13 @@ pub fn study_by_list(
 }
 
 pub const Checkboxes = struct {
-    present_future: *Entity = undefined,
+    parent: *ParsingSetupScreen = undefined,
+    present: *Entity = undefined,
+    future: *Entity = undefined,
     imperfect: *Entity = undefined,
     aorist: *Entity = undefined,
-    perfect_pluperfect: *Entity = undefined,
+    perfect: *Entity = undefined,
+    pluperfect: *Entity = undefined,
     active: *Entity = undefined,
     middle_passive: *Entity = undefined,
     middle_passive_spacer: *Entity = undefined,
@@ -132,11 +135,179 @@ pub const Checkboxes = struct {
     genitive_dative: *Entity = undefined,
     third_declension: *Entity = undefined,
 
+    pub fn changePresentPreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.present = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeFuturePreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.future = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changePerfectPreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.perfect = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changePluperfectPreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.pluperfect = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeAoristPreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.aorist = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeImperfectPreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.imperfect = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeActivePreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.active = element.type.checkbox.checked;
+
+            if (!self.parent.app.preference.active and !self.parent.app.preference.middle_passive) {
+                self.parent.app.preference.middle_passive = true;
+                self.middle_passive.type.checkbox.checked = true;
+            }
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeMiddlePassivePreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.middle_passive = element.type.checkbox.checked;
+
+            if (!self.parent.app.preference.active and !self.parent.app.preference.middle_passive) {
+                self.parent.app.preference.active = true;
+                self.active.type.checkbox.checked = true;
+            }
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeIndicativePreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.indicative = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeSubjunctivePreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.subjunctive = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeParticiplesPreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.participle = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeInfinitivePreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.infinitive = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
+    pub fn changeImperativePreference(
+        self: *Checkboxes,
+        display: *Display,
+        element: *Entity,
+        _: *Event,
+    ) Allocator.Error!void {
+        if (element.type == .checkbox) {
+            self.parent.app.preference.imperative = element.type.checkbox.checked;
+        }
+        try self.parent.refreshMenu(display);
+    }
+
     pub fn applyPreferences(self: *Checkboxes, app: *App) void {
-        self.present_future.type.checkbox.checked = app.preference.present_future;
+        self.present.type.checkbox.checked = app.preference.present;
+        self.future.type.checkbox.checked = app.preference.future;
         self.aorist.type.checkbox.checked = app.preference.aorist;
         self.imperfect.type.checkbox.checked = app.preference.imperfect;
-        self.perfect_pluperfect.type.checkbox.checked = app.preference.perfect_pluperfect;
+        self.perfect.type.checkbox.checked = app.preference.perfect;
+        self.pluperfect.type.checkbox.checked = app.preference.pluperfect;
 
         self.active.type.checkbox.checked = app.preference.active;
         self.middle_passive.type.checkbox.checked = app.preference.middle_passive;
@@ -158,9 +329,11 @@ pub const Checkboxes = struct {
         self.nominative_accusative.visible = isVisible(stats.nominative_accusative.match > 0);
         self.genitive_dative.visible = isVisible(stats.genitive_dative.match > 0);
         self.third_declension.visible = isVisible(stats.third_declension.match > 0);
-        self.present_future.visible = isVisible(stats.present_future.match > 0);
+        self.present.visible = isVisible(stats.present.match > 0);
+        self.future.visible = isVisible(stats.future.match > 0);
         self.aorist.visible = isVisible(stats.aorist.match > 0);
-        self.perfect_pluperfect.visible = isVisible(stats.perfect_pluperfect.match > 0);
+        self.perfect.visible = isVisible(stats.perfect.match > 0);
+        self.pluperfect.visible = isVisible(stats.pluperfect.match > 0);
         self.indicative.visible = isVisible(stats.indicative.match > 0);
         self.imperfect.visible = isVisible(stats.imperfect.match > 0);
         self.imperative.visible = isVisible(stats.imperative.match > 0);
@@ -178,6 +351,7 @@ pub fn deinit(self: *ParsingSetupScreen) void {
 
 pub fn init(self: *ParsingSetupScreen, context: *App) !void {
     self.app = context;
+    self.checkboxes.parent = self;
 
     var display = context.display;
 
@@ -185,6 +359,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
         \\panel:panel name "parsing.setup" choosable vertical avoid_safe_area
         \\  align centre start layout grows grows maximum width=450
         \\  hidden pad left=1em right=1em spacing=10 
+        \\  on_resized resizePanel
     , ParsingSetupScreen, self);
 
     self.back_button = try self.app.addBackButton(self.panel, .{
@@ -202,7 +377,6 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
         \\  align centre centre
         \\  minimum height=600 spacing=10
         \\  vertical scroll vertical
-        \\  on_resized resizeScroller
         \\{
         \\  label:help_line name "parsing.setup.heading"
         \\    layout grows shrinks align centre start
@@ -290,159 +464,70 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .type = .{ .panel = .{ .spacing = 10, .direction = .top_to_bottom } },
         }, display);
 
-        self.checkboxes.present_future = try self.verb_panel.add(.{
-            .name = "include.pf",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Present and Future",
-                .on_change = .{
-                    .func = @ptrCast(&changePresentFuturePreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.imperfect = try self.verb_panel.add(.{
-            .name = "include.impf",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Imperfect",
-                .on_change = .{
-                    .func = @ptrCast(&changeImperfectPreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.aorist = try self.verb_panel.add(.{
-            .name = "include.aor",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Aorist",
-                .on_change = .{
-                    .func = @ptrCast(&changeAoristPreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.perfect_pluperfect = try self.verb_panel.add(.{
-            .name = "include.pfplpf",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Perfect and Pluperfect",
-                .on_change = .{
-                    .func = @ptrCast(&changePerfectPluperfectPreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.middle_passive_spacer = try self.verb_panel.add(.{
-            .name = "mp_spacer",
-            .minimum = .{ .width = 5, .height = 5 },
-            .layout = .{ .x = .shrinks, .y = .shrinks },
-            .type = .{ .panel = .{} },
-        }, display);
-
-        self.checkboxes.active = try self.verb_panel.add(.{
-            .name = "include.active",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Active",
-                .on_change = .{
-                    .func = @ptrCast(&changeActivePreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.middle_passive = try self.verb_panel.add(.{
-            .name = "include.midpsv",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .type = .{ .checkbox = .{
-                .text = "Middle and Passive",
-                .on_change = .{
-                    .func = @ptrCast(&changeMiddlePassivePreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
+        try self.verb_panel.appendMultiple(
+            \\panel horizontal layout grows shrinks align start start spacing=10
+            \\{
+            \\    checkbox:present name "include.present" layout fixed shrinks
+            \\    text "Present" on_change changePresentPreference on "ios-checkbox-on"
+            \\
+            \\    checkbox:future name "include.future" layout fixed shrinks
+            \\    text "Future" on_change changeFuturePreference on "ios-checkbox-on"
+            \\}
+            \\panel horizontal layout grows shrinks align start start spacing=10
+            \\{
+            \\    checkbox:imperfect name "include.impf" layout fixed shrinks
+            \\    text "Imperfect" on_change changeImperfectPreference on "ios-checkbox-on"
+            \\
+            \\    checkbox:aorist name "include.aorist" layout fixed shrinks
+            \\    text "Aorist" on_change changeAoristPreference on "ios-checkbox-on"
+            \\}
+            \\panel horizontal layout grows shrinks align start start spacing=10
+            \\{
+            \\    checkbox:perfect name "include.perfect" layout fixed shrinks
+            \\    text "Perfect" on_change changePerfectPreference on "ios-checkbox-on"
+            \\
+            \\    checkbox:pluperfect name "include.pluperfect" layout fixed shrinks
+            \\    text "Pluperfect" on_change changePluperfectPreference on "ios-checkbox-on"
+            \\}
+            \\panel:middle_passive_spacer name "mp_spacer" layout fixed fixed rect width=5 height=5 {}
+            \\panel horizontal layout grows shrinks align start start spacing=10
+            \\{
+            \\    checkbox:active name "include.active" layout fixed shrinks
+            \\    text "Active" on_change changeActivePreference on "ios-checkbox-on"
+            \\
+            \\    checkbox:middle_passive name "include.midpsv" layout fixed shrinks
+            \\    text "Middle/Passive" on_change changeMiddlePassivePreference on "ios-checkbox-on"
+            \\}
+        , Checkboxes, &self.checkboxes, display);
 
         _ = try self.scroller.add(.{
             .name = "middle.expander",
-            .minimum = .{ .width = 100, .height = 20 },
+            .minimum = .{ .width = 100, .height = 10 },
             .layout = .{ .x = .shrinks, .y = .shrinks },
             .type = .{ .expander = .{ .weight = 0.4 } },
         }, display);
 
-        self.checkboxes.indicative = try self.scroller.add(.{
-            .name = "include.indicative",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .pad = .{ .left = 14, .right = 14 },
-            .type = .{ .checkbox = .{
-                .text = "Indicative",
-                .on_change = .{
-                    .func = @ptrCast(&changeIndicativePreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.subjunctive = try self.scroller.add(
-            .{
-                .name = "include.sbj",
-                .layout = .{ .y = .shrinks, .x = .grows },
-                .pad = .{ .left = 14, .right = 14 },
-                .type = .{ .checkbox = .{
-                    .text = "Subjunctive",
-                    .on_change = .{
-                        .func = @ptrCast(&changeSubjunctivePreference),
-                        .ptr = self,
-                    },
-                } },
-            },
-            display,
-        );
-
-        self.checkboxes.participles = try self.scroller.add(.{
-            .name = "include.ptcp",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .pad = .{ .left = 14, .right = 14 },
-            .type = .{ .checkbox = .{
-                .text = "Participles",
-                .on_change = .{
-                    .func = @ptrCast(&changeParticiplesPreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.infinitive = try self.scroller.add(.{
-            .name = "include.inf",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .pad = .{ .left = 14, .right = 14 },
-            .type = .{ .checkbox = .{
-                .text = "Infinitive",
-                .on_change = .{
-                    .func = @ptrCast(&changeInfinitivePreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
-
-        self.checkboxes.imperative = try self.scroller.add(.{
-            .name = "include.impv",
-            .layout = .{ .y = .shrinks, .x = .grows },
-            .pad = .{ .left = 14, .right = 14 },
-            .type = .{ .checkbox = .{
-                .text = "Imperative",
-                .on_change = .{
-                    .func = @ptrCast(&changeImperativePreference),
-                    .ptr = self,
-                },
-            } },
-        }, display);
+        try self.scroller.appendMultiple(
+            \\panel horizontal layout grows shrinks align start start spacing=10 pad left=15
+            \\{
+            \\    checkbox:indicative name "include.indicative" layout fixed shrinks
+            \\      text "Indicative" on_change changeIndicativePreference on "ios-checkbox-on"
+            \\    checkbox:subjunctive name "include.subjunctive" layout fixed shrinks
+            \\      text "Subjunctive" on_change changeSubjunctivePreference on "ios-checkbox-on"
+            \\}
+            \\panel horizontal layout grows shrinks align start start spacing=10 pad left=15
+            \\{
+            \\    checkbox:infinitive name "include.infinitive" layout fixed shrinks
+            \\      text "Infinitive" on_change changeInfinitivePreference on "ios-checkbox-on"
+            \\    checkbox:participles name "include.participles" layout fixed shrinks
+            \\      text "Participles" on_change changeParticiplesPreference on "ios-checkbox-on"
+            \\}
+            \\panel horizontal layout grows shrinks align start start spacing=10 pad left=15
+            \\{
+            \\    checkbox:imperative name "include.imperative" layout fixed shrinks
+            \\      text "Imperative" on_change changeImperativePreference on "ios-checkbox-on"
+            \\}
+        , Checkboxes, &self.checkboxes, display);
 
         _ = try display.add_spacer(self.scroller, 20);
     }
@@ -643,12 +728,31 @@ pub fn tapBack(
     try self.app.parsing_menu.show(display, element, event);
 }
 
-pub fn resizeScroller(
+pub fn resizePanel(
     self: *ParsingSetupScreen,
     display: *Display,
     _: *Entity,
 ) bool {
     var updated = false;
+
+    // Update checkbox width
+    const panel_width = self.panel.rect.width -
+        self.panel.pad.left - self.panel.pad.right -
+        self.noun_panel.pad.left - self.noun_panel.pad.right;
+    const checkbox_width = @round(panel_width / 2 - 5);
+    self.checkboxes.present.rect.width = checkbox_width;
+    self.checkboxes.future.rect.width = checkbox_width;
+    self.checkboxes.perfect.rect.width = checkbox_width;
+    self.checkboxes.pluperfect.rect.width = checkbox_width;
+    self.checkboxes.imperfect.rect.width = checkbox_width;
+    self.checkboxes.aorist.rect.width = checkbox_width;
+    self.checkboxes.active.rect.width = checkbox_width;
+    self.checkboxes.middle_passive.rect.width = checkbox_width;
+    self.checkboxes.indicative.rect.width = checkbox_width;
+    self.checkboxes.subjunctive.rect.width = checkbox_width;
+    self.checkboxes.imperative.rect.width = checkbox_width;
+    self.checkboxes.infinitive.rect.width = checkbox_width;
+    self.checkboxes.participles.rect.width = checkbox_width;
 
     if (self.app.preference.size == .large or self.app.preference.size == .extra_large) {
         if (self.help_line.visible != .hidden) {
@@ -751,13 +855,15 @@ pub fn updateOptionPanels(self: *ParsingSetupScreen) void {
 }
 
 fn refreshMenu(self: *ParsingSetupScreen, display: *Display) !void {
-    if (self.app.preference.present_future == false and
+    if (self.app.preference.present == false and
+        self.app.preference.future == false and
         self.app.preference.imperfect == false and
         self.app.preference.aorist == false and
-        self.app.preference.perfect_pluperfect == false)
+        self.app.preference.perfect == false and
+        self.app.preference.pluperfect == false)
     {
-        self.app.preference.present_future = true;
-        self.checkboxes.present_future.type.checkbox.checked = true;
+        self.app.preference.present = true;
+        self.checkboxes.present.type.checkbox.checked = true;
     }
     if (self.app.preference.indicative == false and
         self.app.preference.participle == false and
@@ -826,88 +932,6 @@ pub fn changeGenitiveDativePreference(
     try self.refreshMenu(display);
 }
 
-pub fn changePresentFuturePreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.present_future = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeAoristPreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.aorist = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeImperfectPreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.imperfect = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changePerfectPluperfectPreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.perfect_pluperfect = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeActivePreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.active = element.type.checkbox.checked;
-
-        if (!self.app.preference.active and !self.app.preference.middle_passive) {
-            self.app.preference.middle_passive = true;
-            self.checkboxes.middle_passive.type.checkbox.checked = true;
-        }
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeMiddlePassivePreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.middle_passive = element.type.checkbox.checked;
-
-        if (!self.app.preference.active and !self.app.preference.middle_passive) {
-            self.app.preference.active = true;
-            self.checkboxes.active.type.checkbox.checked = true;
-        }
-    }
-    try self.refreshMenu(display);
-}
-
 pub fn changeMiPreference(
     self: *ParsingSetupScreen,
     display: *Display,
@@ -916,66 +940,6 @@ pub fn changeMiPreference(
 ) Allocator.Error!void {
     if (element.type == .checkbox) {
         self.app.preference.mi = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeIndicativePreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.indicative = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeParticiplesPreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.participle = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeInfinitivePreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.infinitive = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeSubjunctivePreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.subjunctive = element.type.checkbox.checked;
-    }
-    try self.refreshMenu(display);
-}
-
-pub fn changeImperativePreference(
-    self: *ParsingSetupScreen,
-    display: *Display,
-    element: *Entity,
-    _: *Event,
-) Allocator.Error!void {
-    if (element.type == .checkbox) {
-        self.app.preference.imperative = element.type.checkbox.checked;
     }
     try self.refreshMenu(display);
 }
