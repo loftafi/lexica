@@ -158,7 +158,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.present,
             tense_form_row1,
             "present",
-            "Present",
+            "PRESENT",
             @ptrCast(&tense_form_changed),
         );
 
@@ -166,7 +166,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.future,
             tense_form_row1,
             "future",
-            "Future",
+            "FUTURE",
             @ptrCast(&tense_form_changed),
         );
 
@@ -174,7 +174,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.perfect,
             tense_form_row1,
             "perfect",
-            "Perfect",
+            "PERFECT",
             @ptrCast(&tense_form_changed),
         );
 
@@ -182,7 +182,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.aorist,
             tense_form_row2,
             "aorist",
-            "Aorist",
+            "AORIST",
             @ptrCast(&tense_form_changed),
         );
 
@@ -190,7 +190,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.imperfect,
             tense_form_row2,
             "imperfect",
-            "Imperfect",
+            "IMPERFECT",
             @ptrCast(&tense_form_changed),
         );
 
@@ -198,7 +198,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.pluperfect,
             tense_form_row2,
             "pluperfect",
-            "Pluperfect",
+            "PLUPERFECT",
             @ptrCast(&tense_form_changed),
         );
     }
@@ -222,7 +222,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.active,
             pickers.voice,
             "active",
-            "Active",
+            "ACTIVE",
             @ptrCast(&voice_changed),
         );
 
@@ -230,7 +230,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.middle,
             pickers.voice,
             "middle",
-            "Middle",
+            "MIDDLE",
             @ptrCast(&voice_changed),
         );
 
@@ -238,7 +238,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.passive,
             pickers.voice,
             "passive",
-            "Passive",
+            "PASSIVE",
             @ptrCast(&voice_changed),
         );
     }
@@ -278,7 +278,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.indicative,
             mood_row1,
             "indicative",
-            "Indicative",
+            "INDICATIVE",
             @ptrCast(&mood_changed),
         );
 
@@ -286,7 +286,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.participle,
             mood_row1,
             "participle",
-            "Participle",
+            "PARTICIPLE",
             @ptrCast(&mood_changed),
         );
 
@@ -294,7 +294,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.subjunctive,
             mood_row1,
             "subjunctive",
-            "Subjunctive",
+            "SUBJUNCTIVE",
             @ptrCast(&mood_changed),
         );
 
@@ -302,7 +302,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.imperative,
             mood_row2,
             "imperative",
-            "Imperative",
+            "IMPERATIVE",
             @ptrCast(&mood_changed),
         );
 
@@ -310,7 +310,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.infinitive,
             mood_row2,
             "infinitive",
-            "Infinitive",
+            "INFINITIVE",
             @ptrCast(&mood_changed),
         );
     }
@@ -336,7 +336,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.first,
             pickers.person,
             "first_person",
-            "1st Person",
+            "1ST_PERSON",
             @ptrCast(&person_changed),
         );
 
@@ -344,7 +344,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.second,
             pickers.person,
             "second_person",
-            "2nd Person",
+            "2ND_PERSON",
             @ptrCast(&person_changed),
         );
 
@@ -352,7 +352,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.third,
             pickers.person,
             "third_person",
-            "3rd Person",
+            "3RD_PERSON",
             @ptrCast(&person_changed),
         );
     }
@@ -377,7 +377,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.nominative,
             pickers.case,
             "nominative",
-            "Nominative",
+            "NOMINATIVE",
             @ptrCast(&case_changed),
         );
         buttons.nominative_container = pickers.case.type.panel.children.items[0];
@@ -386,7 +386,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.accusative,
             pickers.case,
             "accusative",
-            "Accusative",
+            "ACCUSATIVE",
             @ptrCast(&case_changed),
         );
         buttons.accusative_container = pickers.case.type.panel.children.items[1];
@@ -395,7 +395,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.genitive,
             pickers.case,
             "genitive",
-            "Genitive",
+            "GENITIVE",
             @ptrCast(&case_changed),
         );
         buttons.genitive_container = pickers.case.type.panel.children.items[2];
@@ -404,7 +404,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.dative,
             pickers.case,
             "dative",
-            "Dative",
+            "DATIVE",
             @ptrCast(&case_changed),
         );
         buttons.dative_container = pickers.case.type.panel.children.items[3];
@@ -429,7 +429,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.singular,
             pickers.number,
             "singular",
-            "Singular",
+            "SINGULAR",
             @ptrCast(&number_changed),
         );
 
@@ -437,7 +437,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.plural,
             pickers.number,
             "plural",
-            "Plural",
+            "PLURAL",
             @ptrCast(&number_changed),
         );
     }
@@ -461,7 +461,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.masculine,
             pickers.gender,
             "masculine",
-            "Masculine",
+            "MASCULINE",
             @ptrCast(&gender_changed),
         );
 
@@ -469,7 +469,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.feminine,
             pickers.gender,
             "feminine",
-            "Feminine",
+            "FEMININE",
             @ptrCast(&gender_changed),
         );
 
@@ -477,7 +477,7 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
             &buttons.neuter,
             pickers.gender,
             "neuter",
-            "Neuter",
+            "NEUTER",
             @ptrCast(&gender_changed),
         );
     }

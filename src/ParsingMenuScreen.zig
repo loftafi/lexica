@@ -61,7 +61,7 @@ pub fn init(
         \\      align centre centre
         \\      icon_size width=1.5em height=1.5em
         \\
-        \\    label name "heading_text" text "Parsing Quiz"
+        \\    label name "heading_text" text "PARSING_QUIZ"
         \\      style tinted accessibility_focus
         \\      layout shrinks shrinks align centre centre
         \\      text_size heading

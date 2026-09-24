@@ -62,7 +62,6 @@ pub fn study_by_form(
     self.checkboxes.update_statistics(self.app.parsing_quiz.all_forms.items);
 
     debug("parsing picker for {s}", .{called_lexeme.word});
-    try self.heading.setText(display, "");
     try self.heading.setText(display, called_lexeme.word);
     try self.help_line.setText(display, "");
 
@@ -107,7 +106,6 @@ pub fn study_by_list(
     self.checkboxes.update_statistics(try study_list.study_forms(display.allocator));
 
     debug("parsing picker for {s}", .{study_list.name.items});
-    try self.heading.setText(display, "");
     try self.heading.setText(display, study_list.name.items);
     self.help_line.visible = .hidden;
 
@@ -406,7 +404,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .name = "include.na",
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
-                .text = "Nominative and Accusative",
+                .text = "NOMINATIVE_AND_ACCUSATIVE",
                 .on_change = .{
                     .func = @ptrCast(&changeNominativeAccusativePreference),
                     .ptr = self,
@@ -419,7 +417,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             .minimum = .{ .height = 200 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
-                .text = "Genitive and Dative",
+                .text = "GENITIVE_AND_DATIVE",
                 .on_change = .{
                     .func = @ptrCast(&changeGenitiveDativePreference),
                     .ptr = self,
@@ -468,42 +466,42 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             \\panel horizontal layout grows shrinks align start start spacing=10
             \\{
             \\    checkbox:present name "include.present" layout fixed shrinks
-            \\      text "Present" on_change changePresentPreference on "ios-checkbox-on"
+            \\      text "PRESENT" on_change changePresentPreference on "ios-checkbox-on"
             \\      side start
             \\
             \\    checkbox:future name "include.future" layout fixed shrinks
-            \\      text "Future" on_change changeFuturePreference on "ios-checkbox-on"
+            \\      text "FUTURE" on_change changeFuturePreference on "ios-checkbox-on"
             \\      side start
             \\}
             \\panel horizontal layout grows shrinks align start start spacing=10
             \\{
             \\    checkbox:imperfect name "include.impf" layout fixed shrinks
-            \\      text "Imperfect" on_change changeImperfectPreference on "ios-checkbox-on"
+            \\      text "IMPERFECT" on_change changeImperfectPreference on "ios-checkbox-on"
             \\      side start
             \\
             \\    checkbox:aorist name "include.aorist" layout fixed shrinks
-            \\      text "Aorist" on_change changeAoristPreference on "ios-checkbox-on"
+            \\      text "AORIST" on_change changeAoristPreference on "ios-checkbox-on"
             \\      side start
             \\}
             \\panel horizontal layout grows shrinks align start start spacing=10
             \\{
             \\    checkbox:perfect name "include.perfect" layout fixed shrinks
-            \\      text "Perfect" on_change changePerfectPreference on "ios-checkbox-on"
+            \\      text "PERFECT" on_change changePerfectPreference on "ios-checkbox-on"
             \\      side start
             \\
             \\    checkbox:pluperfect name "include.pluperfect" layout fixed shrinks
-            \\      text "Pluperfect" on_change changePluperfectPreference on "ios-checkbox-on"
+            \\      text "PLUPERFECT" on_change changePluperfectPreference on "ios-checkbox-on"
             \\      side start
             \\}
             \\panel:middle_passive_spacer name "mp_spacer" layout fixed fixed rect width=5 height=5 {}
             \\panel horizontal layout grows shrinks align start start spacing=10
             \\{
             \\    checkbox:active name "include.active" layout fixed shrinks
-            \\      text "Active" on_change changeActivePreference on "ios-checkbox-on"
+            \\      text "ACTIVE" on_change changeActivePreference on "ios-checkbox-on"
             \\      side start
             \\
             \\    checkbox:middle_passive name "include.midpsv" layout fixed shrinks
-            \\      text "Middle/Passive" on_change changeMiddlePassivePreference on "ios-checkbox-on"
+            \\      text "MIDDLE_PASSIVE" on_change changeMiddlePassivePreference on "ios-checkbox-on"
             \\      side start
             \\}
         , Checkboxes, &self.checkboxes, display);
@@ -519,25 +517,25 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
             \\panel horizontal layout grows shrinks align start start spacing=10 pad left=15
             \\{
             \\    checkbox:indicative name "include.indicative" layout fixed shrinks
-            \\      text "Indicative" on_change changeIndicativePreference on "ios-checkbox-on"
+            \\      text "INDICATIVE" on_change changeIndicativePreference on "ios-checkbox-on"
             \\      side start
             \\    checkbox:subjunctive name "include.subjunctive" layout fixed shrinks
-            \\      text "Subjunctive" on_change changeSubjunctivePreference on "ios-checkbox-on"
+            \\      text "SUBJUNCTIVE" on_change changeSubjunctivePreference on "ios-checkbox-on"
             \\      side start
             \\}
             \\panel horizontal layout grows shrinks align start start spacing=10 pad left=15
             \\{
             \\    checkbox:infinitive name "include.infinitive" layout fixed shrinks
-            \\      text "Infinitive" on_change changeInfinitivePreference on "ios-checkbox-on"
+            \\      text "INFINITIVE" on_change changeInfinitivePreference on "ios-checkbox-on"
             \\      side start
             \\    checkbox:participles name "include.participles" layout fixed shrinks
-            \\      text "Participles" on_change changeParticiplesPreference on "ios-checkbox-on"
+            \\      text "PARTICIPLES" on_change changeParticiplesPreference on "ios-checkbox-on"
             \\      side start
             \\}
             \\panel horizontal layout grows shrinks align start start spacing=10 pad left=15
             \\{
             \\    checkbox:imperative name "include.imperative" layout fixed shrinks
-            \\      text "Imperative" on_change changeImperativePreference on "ios-checkbox-on"
+            \\      text "IMPERATIVE" on_change changeImperativePreference on "ios-checkbox-on"
             \\      side start
             \\}
         , Checkboxes, &self.checkboxes, display);
@@ -668,7 +666,7 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
                         .hover_name = "hover button",
                         .pressed_name = "pressed button",
                     },
-                    .text = "Practice",
+                    .text = "PRACTICE",
                     .on_pressed = .{
                         .func = @ptrCast(&tapPractice),
                         .ptr = self,

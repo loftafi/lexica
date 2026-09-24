@@ -150,7 +150,7 @@ pub fn init(
             .image_corner_radius = 50,
         },
         .type = .{ .button = .{
-            .text = "Next",
+            .text = "NEXT",
             .button = .{
                 .default_name = "default button",
                 .hover_name = "hover button",

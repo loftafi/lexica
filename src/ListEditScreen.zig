@@ -8,7 +8,7 @@
 //!  - help instructions when it is empty.
 pub const ListEditScreen = @This();
 
-pub const MAX_SEARCH_RESULTS: usize = 30;
+pub const max_search_results: usize = 30;
 pub const MAX_LIST_ENTRIES: usize = Lists.MAX_FORMS_IN_SET;
 pub var icon_size: f32 = 18;
 pub var icon_pad: f32 = 10;
@@ -23,17 +23,18 @@ help_line: *Entity = undefined,
 
 // Save and display search results when searching for new words to add.
 var seen_result: std.AutoHashMap(u24, *Form) = undefined;
-var search_results: [MAX_SEARCH_RESULTS]*Entity = undefined;
-var search_result_form: [MAX_SEARCH_RESULTS]?*praxis.Form = @splat(null);
-var search_transliterations: [MAX_SEARCH_RESULTS][praxis.MAX_WORD_SIZE * 2]u8 = undefined;
+
+const Row = struct {
+    panel: *Entity = undefined,
+    form: ?*praxis.Form = null,
+    transliterations: [praxis.max_word_size * 2]u8 = @splat(0),
+    gloss_buffer: std.Io.Writer.Allocating = undefined,
+};
+var row: [max_search_results]Row = undefined;
 
 // Hold and display the contents of the word set.
 var list_entries: [MAX_LIST_ENTRIES]*Entity = undefined;
-var list_transliterations: [MAX_LIST_ENTRIES][praxis.MAX_WORD_SIZE * 2]u8 = undefined;
-
-// String buffers for labels.
-var string_buffers: [MAX_SEARCH_RESULTS * 2 + MAX_LIST_ENTRIES * 2]std.Io.Writer.Allocating = undefined;
-var string_buffer_index: usize = 0;
+var list_transliterations: [MAX_LIST_ENTRIES][praxis.max_word_size * 2]u8 = undefined;
 
 pub fn show(
     self: *ListEditScreen,
@@ -57,8 +58,8 @@ pub fn show(
 
 pub fn deinit(self: *ListEditScreen, _: Allocator) void {
     seen_result.deinit();
-    for (0..string_buffers.len) |i| {
-        string_buffers[i].deinit();
+    for (0..row.len) |i| {
+        row[i].gloss_buffer.deinit();
     }
     self.* = undefined;
 }
@@ -71,10 +72,9 @@ pub fn init(
     self.app = app;
 
     seen_result = std.AutoHashMap(u24, *Form).init(display.allocator);
-    for (0..string_buffers.len) |i| {
-        string_buffers[i] = .init(display.allocator);
+    for (0..row.len) |i| {
+        row[i].gloss_buffer = .init(display.allocator);
     }
-    string_buffer_index = 0;
 
     self.panel = try display.addPanel(.{
         .name = "list.edit.screen",
@@ -123,8 +123,8 @@ pub fn init(
         .name = "search_query",
         .background = .{
             .image_name = "white rounded rect",
-            .corner_radius = 14,
-            .image_corner_radius = 50,
+            .corner_radius = 20,
+            .image_corner_radius = 14,
         },
         .layout = .{ .x = .grows, .y = .shrinks },
         .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
@@ -169,13 +169,13 @@ pub fn init(
 
     // Build the search result elements
     var x: usize = 0;
-    for (0..MAX_SEARCH_RESULTS) |i| {
+    for (0..max_search_results) |i| {
         const element = try self.initSearchResultRow(display, self.scroller);
-        search_results[i] = element;
-        search_result_form[i] = null;
+        row[i].panel = element;
+        row[i].form = null;
         if (i < app.view_history.items.len) {
-            search_result_form[i] = app.view_history.items[i];
-            try updateSearchResultPanel(search_result_form[i].?, &x, &seen_result, "", display);
+            row[i].form = app.view_history.items[i];
+            try updateSearchResultPanel(row[i].form.?, &x, &seen_result, "", display);
         }
     }
 
@@ -211,12 +211,12 @@ pub fn updateSearchResults(
 
     // Clear any visible search results to make way for list entries
     var i: usize = 0;
-    while (i < MAX_SEARCH_RESULTS) : (i += 1) {
-        const result = search_results[i].type.panel.children.items;
+    while (i < max_search_results) : (i += 1) {
+        const result = row[i].panel.type.panel.children.items;
         try result[1].setText(display, "");
         try result[2].setText(display, "");
-        search_results[i].visible = .hidden;
-        search_result_form[i] = null;
+        row[i].panel.visible = .hidden;
+        row[i].form = null;
     }
     display.need_relayout = true;
 
@@ -235,17 +235,16 @@ pub fn updateSearchResults(
     for (self.list.?.forms.items) |form| {
         const result = list_entries[i].type.panel.children.items;
 
-        string_buffers[string_buffer_index].clearRetainingCapacity();
+        row[i].gloss_buffer.clearRetainingCapacity();
         if (form.glossesByLang(Lang.english)) |value| {
-            value.string(&string_buffers[string_buffer_index].writer) catch {};
+            value.string(&row[i].gloss_buffer.writer) catch {};
         } else {
             return;
         }
 
         try result[0].setText(display, form.word);
-        try result[1].setText(display, string_buffers[string_buffer_index].written());
+        try result[1].setText(display, row[i].gloss_buffer.written());
         list_entries[i].visible = .visible;
-        //_ = self.resizeListEntry(display, list_entries[i], event);
 
         i += 1;
     }
@@ -309,7 +308,7 @@ pub fn changedTextInput(
     if (r) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
-            if (i >= MAX_SEARCH_RESULTS) break;
+            if (i >= max_search_results) break;
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
                 if (lexeme.primaryForm()) |first| {
@@ -323,7 +322,7 @@ pub fn changedTextInput(
     if (r) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
-            if (i >= MAX_SEARCH_RESULTS) break;
+            if (i >= max_search_results) break;
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
                 if (lexeme.primaryForm()) |first| {
@@ -337,7 +336,7 @@ pub fn changedTextInput(
     if (r) |result| {
         var iter = result.iterator();
         while (iter.next()) |*word| {
-            if (i >= MAX_SEARCH_RESULTS) break;
+            if (i >= max_search_results) break;
             if (!can_practice_form(word.*)) continue;
             if (word.*.lexeme) |lexeme| {
                 if (lexeme.primaryForm()) |first| {
@@ -350,12 +349,12 @@ pub fn changedTextInput(
     trace("search for '{s}' found {d} result(s)", .{ query, i });
     const result_count = i;
 
-    while (i < MAX_SEARCH_RESULTS) : (i += 1) {
-        const result = search_results[i].type.panel.children.items;
+    while (i < max_search_results) : (i += 1) {
+        const result = row[i].panel.type.panel.children.items;
         try result[1].setText(display, "");
         try result[2].setText(display, "");
-        search_results[i].visible = .hidden;
-        search_result_form[i] = null;
+        row[i].panel.visible = .hidden;
+        row[i].form = null;
     }
 
     if (result_count == 0) {
@@ -416,12 +415,12 @@ pub fn tapAddWord(
 }
 
 pub fn get_form_from_scroll_list(_: *ListEditScreen, element: *Entity) ?*Form {
-    for (search_results, 0..) |result, i| {
-        if (result.type != .panel) {
+    for (row, 0..) |result, i| {
+        if (result.panel.type != .panel) {
             continue;
         }
-        if (result.type.panel.children.items[0] == element) {
-            if (search_result_form[i]) |word| {
+        if (result.panel.type.panel.children.items[0] == element) {
+            if (row[i].form) |word| {
                 debug("match found {s}", .{word.word});
                 return word;
             }
@@ -438,15 +437,15 @@ pub fn resizeList(
     _: *const Event,
 ) bool {
     var updated = false;
-    if (self.scroller.rect.height != display.root.rect.height - 170) {
-        self.scroller.rect.height = display.root.rect.height - 170;
+    if (self.scroller.rect.height != display.root.rect.height - 190) {
+        self.scroller.rect.height = display.root.rect.height - 190;
         self.scroller.minimum.height = self.scroller.rect.height;
         self.scroller.maximum.height = self.scroller.rect.height;
         updated = true;
     }
-    for (search_results) |result| {
-        if (result.visible == .visible)
-            self.resizeSearchResult(display, result, self.scroller.rect.width);
+    for (row) |result| {
+        if (result.panel.visible == .visible)
+            self.resizeSearchResult(display, result.panel, self.scroller.rect.width);
     }
     for (list_entries) |entry| {
         if (entry.visible == .visible)
@@ -494,31 +493,25 @@ inline fn updateSearchResultPanel(
     _: []const u8,
     display: *engine.Display,
 ) error{OutOfMemory}!void {
-    var search_result = search_results[i.*];
-
     if (form.lexeme) |lexeme| {
         if (seen.contains(lexeme.uid)) {
             return;
         }
         try seen.put(lexeme.uid, form);
     }
-    string_buffers[string_buffer_index].clearRetainingCapacity();
+    row[i.*].gloss_buffer.clearRetainingCapacity();
     if (form.glossesByLang(Lang.english)) |value| {
-        value.string(&string_buffers[string_buffer_index].writer) catch {};
+        value.string(&row[i.*].gloss_buffer.writer) catch {};
     } else {
         return;
     }
 
-    const result = search_results[i.*].type.panel.children.items;
+    const result = row[i.*].panel.type.panel.children.items;
     try result[1].setText(display, form.word);
-    try result[2].setText(display, string_buffers[string_buffer_index].written());
+    try result[2].setText(display, row[i.*].gloss_buffer.written());
 
-    search_result.visible = .visible;
-    search_result_form[i.*] = form;
-    string_buffer_index += 1;
-    if (string_buffer_index >= string_buffers.len) {
-        string_buffer_index = 0;
-    }
+    row[i.*].panel.visible = .visible;
+    row[i.*].form = form;
     i.* += 1;
 }
 

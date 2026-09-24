@@ -1,6 +1,6 @@
 .{
     .name = .lexica,
-    .version = "9.0.1",
+    .version = "9.0.2",
     .fingerprint = 0x2ce87c922558d28,
     .minimum_zig_version = "0.17.0-dev.1426+58a94eaae",
     .dependencies = .{
@@ -13,8 +13,8 @@
             .hash = "zig_objc-0.0.0-Ir_Sp_4tAQDXtPi51nW_jD9LOEzBvU9lofwO9Pzi6IB4",
         },
         .engine = .{
-            .url = "git+https://github.com/loftafi/engine#9df7ad31e5f031a27d9ecd82f6a341d58dda6b78",
-            .hash = "engine-0.48.0-1VilCpl19QvrmgsA1cbIYSK7uDBE6WW-htmTt76VNkXY",
+            .url = "git+https://github.com/loftafi/engine#ac1453fbf28e56ee1badf2c4f235ab04db140700",
+            .hash = "engine-0.49.0-1VilCit29QtthH374c7iN-1oApPfXPg_FRuEL4dZpMSH",
         },
     },
 

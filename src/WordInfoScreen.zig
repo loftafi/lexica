@@ -323,7 +323,7 @@ pub fn init(self: *WordInfoScreen, app: *App) !void {
                     .pressed_name = "button pressed",
                     .hover_name = "button hover",
                 },
-                .text = "Practice",
+                .text = "PRACTICE",
                 .on_pressed = .{ .func = @ptrCast(&tapPracticeButton), .ptr = self },
                 .spacing = 10,
             },

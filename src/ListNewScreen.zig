@@ -64,8 +64,8 @@ pub fn init(
         .name = "new_list_name",
         .background = .{
             .image_name = "white rounded rect",
-            .image_corner_radius = 50,
-            .corner_radius = 14,
+            .corner_radius = 20,
+            .image_corner_radius = 14,
         },
         .pad = .{ .left = 10, .right = 10, .top = 10, .bottom = 10 },
         .rect = .{ .width = 250, .height = 10 },

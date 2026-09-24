@@ -62,7 +62,7 @@ pub fn init(self: *SearchScreen, app: *App) !void {
         .name = "search_query",
         .background = .{
             .image_name = "white rounded rect",
-            .corner_radius = 14,
+            .corner_radius = 20,
             .image_corner_radius = 14,
         },
         .rect = .{ .width = 500, .height = 20 },
