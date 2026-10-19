@@ -184,18 +184,14 @@ pub fn resizeScroller(
 pub fn enableDebug(
     self: *LicenseScreen,
     display: *Display,
-    _: *Entity,
-    _: *const Event,
+    entity: *Entity,
+    event: *const Event,
 ) Allocator.Error!void {
-    _ = display;
     info("enableDebug count={d}", .{self.debug_tap_count});
     self.debug_tap_count += 1;
-
-    if (self.debug_tap_count >= 15) {
-        self.debug_tap_count = 0;
-        info("enableDebug enable debug mode", .{});
-        engine.dev_mode = !engine.dev_mode;
-    }
+    if (self.debug_tap_count < 15) return;
+    self.debug_tap_count = 0;
+    try display.toggleDevMode(display, entity, event);
 }
 
 const std = @import("std");

@@ -11,7 +11,7 @@ us_panel: *Entity = undefined,
 us_panel_ring: *Entity = undefined,
 
 /// Tap the heading 10 times to enable debug mode
-tap_counter: usize = 0,
+debug_tap_count: usize = 0,
 
 pub fn show(
     self: *PreferencesScreen,
@@ -28,7 +28,7 @@ pub fn show(
 
     display.relayout();
     self.updateRing();
-    self.tap_counter = 0;
+    self.debug_tap_count = 0;
 }
 
 pub fn init(self: *PreferencesScreen, app: *App) !void {
@@ -366,16 +366,15 @@ fn initThemeButton(
 
 pub fn tapHeading(
     self: *PreferencesScreen,
-    _: *Display,
-    _: *Entity,
-    _: *Event,
+    display: *Display,
+    entity: *Entity,
+    event: *Event,
 ) Allocator.Error!void {
-    self.tap_counter += 1;
-    if (self.tap_counter > 10) {
-        self.tap_counter = 0;
-        engine.dev_mode = !engine.dev_mode;
-        info("Dev mode: {any}", .{engine.dev_mode});
-    }
+    info("enableDebug count={d}", .{self.debug_tap_count});
+    self.debug_tap_count += 1;
+    if (self.debug_tap_count < 15) return;
+    self.debug_tap_count = 0;
+    try display.toggleDevMode(display, entity, event);
 }
 
 pub fn tapThemeButton(

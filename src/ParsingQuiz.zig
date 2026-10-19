@@ -83,12 +83,13 @@ pub fn setupWithLexeme(
         lexeme.forms.items.len,
         self.form_bank.items.len,
     });
-    if (engine.dev_mode == true) {
+
+    if (engine.log.minimum_log_level == .trace) {
         for (self.form_bank.items) |form| {
             var ps: std.Io.Writer.Allocating = .init(gpa);
             defer ps.deinit();
             form.parsing.string(&ps.writer) catch {};
-            debug("  {s} {s}", .{ form.word, ps.written() });
+            engine.log.trace("  {s} {s}", .{ form.word, ps.written() });
         }
     }
 
@@ -122,12 +123,12 @@ pub fn setupWithWordSet(
         self.all_forms.items.len,
         self.form_bank.items.len,
     });
-    if (engine.dev_mode == true) {
+    if (engine.log.minimum_log_level == .trace) {
         for (self.form_bank.items) |form| {
             var ps: std.Io.Writer.Allocating = .init(gpa);
             defer ps.deinit();
             form.parsing.string(&ps.writer) catch {};
-            debug("  {s} {s}", .{ form.word, ps.written() });
+            engine.log.trace("  {s} {s}", .{ form.word, ps.written() });
         }
     }
 
