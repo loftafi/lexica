@@ -733,6 +733,9 @@ fn setTableRow(
     form: ?*praxis.Form,
 ) error{OutOfMemory}!void {
     const show_article = article.len > 0;
+    row.type.panel.children.items[0].minimum.height = engine.TextSize.pixels + 4;
+    row.type.panel.children.items[1].minimum.height = engine.TextSize.pixels + 4;
+
     row.type.panel.children.items[0].visible = if (show_article) .visible else .hidden;
     try row.type.panel.children.items[0].setText(display, article);
     if (form != null) {
