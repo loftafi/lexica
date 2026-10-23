@@ -7,7 +7,6 @@ pub const APP_MINIMUM_WIDTH = 390;
 pub const APP_MINIMUM_HEIGHT = 600;
 pub const APP_MAXIMUM_WIDTH = 1000;
 pub const MAX_SEARCH_HISTORY = @import("SearchScreen.zig").MAX_SEARCH_RESULTS;
-pub const MAX_PANEL_TABLES: usize = 20;
 pub const study_optative = false;
 pub var writing_enabled = true;
 
@@ -39,7 +38,6 @@ word_info: WordInfoScreen = undefined,
 // Word info screen data
 word_lexeme: ?*praxis.Lexeme = null,
 panels: *Panels = undefined,
-panel_tables: [MAX_PANEL_TABLES]*Entity = undefined,
 
 parsing_quiz: ParsingQuiz = undefined,
 

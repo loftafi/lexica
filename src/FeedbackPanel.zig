@@ -5,7 +5,7 @@ pub const FeedbackPanel = @This();
 const feedback_panel_height = 85;
 const feedback_panel_pad = 7;
 const feedback_button_width = 100;
-const feedback_icon_width = 30;
+const feedback_icon_size = 30;
 
 /// Feedback slide in time in milliseconds
 const slide_time = 0.15 * seconds;
@@ -29,8 +29,10 @@ heading: *Entity,
 text: *Entity,
 button: *Entity,
 flag: *Entity,
+help: *Entity,
 icon: *Entity,
 on_feedback: Entity.Callback = .empty,
+on_help: Entity.Callback = .empty,
 on_next: Entity.Callback = .empty,
 bucket: *StringBucket,
 
@@ -46,10 +48,12 @@ pub fn init(
     box: *Entity,
     style: engine.Theme.Style,
     on_feedback: Entity.Callback,
+    on_help: Entity.Callback,
     on_next: Entity.Callback,
 ) (engine.Error || Allocator.Error || Resources.Error)!void {
     self.on_next = on_next;
     self.on_feedback = on_feedback;
+    self.on_help = on_help;
     self.bucket = bucket;
     self.panel = try box.add(.{
         .name = "feedback.panel",
@@ -79,9 +83,9 @@ pub fn init(
         .layout = .{ .x = .shrinks },
         .child_align = .{ .x = .centre, .y = .centre },
         .pad = .{ .top = 5, .bottom = 5, .left = 5, .right = 5 },
-        .rect = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_width },
-        .minimum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_width },
-        .maximum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_width },
+        .rect = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_size },
+        .minimum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_size },
+        .maximum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_size },
         .texture_name = if (style == .success) "feedback tick" else "feedback cross",
         .type = .{ .sprite = .{ .scale = .fit } },
     }, display);
@@ -118,16 +122,22 @@ pub fn init(
             .text = "This is a sample translation.",
         } },
     }, display);
-    self.flag = try self.panel.add(.{
+    var button_tray = try self.panel.add(.{
+        .name = "button_tray",
+        .layout = .{ .y = .fixed, .x = .fixed },
+        .rect = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_size },
+        .child_align = .{ .x = .centre, .y = .centre },
+        .type = .{ .panel = .{ .spacing = 4, .direction = .top_to_bottom } },
+    }, display);
+
+    self.flag = try button_tray.add(.{
         .name = "flag",
-        .layout = .{ .x = .shrinks },
+        .layout = .{ .x = .fixed, .y = .fixed },
         .child_align = .{ .y = .centre },
         .style = .custom,
         .colour = .{ .r = 255, .g = 255, .b = 255, .a = 128 },
         .pad = .{ .top = 5, .bottom = 5, .left = 5, .right = 5 },
-        .rect = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_width },
-        .minimum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_width },
-        .maximum = .{ .height = feedback_panel_height - feedback_panel_pad * 2, .width = feedback_icon_width },
+        .rect = .{ .height = feedback_icon_size, .width = feedback_icon_size },
         .texture_name = "feedback flag",
         .type = .{ .sprite = .{
             .scale = .fit,
@@ -135,6 +145,22 @@ pub fn init(
         } },
     }, display);
     if (on_feedback.func == null) self.flag.visible = .hidden;
+    self.help = try button_tray.add(.{
+        .name = "help",
+        .layout = .{ .x = .fixed, .y = .fixed },
+        .rect = .{ .height = feedback_icon_size, .width = feedback_icon_size },
+        .child_align = .{ .y = .centre },
+        .style = .custom,
+        .colour = .{ .r = 255, .g = 255, .b = 255, .a = 128 },
+        .pad = .{ .top = 5, .bottom = 5, .left = 5, .right = 5 },
+        .texture_name = "feedback flag",
+        .type = .{ .sprite = .{
+            .scale = .fit,
+            .on_pressed = on_help,
+        } },
+    }, display);
+    if (on_help.func == null) self.help.visible = .hidden;
+
     self.button = try self.panel.add(.{
         .name = "next",
         .aria_label = "Show Next Card",
@@ -256,27 +282,36 @@ pub fn resizeFeedbackBar(
     display: *Display,
     _: *Entity,
 ) bool {
-    const feedback_width = @min(
+    const feedback_width: f32 = @min(
         display.root.rect.width - display.root.pad.left - display.root.pad.right - 20,
         500,
     );
-    const button_width = feedback_button_width;
-    const spacing = feedback_panel_pad;
     var updated = false;
 
     if (self.panel.rect.width != feedback_width) {
         self.panel.rect.width = feedback_width;
         self.panel.minimum.width = feedback_width;
         self.panel.maximum.width = feedback_width;
-        self.rows.rect.width = feedback_width - button_width - feedback_icon_width - spacing * 5;
-        self.rows.minimum.width = self.rows.rect.width;
-        self.rows.maximum.width = self.rows.rect.width;
-        self.text.rect.width = feedback_width - button_width - feedback_icon_width - spacing * 5;
-        self.text.minimum.width = self.text.rect.width;
-        self.text.maximum.width = self.text.rect.width;
-        self.heading.rect.width = feedback_width - button_width - feedback_icon_width - spacing * 5;
-        self.heading.minimum.width = self.heading.rect.width;
-        self.heading.maximum.width = self.heading.rect.width;
+        // Text width is full panel width not including left icon,
+        // right button, and flag/help buttons if visible.
+
+        const flag_pad: f32 = if (self.on_help.func != null or self.on_feedback.func != null)
+            (feedback_icon_size + feedback_panel_pad)
+        else
+            0.0;
+        const inner_text_width: f32 = feedback_width -
+            feedback_button_width -
+            feedback_icon_size -
+            feedback_panel_pad * 5 - flag_pad;
+        self.rows.rect.width = inner_text_width;
+        self.rows.minimum.width = inner_text_width;
+        self.rows.maximum.width = inner_text_width;
+        self.text.rect.width = inner_text_width;
+        self.text.minimum.width = inner_text_width;
+        self.text.maximum.width = inner_text_width;
+        self.heading.rect.width = inner_text_width;
+        self.heading.minimum.width = inner_text_width;
+        self.heading.maximum.width = inner_text_width;
         updated = true;
     }
 

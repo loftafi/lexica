@@ -489,8 +489,9 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
         display,
         self.panel,
         .success,
-        .{ .func = null, .ptr = self },
-        .{ .func = @ptrCast(&tapNext), .ptr = self },
+        .{ .func = null, .ptr = self }, // feedback
+        .{ .func = @ptrCast(&tapHelp), .ptr = self }, // help
+        .{ .func = @ptrCast(&tapNext), .ptr = self }, // next
     );
     try self.incorrect_panel.init(
         App.APP_MINIMUM_WIDTH,
@@ -499,8 +500,9 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
         display,
         self.panel,
         .failed,
-        .{ .func = null, .ptr = self },
-        .{ .func = @ptrCast(&tapNext), .ptr = self },
+        .{ .func = null, .ptr = self }, // feedback
+        .{ .func = @ptrCast(&tapHelp), .ptr = self }, // help
+        .{ .func = @ptrCast(&tapNext), .ptr = self }, // next
     );
 
     _ = try self.panel.add(.{
@@ -1118,6 +1120,15 @@ pub fn tapNext(
         return;
     }
     _ = try self.setupNextCard(display);
+}
+
+pub fn tapHelp(
+    _: *ParsingCardScreen,
+    _: *Display,
+    _: *Entity,
+    _: *Event,
+) error{OutOfMemory}!void {
+    info("help tapped", .{});
 }
 
 pub fn button_bounce(

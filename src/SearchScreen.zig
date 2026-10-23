@@ -295,7 +295,7 @@ inline fn updateSearchResult(
         return;
     }
 
-    const transliterated = praxis.transliterate(form.word, true, self.search_transliterations[i.*][0 .. praxis.max_word_size * 2]) catch "";
+    const transliterated = praxis.transliterateSyllables(form.word, true, "·", self.search_transliterations[i.*][0 .. praxis.max_word_size * 2]) catch "";
 
     search_result.aria_label = self.app.bucket.addFmt("View '{s}' details", .{form.word}) catch "View Details";
 
@@ -339,7 +339,7 @@ pub fn selectPrimaryForm(word: *praxis.Form, query: []const u8) *Form {
 
     // Check prefix presuming transliterated English
     var buffer: [praxis.max_word_size * 2]u8 = undefined;
-    const transliterated = praxis.transliterate(primary.?.word, false, &buffer) catch |e| {
+    const transliterated = praxis.transliterateSyllables(primary.?.word, false, "·", &buffer) catch |e| {
         warn("selectPrimaryForm({s},{s}) transliterate failed {any}", .{ word.word, query, e });
         return word;
     };
