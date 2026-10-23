@@ -19,7 +19,6 @@ word_title: *Entity = undefined,
 word_glosses: *Entity = undefined,
 word_transliteration: *Entity = undefined,
 
-row_pos: *Entity = undefined,
 row_tags: *Entity = undefined,
 row_strongs: *Entity = undefined,
 row_articles: *Entity = undefined,
@@ -30,11 +29,12 @@ strongs_buffer: std.Io.Writer.Allocating = undefined,
 gloss_buffer: std.Io.Writer.Allocating = undefined,
 tags_buffer: std.Io.Writer.Allocating = undefined,
 
-panel_tables: [max_panel_tables]FormPanel = undefined,
+word_chart: WordChart = undefined,
 
-pub const max_panel_tables: usize = 20;
-
-pub fn init(self: *WordInfoScreen, app: *App) !void {
+pub fn init(
+    self: *WordInfoScreen,
+    app: *App,
+) (engine.Error || Allocator.Error || Resources.Error)!void {
     self.app = app;
     var display = app.display;
 
@@ -122,15 +122,15 @@ pub fn init(self: *WordInfoScreen, app: *App) !void {
         \\}
     , WordInfoScreen, self);
 
-    for (&self.panel_tables) |*panel| {
-        try panel.init(display, self.scroller);
-    }
+    try self.word_chart.init(display, self.scroller);
 }
 
 pub fn deinit(self: *WordInfoScreen) void {
+    self.word_chart.deinit(self.app.display);
     self.gloss_buffer.deinit();
     self.strongs_buffer.deinit();
     self.tags_buffer.deinit();
+    self.word_chart.deinit(self.app.display);
     self.* = undefined;
 }
 
@@ -261,24 +261,59 @@ pub fn show(
     }
 
     const uk = self.app.preference.uk_order;
-    self.app.panels.*.setLexeme(lexeme);
-    const panels = try self.app.panels.panels(display.allocator);
-    var i: usize = 0;
-    for (panels) |*table| {
-        if (i >= max_panel_tables) break;
-        try self.panel_tables[i].setup(display, table, lexeme, uk);
-        i += 1;
-    }
 
-    // Hide the final unused panels
-    while (i < max_panel_tables) {
-        self.panel_tables[i].panel.visible = .hidden;
-        i += 1;
-    }
-
-    self.scroller.offset = .{ .x = 0, .y = 0 };
+    try self.word_chart.setup(display, uk, lexeme);
     try display.choosePanel("word.info", event);
 }
+
+pub const WordChart = struct {
+    pub const max_panel_tables: usize = 20;
+
+    chart: [max_panel_tables]FormPanel = undefined,
+    panels: praxis.Panels = .empty,
+    parent: *Entity = undefined,
+
+    pub fn init(
+        self: *WordChart,
+        display: *Display,
+        parent: *Entity,
+    ) (engine.Error || Allocator.Error || Resources.Error)!void {
+        self.parent = parent;
+        self.panels = .empty;
+        for (&self.chart) |*panel| {
+            try panel.init(display, parent);
+        }
+    }
+
+    pub fn deinit(self: *WordChart, display: *Display) void {
+        self.panels.deinit(display.allocator);
+        self.* = undefined;
+    }
+
+    pub fn setup(
+        self: *WordChart,
+        display: *Display,
+        uk: bool,
+        lexeme: *praxis.Lexeme,
+    ) Allocator.Error!void {
+        self.panels.setLexeme(lexeme);
+        const panels = try self.panels.panels(display.allocator);
+        var i: usize = 0;
+        for (panels) |*table| {
+            if (i >= max_panel_tables) break;
+            try self.chart[i].setup(display, table, lexeme, uk);
+            i += 1;
+        }
+
+        // Hide the final unused panels
+        while (i < max_panel_tables) {
+            self.chart[i].panel.visible = .hidden;
+            i += 1;
+        }
+
+        self.parent.offset = .{ .x = 0, .y = 0 };
+    }
+};
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;

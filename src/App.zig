@@ -37,7 +37,6 @@ word_info: WordInfoScreen = undefined,
 
 // Word info screen data
 word_lexeme: ?*praxis.Lexeme = null,
-panels: *Panels = undefined,
 
 parsing_quiz: ParsingQuiz = undefined,
 
@@ -79,8 +78,6 @@ pub fn create(
     self.bucket = .init(gpa);
     try self.parsing_quiz.init(gpa);
     errdefer self.view_history.deinit(gpa);
-    self.panels = try Panels.create(gpa);
-    errdefer self.panels.destroy(gpa);
 
     self.display = try Display.create(
         gpa,
@@ -129,7 +126,7 @@ pub fn destroy(self: *App) void {
     }
     self.view_history.deinit(self.allocator);
     self.display.destroy();
-    self.panels.destroy(self.allocator);
+    self.word_info.deinit();
     self.parsing_quiz.deinit(self.allocator);
     self.privacy.deinit();
     self.license.deinit();
@@ -548,7 +545,6 @@ const Lang = praxis.Lang;
 const Resources = @import("resources").Resources;
 const ResourcesError = @import("resources").Resources.Error;
 const Dictionary = praxis.Dictionary;
-const Panels = praxis.Panels;
 
 const engine = @import("engine");
 const Display = engine.Display;
