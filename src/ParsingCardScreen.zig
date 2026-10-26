@@ -10,6 +10,12 @@ progress_bar: *Entity = undefined,
 
 correct_panel: FeedbackPanel,
 incorrect_panel: FeedbackPanel,
+word_chart: WordChart = undefined,
+
+help_overlay: *Entity = undefined,
+help_scroller: *Entity = undefined,
+
+current_form: ?*Form = null,
 
 pub fn show(
     self: *ParsingCardScreen,
@@ -518,6 +524,20 @@ pub fn init(self: *ParsingCardScreen, app: *App) (error{
         .layout = .{ .x = .fixed, .y = .fixed },
         .type = .{ .panel = .{} },
     }, display);
+
+    self.help_overlay = try self.panel.add(.{
+        .visible = .hidden,
+        .child_align = .{ .x = .centre, .y = .centre },
+        .layout = .{ .x = .grows, .y = .grows },
+        .type = .{ .panel = .{} },
+    }, display);
+
+    self.help_scroller = try self.help_overlay.add(.{
+        .layout = .{ .x = .grows, .y = .grows },
+        .type = .{ .panel = .{} },
+    }, display);
+
+    try self.word_chart.init(display, self.help_scroller);
 }
 
 pub fn deinit(self: *ParsingCardScreen) void {
@@ -1123,12 +1143,16 @@ pub fn tapNext(
 }
 
 pub fn tapHelp(
-    _: *ParsingCardScreen,
-    _: *Display,
-    _: *Entity,
-    _: *Event,
+    self: *ParsingCardScreen,
+    display: *Display,
+    entity: *Entity,
+    event: *Event,
 ) error{OutOfMemory}!void {
     info("help tapped", .{});
+    if (self.current_form) |form| {
+        try self.app.parsing_help_overlay.setup(display, form, self.app.preference.uk_order);
+        try self.app.parsing_help_overlay.animateIn(display, entity, event);
+    }
 }
 
 pub fn button_bounce(
@@ -1178,6 +1202,7 @@ pub fn setupNextCard(
     }
 
     const form = self.app.parsing_quiz.next_form();
+    self.current_form = form;
     self.progress_bar.type.progress_bar.progress = self.app.parsing_quiz.progress();
 
     try self.quiz_word.setText(display, form.*.word);
@@ -1512,3 +1537,4 @@ const MenuUI = @import("MenuUI.zig");
 const ParsingQuiz = @import("ParsingQuiz.zig");
 const FeedbackPanel = @import("FeedbackPanel.zig");
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
+const WordChart = @import("WordInfoScreen.zig").WordChart;

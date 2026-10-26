@@ -33,7 +33,7 @@ pub fn init(self: *MenuUI, app: *App) !void {
         \\    progress_bar never_focus name "progress_bar"
         \\      layout grows grows
         \\      minimum width=100 height=12
-        \\      maximum width=800 height=20
+        \\      maximum width=800 height=12
         \\      image "white rounded rect"
         \\      corner_radius 6 image_corner_radius 14
         \\  }

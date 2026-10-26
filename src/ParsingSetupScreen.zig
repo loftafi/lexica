@@ -414,7 +414,6 @@ pub fn init(self: *ParsingSetupScreen, context: *App) !void {
 
         self.checkboxes.genitive_dative = try self.noun_panel.add(.{
             .name = "include.gd",
-            .minimum = .{ .height = 200 },
             .layout = .{ .y = .shrinks, .x = .grows },
             .type = .{ .checkbox = .{
                 .text = "GENITIVE_AND_DATIVE",
@@ -767,12 +766,12 @@ pub fn resizePanel(
 
     if (self.app.preference.size == .large or self.app.preference.size == .extra_large) {
         if (self.help_line.visible != .hidden) {
-            self.help_line.visible = .hidden;
+            self.help_line.setVisibility(display, .hidden) catch {};
             updated = true;
         }
     } else {
-        if (self.help_line.visible == .hidden) {
-            self.help_line.visible = .visible;
+        if (self.help_line.visible == .hidden and self.list == null) {
+            self.help_line.setVisibility(display, .visible) catch {};
             updated = true;
         }
     }

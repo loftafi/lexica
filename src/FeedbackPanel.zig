@@ -153,7 +153,7 @@ pub fn init(
         .style = .custom,
         .colour = .{ .r = 255, .g = 255, .b = 255, .a = 128 },
         .pad = .{ .top = 5, .bottom = 5, .left = 5, .right = 5 },
-        .texture_name = "feedback flag",
+        .texture_name = "info icon",
         .type = .{ .sprite = .{
             .scale = .fit,
             .on_pressed = on_help,

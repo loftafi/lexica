@@ -36,14 +36,13 @@ pub fn init(
     app: *App,
 ) (engine.Error || Allocator.Error || Resources.Error)!void {
     self.app = app;
-    var display = app.display;
 
-    self.gloss_buffer = .init(display.allocator);
-    self.strongs_buffer = .init(display.allocator);
-    self.tags_buffer = .init(display.allocator);
+    self.gloss_buffer = .init(app.display.allocator);
+    self.strongs_buffer = .init(app.display.allocator);
+    self.tags_buffer = .init(app.display.allocator);
     self.string_buffers_i = 0;
 
-    _ = try display.appendPanel(
+    _ = try app.display.appendPanel(
         \\panel:panel name "word.info" hidden top_left choosable
         \\  layout grows grows align start start
         \\  spacing 2 on_resized resizePanel
@@ -122,7 +121,7 @@ pub fn init(
         \\}
     , WordInfoScreen, self);
 
-    try self.word_chart.init(display, self.scroller);
+    try self.word_chart.init(app.display, self.scroller);
 }
 
 pub fn deinit(self: *WordInfoScreen) void {
@@ -130,7 +129,6 @@ pub fn deinit(self: *WordInfoScreen) void {
     self.gloss_buffer.deinit();
     self.strongs_buffer.deinit();
     self.tags_buffer.deinit();
-    self.word_chart.deinit(self.app.display);
     self.* = undefined;
 }
 
@@ -262,7 +260,7 @@ pub fn show(
 
     const uk = self.app.preference.uk_order;
 
-    try self.word_chart.setup(display, uk, lexeme);
+    try self.word_chart.setup(display, uk, lexeme, null);
     try display.choosePanel("word.info", event);
 }
 
@@ -286,6 +284,11 @@ pub const WordChart = struct {
     }
 
     pub fn deinit(self: *WordChart, display: *Display) void {
+        if (self.panels.lexeme) |lexeme| {
+            std.log.debug("deinit with lexeme {s}", .{lexeme.word});
+        } else {
+            std.log.debug("deinit without lexeme", .{});
+        }
         self.panels.deinit(display.allocator);
         self.* = undefined;
     }
@@ -295,13 +298,12 @@ pub const WordChart = struct {
         display: *Display,
         uk: bool,
         lexeme: *praxis.Lexeme,
+        highlight: ?*praxis.Form,
     ) Allocator.Error!void {
-        self.panels.setLexeme(lexeme);
-        const panels = try self.panels.panels(display.allocator);
         var i: usize = 0;
-        for (panels) |*table| {
+        for (try self.panels.setup(lexeme, display.allocator)) |*table| {
             if (i >= max_panel_tables) break;
-            try self.chart[i].setup(display, table, lexeme, uk);
+            try self.chart[i].setup(display, table, lexeme, highlight, uk);
             i += 1;
         }
 

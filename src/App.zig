@@ -29,6 +29,7 @@ noto: NotoScreen = undefined,
 parsing_card: ParsingCardScreen = undefined,
 parsing_menu: ParsingMenuScreen = undefined,
 parsing_setup: ParsingSetupScreen = undefined,
+parsing_help_overlay: ParsingHelpOverlay = undefined,
 preferences: PreferencesScreen = undefined,
 privacy: PrivacyScreen = undefined,
 terms: TermsScreen = undefined,
@@ -117,25 +118,27 @@ pub fn create(
 
 /// Release all memory
 pub fn destroy(self: *App) void {
+    // Deinitialise any panels that need `deinit`.
     if (self.dictionary.lexemes.count() > 0) {
         debug("cleanup screens, dictionary was loaded with {d} records", .{self.dictionary.lexemes.count()});
         self.parsing_setup.deinit();
         self.search_screen.deinit(self.allocator);
         self.list_edit.deinit(self.allocator);
-        self.word_info.deinit();
     }
     self.view_history.deinit(self.allocator);
-    self.display.destroy();
-    self.word_info.deinit();
     self.parsing_quiz.deinit(self.allocator);
+    self.parsing_help_overlay.deinit();
     self.privacy.deinit();
     self.license.deinit();
     self.license_info.deinit();
     self.terms.deinit();
     self.byz.deinit();
     self.noto.deinit();
-    self.lists.deinit(self.allocator);
+    self.word_info.deinit();
 
+    // Deinit supporting data structures
+    self.lists.deinit(self.allocator);
+    self.display.destroy();
     self.dictionary.destroy();
     self.dictionary_arena.deinit();
     self.bucket.deinit();
@@ -221,6 +224,9 @@ pub fn initPanels(self: *App) !void {
 
     try self.noto.init(self);
     errdefer self.noto.deinit();
+
+    try self.parsing_help_overlay.init(self);
+    errdefer self.parsing_help_overlay.deinit();
 
     end = std.Io.Timestamp.now(self.io, .real).toMilliseconds();
     info("Panels initialised in {d}ms.", .{end - start});
@@ -393,10 +399,14 @@ pub fn addBackButton(
 fn keypressEscape(
     self: *App,
     display: *Display,
-    _: *Entity,
+    entity: *Entity,
     event: *const Event,
 ) error{OutOfMemory}!void {
     info("Escape or Android back pressed", .{});
+    if (self.parsing_help_overlay.panel.visible != .hidden) {
+        try self.parsing_help_overlay.animateOut(display, entity, event);
+        return;
+    }
     if (display.currentPanel()) |screen| {
         if (std.mem.eql(u8, screen.name, self.word_info.panel.name)) {
             try self.search_screen.show(display, screen, event);
@@ -579,6 +589,7 @@ const PreferencesScreen = @import("PreferencesScreen.zig");
 const ParsingMenuScreen = @import("ParsingMenuScreen.zig");
 const ParsingSetupScreen = @import("ParsingSetupScreen.zig");
 const ParsingCardScreen = @import("ParsingCardScreen.zig");
+const ParsingHelpOverlay = @import("ParsingHelpOverlay.zig");
 const SearchScreen = @import("SearchScreen.zig");
 const TermsScreen = @import("TermsScreen.zig");
 const WordInfoScreen = @import("WordInfoScreen.zig");
