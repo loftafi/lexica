@@ -18,6 +18,7 @@ display: *Display = undefined,
 dictionary: *Dictionary = undefined,
 dictionary_arena: std.heap.ArenaAllocator = undefined,
 
+bible_reader_screen: BibleReaderScreen = undefined,
 byz: ByzScreen = undefined,
 license: LicenseScreen = undefined,
 license_info: LicenseInfoScreen = undefined,
@@ -135,6 +136,7 @@ pub fn destroy(self: *App) void {
     self.byz.deinit();
     self.noto.deinit();
     self.word_info.deinit();
+    self.bible_reader_screen.deinit();
 
     // Deinit supporting data structures
     self.lists.deinit(self.allocator);
@@ -200,6 +202,9 @@ pub fn initPanels(self: *App) !void {
 
     try self.word_info.init(self);
     errdefer self.word_info.deinit();
+
+    try self.bible_reader_screen.init(self);
+    errdefer self.bible_reader_screen.deinit();
 
     try self.license.init(self);
     errdefer self.license.deinit();
@@ -408,6 +413,10 @@ fn keypressEscape(
         return;
     }
     if (display.currentPanel()) |screen| {
+        if (std.mem.eql(u8, screen.name, self.bible_reader_screen.panel.name)) {
+            try self.search_screen.show(display, screen, event);
+            return;
+        }
         if (std.mem.eql(u8, screen.name, self.word_info.panel.name)) {
             try self.search_screen.show(display, screen, event);
             return;
@@ -576,6 +585,7 @@ const WordSet = Lists.WordSet;
 const ParsingQuiz = @import("ParsingQuiz.zig");
 const Preferences = @import("Preferences.zig");
 
+const BibleReaderScreen = @import("BibleReaderScreen.zig");
 const ByzScreen = @import("ByzScreen.zig");
 const LicenseScreen = @import("LicenseScreen.zig");
 const LicenseInfoScreen = @import("LicenseInfoScreen.zig");
