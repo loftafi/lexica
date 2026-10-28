@@ -135,3 +135,20 @@ pub export fn SDL_AppInit(
     engine.start.shutdown_handler = shutdown;
     return engine.AppInitC(appstate, argc, argv);
 }
+
+comptime {
+    if (builtin.abi.isAndroid()) {
+        @export(
+            &@import("AndroidNotifications.zig").Java_org_libsdl_app_SDLActivity_nativeNotificationCallback,
+            .{ .name = "Java_org_libsdl_app_SDLActivity_nativeNotificationCallback", .linkage = .strong },
+        );
+        @export(
+            &@import("AndroidNotifications.zig").JNI_OnLoad,
+            .{ .name = "JNI_OnLoad", .linkage = .strong },
+        );
+        @export(
+            &@import("AndroidNotifications.zig").JNI_OnLoad,
+            .{ .name = "OnLoad", .linkage = .strong },
+        );
+    }
+}
