@@ -48,7 +48,7 @@ lists: Lists,
 preference: Preferences = .empty,
 
 /// Words that were tapped to be viewed
-view_history: std.ArrayListUnmanaged(*praxis.Form),
+view_history: std.ArrayList(*praxis.Form),
 
 data_loaded_event: u32,
 

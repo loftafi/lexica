@@ -6,7 +6,7 @@ pub const MAX_SET_NAME: usize = 40;
 
 pub const Lists = @This();
 
-sets: ArrayListUnmanaged(*WordSet),
+sets: ArrayList(*WordSet),
 dictionary: *Dictionary,
 
 const FILENAME = "sets.txt";
@@ -237,10 +237,10 @@ fn writeListData(
 }
 
 pub const WordSet = struct {
-    name: ArrayListUnmanaged(u8),
-    forms: ArrayListUnmanaged(*Form),
+    name: ArrayList(u8),
+    forms: ArrayList(*Form),
 
-    study_items: ArrayListUnmanaged(*Form),
+    study_items: ArrayList(*Form),
 
     pub fn create(allocator: Allocator) error{OutOfMemory}!*WordSet {
         var list = try allocator.create(WordSet);
@@ -351,7 +351,7 @@ pub const WordSet = struct {
 };
 
 const std = @import("std");
-const ArrayListUnmanaged = std.ArrayListUnmanaged;
+const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 
 const engine = @import("engine");

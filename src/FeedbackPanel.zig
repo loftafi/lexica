@@ -428,7 +428,6 @@ const Sentence = dialogos.Sentence;
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const ArrayListUnmanaged = std.ArrayListUnmanaged;
 
 const engine = @import("engine");
 const trace = engine.log.trace;

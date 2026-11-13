@@ -5,8 +5,8 @@ const ParsingQuiz = @This();
 lexeme: ?*praxis.Lexeme = null,
 word_set: ?*WordSet = null,
 
-form_bank: ArrayListUnmanaged(*praxis.Form) = undefined,
-all_forms: ArrayListUnmanaged(*praxis.Form) = undefined,
+form_bank: ArrayList(*praxis.Form) = undefined,
+all_forms: ArrayList(*praxis.Form) = undefined,
 total_cards: usize = 0,
 
 const ignores = [_][]const u8{"δώσωσιν"};
@@ -279,7 +279,7 @@ pub fn remove_current_form(self: *ParsingQuiz) usize {
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const ArrayListUnmanaged = std.ArrayListUnmanaged;
+const ArrayList = std.ArrayList;
 
 const engine = @import("engine");
 const err = engine.log.err;

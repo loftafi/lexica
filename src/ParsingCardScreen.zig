@@ -981,7 +981,7 @@ var buttons = struct {
         var correct: bool = false;
 
         // There may be one or more parsing options for a given form.
-        var valid_forms: std.ArrayListUnmanaged(*praxis.Form) = .empty;
+        var valid_forms: std.ArrayList(*praxis.Form) = .empty;
         defer valid_forms.deinit(gpa);
         if (form.lexeme == null) {
             try valid_forms.append(gpa, form);

@@ -51,7 +51,7 @@ pub fn startup(
 
     // Command line options may override the location to load app resources
     // and `make_bundle` requests that an app bundle is created.
-    var bundle_info: std.ArrayListUnmanaged(engine.BundleInfo) = .empty;
+    var bundle_info: std.ArrayList(engine.BundleInfo) = .empty;
     defer bundle_info.deinit(arena);
 
     var cmd_args = args;
